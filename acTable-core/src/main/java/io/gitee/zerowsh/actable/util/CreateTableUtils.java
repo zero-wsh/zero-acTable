@@ -16,6 +16,7 @@ import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.CreateTableConstants.*;
@@ -118,6 +119,11 @@ public class CreateTableUtils {
                         continue;
                     }
                 }
+            }
+            //需要排除修饰符的方法
+            String modifier = Modifier.toString(field.getModifiers());
+            if (modifier.contains(STATIC) || modifier.contains(TRANSIENT)) {
+                continue;
             }
 
             Column column = field.getAnnotation(Column.class);

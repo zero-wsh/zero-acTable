@@ -15,8 +15,8 @@ mybatis-plus:
 #  configuration:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   mapper-locations: classpath*:/mapper/**/*.xml
-mybatis:
-  create:
-    table:
-      entity-package: zero.mybatisplus.dynamictable.demo.entity
+zero:
+  mybatis:
+    ac-table:
+      entity-package: io.gitee.zerowsh.actable.demo.entity
       model: add_or_update_del

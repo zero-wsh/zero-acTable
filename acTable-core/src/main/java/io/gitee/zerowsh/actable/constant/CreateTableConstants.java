@@ -59,6 +59,8 @@ public interface CreateTableConstants {
     String DEL_UK_C_SQL = "del_uk_sql";
     String DEL_INDEX_C_SQL = "del_index_sql";
     String DEL_DF_C_SQL = "del_df_sql";
+    String TRANSIENT = "transient";
+    String STATIC = "static";
     /**
      * 唯一键前缀
      */

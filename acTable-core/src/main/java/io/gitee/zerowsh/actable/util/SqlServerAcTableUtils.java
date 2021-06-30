@@ -646,7 +646,7 @@ public class SqlServerAcTableUtils {
     private static boolean handleUkConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
         for (ConstraintInfo constraintInfo : constraintInfoList) {
             if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), 2)) {
+                    && Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 return true;
             }
         }
@@ -656,7 +656,7 @@ public class SqlServerAcTableUtils {
     private static boolean handleIdxConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
         for (ConstraintInfo constraintInfo : constraintInfoList) {
             if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), 3)) {
+                    && Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
                 return true;
             }
         }

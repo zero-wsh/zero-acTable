@@ -4,7 +4,9 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.annotation.*;
@@ -141,6 +143,7 @@ public class HandlerEntityUtils {
 
             Column column = field.getAnnotation(Column.class);
             TableField tableField = field.getAnnotation(TableField.class);
+            TableId tableId = field.getAnnotation(TableId.class);
             if (Objects.isNull(column)) {
                 if (Objects.nonNull(tableField) && !tableField.exist()) {
                     continue;
@@ -153,11 +156,19 @@ public class HandlerEntityUtils {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
+                boolean isKey = Objects.nonNull(tableId);
+                boolean isAutoIncrement = Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO);
                 propertyInfoBuilder.columnName(columnName)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(COLUMN_IS_NULL_DEF)
+                        .isKey(isKey)
+                        .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
                         .type(getJavaTurnDatabaseValue(field.getType().getName()));
+                //处理主键
+                if (isKey) {
+                    keyList.add(columnName);
+                }
             } else {
                 if ((Objects.nonNull(tableField) && !tableField.exist()) || column.exclude()) {
                     continue;
@@ -174,18 +185,21 @@ public class HandlerEntityUtils {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
+
+                boolean isKey = Objects.nonNull(tableId) || column.isKey();
+                boolean isAutoIncrement = column.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
                 propertyInfoBuilder.columnName(columnName)
                         .columnComment(judgeIsNull(column.comment()))
                         .decimalLength(column.decimalLength())
                         .defaultValue(judgeIsNull(column.defaultValue()))
-                        .isAutoIncrement(column.isAutoIncrement())
-                        .isKey(column.isKey())
+                        .isAutoIncrement(isAutoIncrement)
+                        .isKey(isKey)
                         .isNull(column.isNull())
                         .length(column.length())
                         .type(Objects.equals(type, ColumnTypeEnums.DEFAULT)
                                 ? getJavaTurnDatabaseValue(field.getType().getName()) : type);
                 //处理主键
-                if (column.isKey()) {
+                if (isKey) {
                     keyList.add(columnName);
                 }
             }

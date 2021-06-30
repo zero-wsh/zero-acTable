@@ -5,6 +5,7 @@ package io.gitee.zerowsh.actable.emnus;
  *
  * @author zero
  */
+@SuppressWarnings("all")
 public enum ModelEnums {
     /**
      * 啥也不做

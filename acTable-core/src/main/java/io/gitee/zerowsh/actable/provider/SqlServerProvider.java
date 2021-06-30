@@ -5,6 +5,7 @@ package io.gitee.zerowsh.actable.provider;
  *
  * @author zero
  */
+@SuppressWarnings("all")
 public class SqlServerProvider {
     public String isExistTable() {
         return "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID(N'${tableName}') AND type IN ('U')";

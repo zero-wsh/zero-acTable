@@ -7,8 +7,8 @@ import io.gitee.zerowsh.actable.constant.CreateTableConstants;
  *
  * @author zero
  */
+@SuppressWarnings("all")
 public enum ColumnTypeEnums {
-
     DEFAULT(CreateTableConstants.DEFAULT_VALUE),
     NVARCHAR("nvarchar"),
     NVARCHAR_MAX("nvarchar(max)"),

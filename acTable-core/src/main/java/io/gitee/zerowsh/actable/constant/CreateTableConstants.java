@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 public interface CreateTableConstants {
     /**
-     * 当等于改值时，默认值为null
+     * 当等于该值时，默认值为null
      */
     String DEFAULT_VALUE = "default_value";
     /**
@@ -27,8 +27,10 @@ public interface CreateTableConstants {
         put("int", ColumnTypeEnums.INT);
         put("java.lang.Boolean", ColumnTypeEnums.BIT);
         put("java.lang.boolean", ColumnTypeEnums.BIT);
-        put("java.util.Date", ColumnTypeEnums.DATETIME2);
-        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME2);
+        put("java.util.Date", ColumnTypeEnums.DATETIME);
+        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME);
+        put("java.time.LocalDate", ColumnTypeEnums.DATETIME);
+        put("java.time.LocalDateTime", ColumnTypeEnums.DATETIME);
         put("java.math.BigDecimal", ColumnTypeEnums.NUMERIC);
         put("java.lang.Double", ColumnTypeEnums.NUMERIC);
         put("double", ColumnTypeEnums.NUMERIC);
@@ -37,6 +39,12 @@ public interface CreateTableConstants {
         put("char", ColumnTypeEnums.NCHAR);
     }};
 
+    /**
+     * java类型转数据库类型
+     *
+     * @param key
+     * @return
+     */
     static ColumnTypeEnums getJavaTurnDatabaseValue(String key) {
         ColumnTypeEnums columnTypeEnums = JAVA_TURN_DATABASE_MAP.get(key);
         return Objects.isNull(columnTypeEnums) ? ColumnTypeEnums.NVARCHAR : columnTypeEnums;
@@ -93,7 +101,6 @@ public interface CreateTableConstants {
     String ADD_TABLE_COMMENT = "EXEC sp_addextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String UPDATE_TABLE_COMMENT = "EXEC sp_updateextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String DROP_TABLE_COMMENT = "EXEC sys.sp_dropextendedproperty 'MS_Description',N'SCHEMA', N'dbo', N'TABLE', N'{}'";
-    //ALTER TABLE [dbo].[t_zero] ADD [dd] varchar(255) DEFAULT 11 NULL
     String ADD_COLUMN = "ALTER TABLE [{}] ADD [{}] {}";
     String UPDATE_COLUMN = "ALTER TABLE [{}] ALTER COLUMN [{}] {}";
     String ADD_COLUMN_COMMENT = "EXEC sp_addextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}','COLUMN', N'{}'";
@@ -102,7 +109,6 @@ public interface CreateTableConstants {
     String CREATE_INDEX = "CREATE NONCLUSTERED INDEX [{}] ON [{}] ({})";
     String CREATE_UNIQUE = "ALTER TABLE [{}] add constraint [{}] unique ({})";
     String DROP_COLUMN = "ALTER TABLE [{}] DROP COLUMN [{}]";
-    //删除约束（包含唯一键和主键约束）
     String DROP_CONSTRAINT = "ALTER TABLE [{}] DROP CONSTRAINT [{}]";
     String DROP_INDEX = "DROP INDEX [{}] ON [{}]";
     String CREATE_PRIMARY_KEY = "ALTER TABLE [{}] ADD CONSTRAINT [{}] PRIMARY KEY CLUSTERED ({})";

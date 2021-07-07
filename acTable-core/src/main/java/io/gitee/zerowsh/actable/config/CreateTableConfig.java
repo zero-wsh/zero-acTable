@@ -36,5 +36,9 @@ public class CreateTableConfig {
      * 数据库类型，默认sql_server
      */
     private DatabaseTypeEnums databaseType = DatabaseTypeEnums.SQL_SERVER;
+    /**
+     * 初始化数据脚本
+     */
+    private String script;
 
 }

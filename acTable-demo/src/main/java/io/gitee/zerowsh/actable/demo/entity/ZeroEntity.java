@@ -1,7 +1,5 @@
 package io.gitee.zerowsh.actable.demo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import io.gitee.zerowsh.actable.annotation.Column;
@@ -18,7 +16,6 @@ import java.sql.Timestamp;
 @Table(name = "t_zero", comment = "测试")
 @ExcludeSuperField
 public class ZeroEntity extends Model<ZeroEntity> {
-    @TableId(type = IdType.ASSIGN_UUID)
     @Column(name = "id", comment = "主键", isKey = true, isAutoIncrement = true)
     private Long id;
 

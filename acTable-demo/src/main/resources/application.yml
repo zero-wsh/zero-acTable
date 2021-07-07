@@ -20,4 +20,4 @@ zero:
     ac-table:
       entity-package: io.gitee.zerowsh.actable.demo.entity
       model: add_or_update_del
-      script: db/insert.sql
+      script: db/*.sql

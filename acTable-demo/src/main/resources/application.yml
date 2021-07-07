@@ -2,12 +2,12 @@ server:
   port: 9528
 spring:
   datasource:
-    url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
-    username: net-dev
-    password: 9DQ11kkb3E
-#    url: jdbc:sqlserver://192.168.0.103;databaseName=dynamic_table
-#    username: sa
-#    password: zero
+#    url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
+#    username: net-dev
+#    password: 9DQ11kkb3E
+    url: jdbc:sqlserver://localhost;databaseName=dynamic_table
+    username: sa
+    password: zero
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -20,3 +20,4 @@ zero:
     ac-table:
       entity-package: io.gitee.zerowsh.actable.demo.entity
       model: add_or_update_del
+      script: db/insert.sql

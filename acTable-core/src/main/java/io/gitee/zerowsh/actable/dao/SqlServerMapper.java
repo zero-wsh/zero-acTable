@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author zero
  */
-public interface SqlServerMapper {
+public interface SqlServerMapper extends BaseDatabaseMapper {
     /**
      * 判断表是否存在
      *

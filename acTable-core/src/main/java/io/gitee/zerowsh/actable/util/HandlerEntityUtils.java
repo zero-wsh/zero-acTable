@@ -13,6 +13,7 @@ import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.config.CreateTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 
 import java.lang.reflect.Field;
@@ -35,6 +36,7 @@ public class HandlerEntityUtils {
      * @return
      */
     public static List<TableInfo> getTableInfoByEntityPackage(CreateTableConfig createTableConfig) {
+        DatabaseTypeEnums databaseType = createTableConfig.getDatabaseType();
         String entityPackage = createTableConfig.getEntityPackage();
         TurnEnums turn = createTableConfig.getTurn();
         //实体类表信息
@@ -71,10 +73,13 @@ public class HandlerEntityUtils {
                 if (tableList.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
                 }
+                tableName = AcTableUtils.handleKeyword(tableName, databaseType);
                 tableList.add(tableName);
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
-                getFieldInfo(cls, propertyInfoList, indexInfoList, uniqueInfoList, keyList, propertyList, table, null, turn);
+                getFieldInfo(cls, propertyInfoList, indexInfoList,
+                        uniqueInfoList, keyList, propertyList, table,
+                        null, turn, createTableConfig);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
                 }
@@ -121,7 +126,9 @@ public class HandlerEntityUtils {
                                      List<String> propertyList,
                                      Table table,
                                      ExcludeSuperField excludeSuperField,
-                                     TurnEnums turn) {
+                                     TurnEnums turn,
+                                     CreateTableConfig createTableConfig) {
+        DatabaseTypeEnums databaseType = createTableConfig.getDatabaseType();
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -179,7 +186,7 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(tableField)) {
                     columnName = tableField.value();
                 }
-                columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName;
+                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName, databaseType);
                 ColumnTypeEnums type = column.type();
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
@@ -236,7 +243,8 @@ public class HandlerEntityUtils {
             return;
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
-                uniqueInfoList, keyList, propertyList, table, cls.getAnnotation(ExcludeSuperField.class), turn);
+                uniqueInfoList, keyList, propertyList, table,
+                cls.getAnnotation(ExcludeSuperField.class), turn, createTableConfig);
     }
 
     /**

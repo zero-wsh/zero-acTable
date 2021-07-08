@@ -12,8 +12,8 @@ import java.sql.Timestamp;
 
 @Getter
 @Setter
-@TableName("t_zero")
-@Table(name = "t_zero", comment = "测试")
+@TableName("[t_zero]")
+@Table(name = "[t_zero]", comment = "测试")
 @ExcludeSuperField
 public class ZeroEntity extends Model<ZeroEntity> {
     @Column(name = "id", comment = "主键", isKey = true, isAutoIncrement = true)

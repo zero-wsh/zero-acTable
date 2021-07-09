@@ -23,14 +23,6 @@ public interface SqlServerMapper extends BaseDatabaseMapper {
     int isExistTable(@Param("tableName") String tableName);
 
     /**
-     * 执行sql
-     *
-     * @param sql
-     */
-    @Select("${sql}")
-    void executeSql(@Param("sql") String sql);
-
-    /**
      * 获取表结构
      * https://blog.csdn.net/huang714/article/details/105063751?utm_medium=distribute.pc_relevant.none-task-blog-baidujs_title-0&spm=1001.2101.3001.4242
      *

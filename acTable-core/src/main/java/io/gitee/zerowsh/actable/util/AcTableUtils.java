@@ -53,17 +53,8 @@ public class AcTableUtils {
                     fileUrl = file.getAbsolutePath();
                     String sql = FileUtil.readUtf8String(file);
                     if (StrUtil.isNotBlank(sql)) {
-                        sql = sql.replaceAll("\t|\r|\n", "");
-                        if (StrUtil.isNotBlank(sql)) {
-                            String[] sqlArray = sql.split(StringPool.BACK_SLASH + StringPool.RIGHT_BRACKET + StringPool.SEMICOLON);
-                            for (String s : sqlArray) {
-                                log.info(s + StringPool.RIGHT_BRACKET);
-                                if (Objects.equals(databaseType, SQL_SERVER)) {
-                                    SqlServerMapper sqlServerMapper = (SqlServerMapper) baseDatabaseMapper;
-                                    sqlServerMapper.executeSql(s + StringPool.RIGHT_BRACKET);
-                                }
-                            }
-                        }
+                        log.info(sql);
+                        baseDatabaseMapper.executeSql(sql);
                     }
                 }
             }

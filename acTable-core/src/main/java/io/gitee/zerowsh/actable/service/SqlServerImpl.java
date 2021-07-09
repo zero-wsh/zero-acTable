@@ -68,8 +68,6 @@ public class SqlServerImpl {
             }
         }
         log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
-        if (acTableUtils.executeScript(createTableConfig, sqlServerMapper)) {
-            log.info("执行 [{}] 初始化数据完成！！！", databaseType);
-        }
+        acTableUtils.executeScript();
     }
 }

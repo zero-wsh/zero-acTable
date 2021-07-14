@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    #    url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
+    #    username: net-dev
+    #    password: 9DQ11kkb3E
+    url: jdbc:sqlserver://localhost;databaseName=dynamic_table
+    username: sa
+    password: zero
+zero:
+  mybatis:
+    ac-table:
+      database-type: sql_server

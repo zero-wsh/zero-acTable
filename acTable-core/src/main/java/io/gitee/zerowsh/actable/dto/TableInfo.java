@@ -1,6 +1,6 @@
 package io.gitee.zerowsh.actable.dto;
 
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,7 +41,7 @@ public class TableInfo {
     public static class PropertyInfo {
         private String columnName;
         private boolean isKey;
-        private ColumnTypeEnums type;
+        private String type;
         private int length;
         private int decimalLength;
         private boolean isNull;

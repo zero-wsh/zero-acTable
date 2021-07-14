@@ -12,8 +12,8 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.config.CreateTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
+import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 
 import java.lang.reflect.Field;
@@ -171,7 +171,7 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
-                        .type(getJavaTurnDatabaseValue(field.getType().getName()));
+                        .type(AcTableUtils.handleType(field.getType().getName(), databaseType));
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);
@@ -187,7 +187,7 @@ public class HandlerEntityUtils {
                     columnName = tableField.value();
                 }
                 columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName, databaseType);
-                ColumnTypeEnums type = column.type();
+                SqlServerColumnTypeEnums type = column.type();
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
@@ -203,8 +203,8 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isNull(column.isNull())
                         .length(column.length())
-                        .type(Objects.equals(type, ColumnTypeEnums.DEFAULT)
-                                ? getJavaTurnDatabaseValue(field.getType().getName()) : type);
+                        .type(Objects.equals(type, SqlServerColumnTypeEnums.DEFAULT)
+                                ? AcTableUtils.handleType(field.getType().getName(), databaseType) : type.getType());
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);

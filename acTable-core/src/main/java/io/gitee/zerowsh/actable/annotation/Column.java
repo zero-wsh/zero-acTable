@@ -1,7 +1,7 @@
 package io.gitee.zerowsh.actable.annotation;
 
 import io.gitee.zerowsh.actable.constant.CreateTableConstants;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 
 import java.lang.annotation.*;
 
@@ -40,7 +40,7 @@ public @interface Column {
      *
      * @return 字段类型
      */
-    ColumnTypeEnums type() default ColumnTypeEnums.DEFAULT;
+    SqlServerColumnTypeEnums type() default SqlServerColumnTypeEnums.DEFAULT;
 
     /**
      * 字段长度，默认是255
@@ -50,9 +50,9 @@ public @interface Column {
     int length() default CreateTableConstants.COLUMN_LENGTH_DEF;
 
     /**
-     * 小数点长度，默认是0
+     * 小数位数，默认是0
      *
-     * @return 小数点长度，默认是0
+     * @return 小数位数
      */
     int decimalLength() default CreateTableConstants.COLUMN_DECIMAL_LENGTH_DEF;
 

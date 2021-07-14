@@ -5,7 +5,6 @@ package io.gitee.zerowsh.actable.emnus;
  *
  * @author zero
  */
-@SuppressWarnings("all")
 public enum ModelEnums {
     /**
      * 啥也不做
@@ -18,5 +17,5 @@ public enum ModelEnums {
     /**
      * 表结构和实体类保持一致（注意：可能会删除表中字段）
      */
-    ADD_OR_UPDATE_DEL
+    ADD_OR_UPDATE_OR_DEL
 }

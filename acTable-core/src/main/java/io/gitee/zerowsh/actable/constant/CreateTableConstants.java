@@ -1,11 +1,5 @@
 package io.gitee.zerowsh.actable.constant;
 
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
 /**
  * 定义常量
  *
@@ -16,39 +10,6 @@ public interface CreateTableConstants {
      * 当等于该值时，默认值为null
      */
     String DEFAULT_VALUE = "default_value";
-    /**
-     * 数据库类型转java类型
-     */
-    Map<String, ColumnTypeEnums> JAVA_TURN_DATABASE_MAP = new HashMap<String, ColumnTypeEnums>() {{
-        put("java.lang.String", ColumnTypeEnums.NVARCHAR);
-        put("java.lang.Long", ColumnTypeEnums.BIGINT);
-        put("long", ColumnTypeEnums.BIGINT);
-        put("java.lang.Integer", ColumnTypeEnums.INT);
-        put("int", ColumnTypeEnums.INT);
-        put("java.lang.Boolean", ColumnTypeEnums.BIT);
-        put("java.lang.boolean", ColumnTypeEnums.BIT);
-        put("java.util.Date", ColumnTypeEnums.DATETIME);
-        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME);
-        put("java.time.LocalDate", ColumnTypeEnums.DATETIME);
-        put("java.time.LocalDateTime", ColumnTypeEnums.DATETIME);
-        put("java.math.BigDecimal", ColumnTypeEnums.NUMERIC);
-        put("java.lang.Double", ColumnTypeEnums.NUMERIC);
-        put("double", ColumnTypeEnums.NUMERIC);
-        put("java.lang.Float", ColumnTypeEnums.FLOAT);
-        put("float", ColumnTypeEnums.FLOAT);
-        put("char", ColumnTypeEnums.NCHAR);
-    }};
-
-    /**
-     * java类型转数据库类型
-     *
-     * @param key
-     * @return
-     */
-    static ColumnTypeEnums getJavaTurnDatabaseValue(String key) {
-        ColumnTypeEnums columnTypeEnums = JAVA_TURN_DATABASE_MAP.get(key);
-        return Objects.isNull(columnTypeEnums) ? ColumnTypeEnums.NVARCHAR : columnTypeEnums;
-    }
 
     /**
      * 定义字段默认值，当实体属性没标记@Column注解时有用
@@ -84,10 +45,14 @@ public interface CreateTableConstants {
     /**
      * 自增
      */
-    String IDENTITY = "identity(1,1)";
-    String NULL = "NULL";
-    String NOT_NULL = "NOT NULL";
-    String DEFAULT = "DEFAULT";
+    String IDENTITY = " identity(1,1)";
+    String NULL = " NULL";
+    String NOT_NULL = " NOT NULL";
+    String DEFAULT = " DEFAULT ";
+    String COMMENT = " COMMENT '{}'";
+    String PRIMARY_KEY = " PRIMARY KEY (`{}`) ";
+    String UNIQUE_KEY = " UNIQUE KEY `{}` (`{}`) ";
+    String INDEX_KEY = " KEY `{}` (`{}`) ";
     /**
      * 验证字符串
      */
@@ -113,4 +78,11 @@ public interface CreateTableConstants {
     String DROP_INDEX = "DROP INDEX [{}] ON [{}]";
     String CREATE_PRIMARY_KEY = "ALTER TABLE [{}] ADD CONSTRAINT [{}] PRIMARY KEY CLUSTERED ({})";
     String ADD_DEFAULT = "ALTER TABLE [{}] ADD DEFAULT {} FOR [{}]";
+    /**
+     * 关键字处理
+     */
+    String SQL_SERVER_KEYWORD_HANDLE = "[{}]";
+    String MYSQL_KEYWORD_HANDLE = "`{}`";
+    String MYSQL_IDENTITY = " AUTO_INCREMENT";
+    String MYSQL_COMMENT = " COMMENT='{}'";
 }

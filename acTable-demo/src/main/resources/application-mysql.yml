@@ -4,6 +4,8 @@ spring:
     username: root
     password: zero
 zero:
-  mybatis:
-    ac-table:
-      database-type: mysql
+  ac-table:
+    entity-package: io.gitee.zerowsh.actable.demo.entity.mysql
+    model: ADD_OR_UPDATE_OR_DEL
+    script: db/*.sql
+    database-type: mysql

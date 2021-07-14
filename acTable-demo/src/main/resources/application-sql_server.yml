@@ -7,6 +7,8 @@ spring:
     username: sa
     password: zero
 zero:
-  mybatis:
-    ac-table:
-      database-type: sql_server
+  ac-table:
+    entity-package: io.gitee.zerowsh.actable.demo.entity.sqlserver
+    model: ADD_OR_UPDATE_OR_DEL
+    script: db/*.sql
+    database-type: sql_server

@@ -1,14 +1,8 @@
 server:
   port: 9528
-spring:
-  profiles:
-    active: mysql
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
-zero:
-  mybatis:
-    ac-table:
-      entity-package: io.gitee.zerowsh.actable.demo.entity
-      model: ADD_OR_UPDATE_OR_DEL
-      script: db/*.sql
+spring:
+  profiles:
+    active: mysql

@@ -9,21 +9,13 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>io.gitee.zero-wsh</groupId>
-    <artifactId>acTable</artifactId>
-    <version>${revision}</version>
+    <artifactId>zero-acTable</artifactId>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>acTable-core</module>
+        <module>acTable</module>
         <module>acTable-demo</module>
     </modules>
-
-    <properties>
-        <mybatis.plus.version>3.4.3.1</mybatis.plus.version>
-        <revision>1.0.0</revision>
-        <knife4j.version>2.0.5</knife4j.version>
-        <hutool.version>5.6.1</hutool.version>
-        <druid.version>1.1.10</druid.version>
-    </properties>
 
 </project>

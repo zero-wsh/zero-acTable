@@ -85,4 +85,18 @@ public interface AcTableConstants {
     String MYSQL_KEYWORD_HANDLE = "`{}`";
     String MYSQL_IDENTITY = " AUTO_INCREMENT";
     String MYSQL_COMMENT = " COMMENT='{}'";
+    String MYSQL_UPDATE_TABLE_COMMENT = "ALTER TABLE `{}` COMMENT = '{}'";
+    /**
+     * ALTER TABLE `dynamic_table`.`dd`
+     * MODIFY COLUMN `11` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '默认值' COMMENT '注释' FIRST,
+     * ADD PRIMARY KEY (`11`),
+     * ADD INDEX `index`(`11`),
+     * ADD UNIQUE INDEX `un`(`11`);
+     */
+    String MYSQL_UPDATE_COLUMN = "ALTER TABLE `{}` MODIFY COLUMN `{}` {}";
+
+    String MYSQL_ADD_PK = "ALTER TABLE `{}` ADD PRIMARY KEY ({})";
+    String MYSQL_DEL_PK = "ALTER TABLE `{}` DROP PRIMARY KEY";
+    String MYSQL_DEL_COLUMN = "ALTER TABLE `{}` DROP COLUMN `{}`";
+    String MYSQL_ADD_COLUMN = "ALTER TABLE `{}` ADD COLUMN `{}` {}";
 }

@@ -30,11 +30,12 @@ public interface MysqlMapper extends BaseDatabaseMapper {
      * @return
      */
     @Select("SELECT t.table_name tableName,t.table_comment tableComment,\n" +
-            "case when c.IS_NULLABLE='YES' then 1 else 0 end isNull,\n" +
-            "c.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue,\n" +
-            "case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length,c.NUMERIC_SCALE decimalLength,case when c.column_key='PRI' then 1 else 0 end isKey,\n" +
-            "case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement \n" +
-            "FROM\tinformation_schema.columns c,information_schema.tables t WHERE\tc.table_name = t.table_name and c.table_name=#{tableName}")
+            "\t\t\tcase when c.IS_NULLABLE='YES' then 1 else 0 end isNull,\n" +
+            "\t\t\tc.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue,\n" +
+            "\t\t\tcase when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length,\n" +
+            "\t\t\tcase when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength,case when c.column_key='PRI' then 1 else 0 end isKey,\n" +
+            "\t\t\tcase when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement \n" +
+            "\t\t\tFROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name=#{tableName}")
     List<TableColumnInfo> getTableStructure(@Param("tableName") String tableName);
 
     /**

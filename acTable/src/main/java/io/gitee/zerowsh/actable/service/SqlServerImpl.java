@@ -8,7 +8,7 @@ import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
-import io.gitee.zerowsh.actable.util.SqlServerAcTableUtils;
+import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

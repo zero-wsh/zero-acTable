@@ -1,4 +1,4 @@
-package io.gitee.zerowsh.actable.util;
+package io.gitee.zerowsh.actable.util.sql;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
@@ -8,7 +8,7 @@ import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
-import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -22,20 +22,29 @@ import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
  */
 @Slf4j
 @SuppressWarnings("all")
-public class MysqlAcTableUtils {
+public class SqlServerAcTableUtils {
     /**
      * 获取创建表sql
-     * CREATE TABLE `t_zero` (
-     * `id` varchar(36) NOT NULL DEFAULT '1',
-     * `name` int(255) NOT NULL,
-     * `date` datetime DEFAULT NULL,
-     * `dd` decimal(10,2) NOT NULL,
-     * `zero` int(11) NOT NULL AUTO_INCREMENT,
-     * PRIMARY KEY (`zero`),
-     * UNIQUE KEY `3` (`id`,`name`),
-     * KEY `1` (`id`,`name`),
-     * KEY `2` (`id`)
-     * ) COMMENT='wewrwe'
+     * <p>
+     * <p>
+     * CREATE TABLE zero1 (id int primary key identity(1,1),name varchar(255)  NULL,zero int DEFAULT 0 NOT NULL,time datetime2(7)  NULL)
+     * GO
+     * --添加备注
+     * EXEC sp_addextendedproperty 'MS_Description', N'22','SCHEMA', N'dbo','TABLE', N't_zero'
+     * GO
+     * EXEC sp_addextendedproperty 'MS_Description', N'主键','SCHEMA', N'dbo','TABLE', N'zero1','COLUMN', N'id'
+     * GO
+     * EXEC sp_addextendedproperty 'MS_Description', N'名称','SCHEMA', N'dbo','TABLE', N'zero1','COLUMN', N'name'
+     * GO
+     * EXEC sp_addextendedproperty 'MS_Description', N'Zero注释','SCHEMA', N'dbo','TABLE', N'zero1','COLUMN', N'zero'
+     * GO
+     * EXEC sp_addextendedproperty 'MS_Description', N'时间','SCHEMA', N'dbo','TABLE', N'zero1','COLUMN', N'time'
+     * GO
+     * -- 添加索引
+     * CREATE NONCLUSTERED INDEX [idx_name] ON zero1 (name)
+     * GO
+     * --添加唯一键
+     * ALTER TABLE zero1 add constraint uk_name unique (name)
      *
      * @param tableInfo
      * @return
@@ -50,32 +59,29 @@ public class MysqlAcTableUtils {
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String columnComment = propertyInfo.getColumnComment();
-            propertySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, columnName));
+            propertySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, columnName));
             splicingColumnInfo(propertySb, propertyInfo, tableName);
+            if (StrUtil.isNotBlank(columnComment)) {
+                addColumnCommentSqlList.add(StrUtil.format(ADD_COLUMN_COMMENT, columnComment, tableName, columnName));
+            }
         }
 
-        for (String key : tableInfo.getKeyList()) {
-            propertySb.append(StrUtil.format(PRIMARY_KEY, key)).append(StringPool.COMMA);
-        }
-        for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
-            String[] columns = uniqueInfo.getColumns();
-            for (String column : columns) {
-                propertySb.append(StrUtil.format(UNIQUE_KEY, column, UK_ + uniqueInfo.getValue())).append(StringPool.COMMA);
-            }
-        }
-        for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
-            String[] columns = indexInfo.getColumns();
-            for (String column : columns) {
-                propertySb.append(StrUtil.format(INDEX_KEY, column, IDX_ + indexInfo.getValue())).append(StringPool.COMMA);
-            }
-        }
-        String createTable = CREATE_TABLE;
+        //建表
+        resultList.add(StrUtil.format(CREATE_TABLE, StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, tableName), propertySb.deleteCharAt(propertySb.length() - 1)));
         if (StrUtil.isNotBlank(comment)) {
             //添加表备注
-            createTable = createTable + StrUtil.format(MYSQL_COMMENT, comment);
+            resultList.add(StrUtil.format(ADD_TABLE_COMMENT, comment, tableName));
         }
-        //建表
-        resultList.add(StrUtil.format(createTable, StrUtil.format(MYSQL_KEYWORD_HANDLE, tableName), propertySb.deleteCharAt(propertySb.length() - 1)));
+        //添加字段备注
+        resultList.addAll(addColumnCommentSqlList);
+        //创建主键
+        createPk(true, tableInfo.getKeyList(), tableName, resultList);
+
+        //创建唯一键
+        createUk(true, tableInfo.getUniqueInfoList(), tableName, resultList, null);
+
+        //创建索引
+        createIdx(true, tableInfo.getIndexInfoList(), tableName, resultList, null);
         return resultList;
     }
 
@@ -91,7 +97,7 @@ public class MysqlAcTableUtils {
         if (flag && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
-                keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
+                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
             }
             resultList.add(StrUtil.format(CREATE_PRIMARY_KEY, tableName, PK_ + tableName, keySb.deleteCharAt(keySb.length() - 1)));
         }
@@ -111,7 +117,7 @@ public class MysqlAcTableUtils {
                 String[] columns = uniqueInfo.getColumns();
                 StringBuilder uniqueSb = new StringBuilder();
                 for (String column : columns) {
-                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    uniqueSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
                 }
 
                 if (CollectionUtil.isEmpty(existUkNameList) || !existUkNameList.contains(uniqueInfo.getValue())) {
@@ -134,7 +140,7 @@ public class MysqlAcTableUtils {
                 String[] columns = indexInfo.getColumns();
                 StringBuilder indexSb = new StringBuilder();
                 for (String column : columns) {
-                    indexSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    indexSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
                 }
                 if (CollectionUtil.isEmpty(existIdxNameList) || !existIdxNameList.contains(indexInfo.getValue())) {
                     resultList.add(StrUtil.format(CREATE_INDEX, indexInfo.getValue(), tableName, indexSb.deleteCharAt(indexSb.length() - 1)));
@@ -256,6 +262,7 @@ public class MysqlAcTableUtils {
     public static List<String> getUpdateTableSql(TableInfo tableInfo,
                                                  List<TableColumnInfo> tableColumnInfoList,
                                                  List<ConstraintInfo> constraintInfoList,
+                                                 List<ConstraintInfo> defaultInfoList,
                                                  ModelEnums modelEnums) {
         List<String> resultList = new ArrayList<>();
         TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
@@ -286,6 +293,7 @@ public class MysqlAcTableUtils {
         /*
          * 标记是否需要删除相关约束
          */
+        boolean defFlag = false;
         boolean pkFlag = false;
         boolean idxFlag = false;
         boolean ukFlag = false;
@@ -295,62 +303,67 @@ public class MysqlAcTableUtils {
             Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
             while (it.hasNext()) {
                 TableInfo.PropertyInfo propertyInfo = it.next();
-                if (!Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
-                    continue;
-                }
                 String type = propertyInfo.getType();
-                //默认值
-                boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
-                        || Objects.equals(StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
-                        || Objects.equals(StringPool.LEFT_BRACKET + StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
-                //类型、是否为空、是否自增
-                boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
-                        || defExistUpdate
-                        || propertyInfo.isKey() != tableColumnInfo.isKey()
-                        || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
-                        || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
-
-                int length = propertyInfo.getLength();
-                int decimalLength = propertyInfo.getDecimalLength();
-                //长度、精度
-                MysqlColumnTypeEnums typeEnum = MysqlColumnTypeEnums.getByValue(type);
-                switch (typeEnum) {
-                    case VARCHAR:
-                    case CHAR:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), handleStrLength(length)));
-                        break;
-                    case DATETIME:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), handleDateTime2Length(length)));
-                        break;
-                    case DECIMAL:
-                    case NUMERIC:
-                        if (decimalLength > length) {
-                            decimalLength = length;
+                if (Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
+                    //默认值
+                    boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
+                            || Objects.equals(StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
+                            || Objects.equals(StringPool.LEFT_BRACKET + StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
+                    boolean judgeDef = defExistUpdate || (!(Objects.equals(tableColumnInfo.getTypeStr(), type)) && Objects.nonNull(tableColumnInfo.getDefaultValue()));
+                    if (judgeDef) {
+                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, propertyInfo.getColumnName());
+                        defFlag = true;
+                    }
+                    //类型、是否为空、是否自增
+                    boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
+                            || defExistUpdate
+                            || propertyInfo.isKey() != tableColumnInfo.isKey()
+                            || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
+                            || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
+                    int length = propertyInfo.getLength();
+                    int decimalLength = propertyInfo.getDecimalLength();
+                    SqlServerColumnTypeEnums typeEnum = SqlServerColumnTypeEnums.getByValue(type);
+                    //长度、精度
+                    switch (typeEnum) {
+                        case NVARCHAR:
+                        case VARCHAR:
+                        case NCHAR:
+                        case CHAR:
+                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), handleStrLength(length)));
+                            break;
+                        case DATETIME2:
+                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), handleDateTime2Length(length)));
+                            break;
+                        case DECIMAL:
+                        case NUMERIC:
+                            if (decimalLength > length) {
+                                decimalLength = length;
+                            }
+                            length = length > 38 || length < 0 ? 18 : length;
+                            decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
+                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
+                                    || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
+                            break;
+                        default:
+                    }
+                    if (existUpdate) {
+                        if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
+                            throw new RuntimeException(StrUtil.format("修改时，不能将自增字段改成非自增，请手动删除该字段或者调整实体类！！！table={} column={}", tableName, propertyInfo.getColumnName()));
                         }
-                        length = length > 38 || length < 0 ? 18 : length;
-                        decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
-                                || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
-                        break;
-                    default:
-                }
-                if (existUpdate) {
-                    if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
-                        throw new RuntimeException(StrUtil.format("修改时，不能将自增字段改成非自增，请手动删除该字段或者调整实体类！！！table={} column={}", tableName, propertyInfo.getColumnName()));
+                        if (propertyInfo.isKey() || tableColumnInfo.isKey()) {
+                            pkFlag = true;
+                        }
+                        StringBuilder propertySb = new StringBuilder();
+                        splicingColumnInfo(propertySb, propertyInfo, tableName, true, addColumnDefSqlList);
+                        updateColumnSqlList.add(StrUtil.format(UPDATE_COLUMN,
+                                tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
                     }
-                    if (propertyInfo.isKey() || tableColumnInfo.isKey()) {
-                        pkFlag = true;
-                    }
-                    StringBuilder propertySb = new StringBuilder();
-                    splicingColumnInfo(propertySb, propertyInfo, tableName, true, addColumnDefSqlList);
-                    updateColumnSqlList.add(StrUtil.format(UPDATE_COLUMN,
-                            tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
+                    //处理列备注
+                    handleColumnComment(tableColumnInfo, propertyInfo, resultList, tableName);
+                    flag = true;
+                    it.remove();
+                    break;
                 }
-                //处理列备注
-                handleColumnComment(tableColumnInfo, propertyInfo, resultList, tableName);
-                flag = true;
-                it.remove();
-                break;
             }
             if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
                 //如果数据库有但是实体类没有，进行删除
@@ -364,6 +377,10 @@ public class MysqlAcTableUtils {
                     }
                     if (handleIdxConstraintDatabase(tableColumnInfo.getColumnName(), constraintInfoList)) {
                         idxFlag = true;
+                    }
+                    if (StrUtil.isNotBlank(tableColumnInfo.getDefaultValue())) {
+                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, tableColumnInfo.getColumnName());
+                        defFlag = true;
                     }
                     delColumnSqlList.add(StrUtil.format(DROP_COLUMN, tableName, tableColumnInfo.getColumnName()));
                 }
@@ -475,6 +492,9 @@ public class MysqlAcTableUtils {
         if (idxFlag) {
             resultList.addAll(delConstraintSqlMap.get(DEL_INDEX_C_SQL));
         }
+        if (defFlag) {
+            resultList.addAll(delConstraintSqlMap.get(DEL_DF_C_SQL));
+        }
         resultList.addAll(delColumnSqlList);
         //添加列
         resultList.addAll(addColumnSqlList);
@@ -488,6 +508,10 @@ public class MysqlAcTableUtils {
         createUk(ukFlag, tableInfo.getUniqueInfoList(), tableName, resultList, exitUkList);
         //创建索引
         createIdx(idxFlag, tableInfo.getIndexInfoList(), tableName, resultList, exitIdxList);
+        if (defFlag) {
+            //添加列默认值
+            resultList.addAll(addColumnDefSqlList);
+        }
         return resultList;
     }
 
@@ -500,6 +524,20 @@ public class MysqlAcTableUtils {
     public static void excludePkConstraint(List<ConstraintInfo> defaultInfoList, boolean pkFlag) {
         if (!pkFlag) {
             defaultInfoList.removeIf(constraintInfo -> Objects.equals(PK, constraintInfo.getConstraintFlag()));
+        }
+    }
+
+    /**
+     * 添加要删除的默认值约束
+     *
+     * @param defaultInfoList
+     * @param columnName
+     */
+    public static void addDelDefConstraintInfo(List<ConstraintInfo> defaultInfoList, List<ConstraintInfo> defaultInfoNewList, String columnName) {
+        for (ConstraintInfo constraintInfo : defaultInfoList) {
+            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)) {
+                defaultInfoNewList.add(constraintInfo);
+            }
         }
     }
 
@@ -635,7 +673,7 @@ public class MysqlAcTableUtils {
      * @return
      */
     public static int handleDateTime2Length(int length) {
-        return length > 7 || length < 0 ? 7 : length;
+        return length > 7 || length < 0 ? 0 : length;
     }
 
     /**
@@ -661,23 +699,26 @@ public class MysqlAcTableUtils {
     private static void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo,
                                            String tableName, boolean isUpdate, List<String> addColumnDefSqlList) {
         splicingColumnType(propertySb, propertyInfo, tableName);
+        //是否自增
+        if (propertyInfo.isAutoIncrement()) {
+            if (!isUpdate) {
+                propertySb.append(IDENTITY);
+            }
+        }
+        //默认值
+        if (StrUtil.isNotBlank(propertyInfo.getDefaultValue())) {
+            if (isUpdate) {
+                addColumnDefSqlList.add(StrUtil.format(ADD_DEFAULT, tableName, propertyInfo.getDefaultValue(), propertyInfo.getColumnName()));
+            } else {
+                propertySb.append(DEFAULT).append(propertyInfo.getDefaultValue());
+            }
+        }
+
         //是否为空
         if (propertyInfo.isNull() && !propertyInfo.isKey() && !propertyInfo.isAutoIncrement()) {
             propertySb.append(NULL);
         } else {
             propertySb.append(NOT_NULL);
-        }
-        //是否自增
-        if (propertyInfo.isAutoIncrement()) {
-            propertySb.append(MYSQL_IDENTITY);
-        } else {
-            //默认值
-            if (StrUtil.isNotBlank(propertyInfo.getDefaultValue())) {
-                propertySb.append(DEFAULT).append(propertyInfo.getDefaultValue());
-            }
-        }
-        if (StrUtil.isNotBlank(propertyInfo.getColumnComment())) {
-            propertySb.append(StrUtil.format(COMMENT, propertyInfo.getColumnComment()));
         }
         propertySb.append(StringPool.COMMA);
     }
@@ -694,15 +735,17 @@ public class MysqlAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        MysqlColumnTypeEnums typeEnum = MysqlColumnTypeEnums.getByValue(type);
+        SqlServerColumnTypeEnums typeEnum = SqlServerColumnTypeEnums.getByValue(type);
         switch (typeEnum) {
             case VARCHAR:
-            case DATETIME:
+            case NVARCHAR:
+            case DATETIME2:
+            case NCHAR:
             case CHAR:
                 propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
-                if (Objects.equals(type, MysqlColumnTypeEnums.DATETIME.getType())) {
+                if (Objects.equals(typeEnum, SqlServerColumnTypeEnums.DATETIME2.getType())) {
                     //对类型特殊处理
-                    if (length > 6 || length < 0) {
+                    if (length > 7 || length < 0) {
                         log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);
                         propertySb.append(0);
                     } else {

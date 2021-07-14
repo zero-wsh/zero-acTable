@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.config.CreateTableConfig;
 import io.gitee.zerowsh.actable.dao.BaseDatabaseMapper;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
+import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -93,6 +95,26 @@ public class AcTableUtils {
                 if (var.startsWith(StringPool.BACKTICK) && var.endsWith(StringPool.BACKTICK)) {
                     var = var.replace(StringPool.BACKTICK, "");
                 }
+                break;
+            default:
+        }
+        return var;
+    }
+
+    /**
+     * 处理类型
+     *
+     * @param var
+     * @param databaseType
+     * @return
+     */
+    public static String handleType(String var, DatabaseTypeEnums databaseType) {
+        switch (databaseType) {
+            case SQL_SERVER:
+                var = SqlServerColumnTypeEnums.getJavaTurnSqlServerValue(var);
+                break;
+            case MYSQL:
+                var = MysqlColumnTypeEnums.getJavaTurnMysqlValue(var);
                 break;
             default:
         }

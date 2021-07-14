@@ -3,25 +3,30 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.gitee.zero-wsh</groupId>
-        <artifactId>acTable</artifactId>
-        <version>${revision}</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.4.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
+    <groupId>io.gitee.zero-wsh</groupId>
     <artifactId>acTable-demo</artifactId>
-
-    <dependencies><dependency>
-        <groupId>com.jcraft</groupId>
-        <artifactId>jsch</artifactId>
-        <version>0.1.55</version>
-    </dependency>
+    <version>1.0.0</version>
+    <properties>
+        <mybatis.plus.version>3.4.3.1</mybatis.plus.version>
+        <revision>1.0.0</revision>
+        <knife4j.version>2.0.5</knife4j.version>
+        <hutool.version>5.6.1</hutool.version>
+        <druid.version>1.1.10</druid.version>
+    </properties>
+    <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>io.gitee.zero-wsh</groupId>
-            <artifactId>acTable-core</artifactId>
-            <version>${revision}</version>
+            <artifactId>acTable</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- sqlserver依赖 -->
@@ -42,16 +47,6 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-spring-boot-starter</artifactId>
-            <version>${knife4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>${hutool.version}</version>
-        </dependency>
         <!-- alibaba的druid数据库连接池 -->
         <dependency>
             <groupId>com.alibaba</groupId>

@@ -3,6 +3,9 @@ package io.gitee.zerowsh.actable.demo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+/**
+ * @author zero
+ */
 @SpringBootApplication
 public class CreateTableApplication {
 

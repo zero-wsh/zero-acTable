@@ -9,6 +9,7 @@ import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
+import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -329,10 +330,10 @@ public class SqlServerAcTableUtils {
                         case VARCHAR:
                         case NCHAR:
                         case CHAR:
-                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), handleStrLength(length)));
+                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), AcTableUtils.handleStrLength(length)));
                             break;
                         case DATETIME2:
-                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), handleDateTime2Length(length)));
+                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), AcTableUtils.handleDateLength(length)));
                             break;
                         case DECIMAL:
                         case NUMERIC:
@@ -657,26 +658,6 @@ public class SqlServerAcTableUtils {
     }
 
     /**
-     * 处理字符串长度
-     *
-     * @param length
-     * @return
-     */
-    public static int handleStrLength(int length) {
-        return length < 0 ? 255 : length;
-    }
-
-    /**
-     * 处理时间长度
-     *
-     * @param length
-     * @return
-     */
-    public static int handleDateTime2Length(int length) {
-        return length > 7 || length < 0 ? 0 : length;
-    }
-
-    /**
      * 拼接列信息
      *
      * @param propertySb
@@ -771,7 +752,7 @@ public class SqlServerAcTableUtils {
                     decimalLength = length;
                 }
                 if (length > 38 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 38);
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 18);
                     propertySb.append(18);
                 } else {
                     propertySb.append(length);

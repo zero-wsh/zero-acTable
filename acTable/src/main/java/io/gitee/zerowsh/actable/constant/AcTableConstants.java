@@ -58,6 +58,7 @@ public interface AcTableConstants {
      */
     String COLUMN_LENGTH_VALID_STR = "表 [{}] 字段 [{}] {}类型长度 [{}] 存在问题，使用默认值 [{}]";
     String COLUMN_DUPLICATE_VALID_STR = "[{}] 字段名或@Column name重复";
+    String COLUMN_TYPE_FAIL = "[{}] 字段类型错误 [{}]，自动转换成默认类型 [{}]";
 
     /**
      * 数据库操作部分sql
@@ -100,5 +101,5 @@ public interface AcTableConstants {
     String MYSQL_ADD_COLUMN = " ADD COLUMN `{}` {}";
     String MYSQL_DEL_INDEX = " DROP INDEX `{}`";
     String MYSQL_ADD_INDEX = " ADD INDEX `{}` ({})";
-    String MYSQL_ADD_UNIQUE= " ADD UNIQUE INDEX  `{}` ({})";
+    String MYSQL_ADD_UNIQUE = " ADD UNIQUE INDEX  `{}` ({})";
 }

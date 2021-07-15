@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
-import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -323,7 +323,7 @@ public class SqlServerAcTableUtils {
                             || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
                     int length = propertyInfo.getLength();
                     int decimalLength = propertyInfo.getDecimalLength();
-                    SqlServerColumnTypeEnums typeEnum = SqlServerColumnTypeEnums.getByValue(type);
+                    ColumnTypeEnums typeEnum = getSqlServerByValue(type);
                     //长度、精度
                     switch (typeEnum) {
                         case NVARCHAR:
@@ -716,7 +716,7 @@ public class SqlServerAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        SqlServerColumnTypeEnums typeEnum = SqlServerColumnTypeEnums.getByValue(type);
+        ColumnTypeEnums typeEnum = getSqlServerByValue(type);
         switch (typeEnum) {
             case VARCHAR:
             case NVARCHAR:
@@ -724,7 +724,7 @@ public class SqlServerAcTableUtils {
             case NCHAR:
             case CHAR:
                 propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
-                if (Objects.equals(typeEnum, SqlServerColumnTypeEnums.DATETIME2.getType())) {
+                if (Objects.equals(typeEnum, ColumnTypeEnums.DATETIME2.getType())) {
                     //对类型特殊处理
                     if (length > 7 || length < 0) {
                         log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);
@@ -770,4 +770,47 @@ public class SqlServerAcTableUtils {
         }
     }
 
+
+    /**
+     * 数据库类型转java类型
+     */
+    private static final Map<String, ColumnTypeEnums> JAVA_TURN_SQL_SERVER_MAP = new HashMap<String, ColumnTypeEnums>() {{
+        put("java.lang.String", ColumnTypeEnums.NVARCHAR);
+        put("java.lang.Long", ColumnTypeEnums.BIGINT);
+        put("long", ColumnTypeEnums.BIGINT);
+        put("java.lang.Integer", ColumnTypeEnums.INT);
+        put("int", ColumnTypeEnums.INT);
+        put("java.lang.Boolean", ColumnTypeEnums.BIT);
+        put("java.lang.boolean", ColumnTypeEnums.BIT);
+        put("java.util.Date", ColumnTypeEnums.DATETIME2);
+        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME2);
+        put("java.time.LocalDate", ColumnTypeEnums.DATETIME2);
+        put("java.time.LocalDateTime", ColumnTypeEnums.DATETIME2);
+        put("java.math.BigDecimal", ColumnTypeEnums.NUMERIC);
+        put("java.lang.Double", ColumnTypeEnums.NUMERIC);
+        put("double", ColumnTypeEnums.NUMERIC);
+        put("java.lang.Float", ColumnTypeEnums.FLOAT);
+        put("float", ColumnTypeEnums.FLOAT);
+        put("char", ColumnTypeEnums.NCHAR);
+    }};
+
+    /**
+     * java类型转数据库类型
+     *
+     * @param key
+     * @return
+     */
+    public static String getJavaTurnSqlServerValue(String key) {
+        ColumnTypeEnums columnTypeEnums = JAVA_TURN_SQL_SERVER_MAP.get(key);
+        return Objects.isNull(columnTypeEnums) ? ColumnTypeEnums.NVARCHAR.getType() : columnTypeEnums.getType();
+    }
+
+    public static ColumnTypeEnums getSqlServerByValue(String type) {
+        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
+            if (Objects.equals(types.getType(), type)) {
+                return types;
+            }
+        }
+        return null;
+    }
 }

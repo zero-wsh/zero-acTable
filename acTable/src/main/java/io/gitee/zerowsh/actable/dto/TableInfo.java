@@ -1,6 +1,5 @@
 package io.gitee.zerowsh.actable.dto;
 
-import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

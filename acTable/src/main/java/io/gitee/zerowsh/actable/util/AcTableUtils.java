@@ -4,10 +4,11 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
-import io.gitee.zerowsh.actable.mapper.BaseDatabaseMapper;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
-import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
-import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
+import io.gitee.zerowsh.actable.mapper.BaseDatabaseMapper;
+import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
+import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -111,16 +112,15 @@ public class AcTableUtils {
     public static String handleType(String var, DatabaseTypeEnums databaseType) {
         switch (databaseType) {
             case SQL_SERVER:
-                var = SqlServerColumnTypeEnums.getJavaTurnSqlServerValue(var);
+                var = SqlServerAcTableUtils.getJavaTurnSqlServerValue(var);
                 break;
             case MYSQL:
-                var = MysqlColumnTypeEnums.getJavaTurnMysqlValue(var);
+                var = MysqlAcTableUtils.getJavaTurnMysqlValue(var);
                 break;
             default:
         }
         return var;
     }
-
 
 
     /**

@@ -1,6 +1,7 @@
 package io.gitee.zerowsh.actable.annotation;
 
 import io.gitee.zerowsh.actable.constant.AcTableConstants;
+import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 
 import java.lang.annotation.*;
@@ -40,7 +41,9 @@ public @interface Column {
      *
      * @return 字段类型
      */
-    SqlServerColumnTypeEnums type() default SqlServerColumnTypeEnums.DEFAULT;
+    SqlServerColumnTypeEnums sqlServerType() default SqlServerColumnTypeEnums.DEFAULT;
+
+    MysqlColumnTypeEnums mysqlType() default MysqlColumnTypeEnums.DEFAULT;
 
     /**
      * 字段长度，默认是255

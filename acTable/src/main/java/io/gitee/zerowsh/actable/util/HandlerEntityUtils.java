@@ -13,6 +13,7 @@ import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
+import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.SqlServerColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 
@@ -187,7 +188,6 @@ public class HandlerEntityUtils {
                     columnName = tableField.value();
                 }
                 columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName, databaseType);
-                SqlServerColumnTypeEnums type = column.type();
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
@@ -203,8 +203,7 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isNull(column.isNull())
                         .length(column.length())
-                        .type(Objects.equals(type, SqlServerColumnTypeEnums.DEFAULT)
-                                ? AcTableUtils.handleType(field.getType().getName(), databaseType) : type.getType());
+                        .type(getTypeStr(field.getType().getName(), column, databaseType));
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);
@@ -268,4 +267,25 @@ public class HandlerEntityUtils {
         return StrUtil.toUnderlineCase(fieldName);
     }
 
+    /**
+     * 处理类型
+     *
+     * @param var
+     * @param databaseType
+     * @return
+     */
+    public static String getTypeStr(String fieldName, Column column, DatabaseTypeEnums databaseType) {
+        switch (databaseType) {
+            case SQL_SERVER:
+                SqlServerColumnTypeEnums sqlServerType = column.sqlServerType();
+                return Objects.equals(sqlServerType, SqlServerColumnTypeEnums.DEFAULT)
+                        ? AcTableUtils.handleType(fieldName, databaseType) : sqlServerType.getType();
+            case MYSQL:
+                MysqlColumnTypeEnums mysqlType = column.mysqlType();
+                return Objects.equals(mysqlType, SqlServerColumnTypeEnums.DEFAULT)
+                        ? AcTableUtils.handleType(fieldName, databaseType) : mysqlType.getType();
+            default:
+        }
+        return null;
+    }
 }

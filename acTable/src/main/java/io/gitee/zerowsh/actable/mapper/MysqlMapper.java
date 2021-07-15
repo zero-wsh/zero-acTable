@@ -41,11 +41,13 @@ public interface MysqlMapper extends BaseDatabaseMapper {
     /**
      * 获取表约束信息（主键、唯一键、索引）
      *
+     *
      * @param tableName
      * @return
      */
-    @Select("select index_name constraintName ,column_name constraintColumnName,\n" +
-            "case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag\n" +
-            "from information_schema.statistics where table_name = #{tableName}")
+    @Select("select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName,\n" +
+            "\t\t\t\tcase when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag\n" +
+            "from information_schema.statistics where table_name = #{tableName} \n" +
+            "GROUP BY constraintName,constraintFlag")
     List<ConstraintInfo> getConstraintInfo(@Param("tableName") String tableName);
 }

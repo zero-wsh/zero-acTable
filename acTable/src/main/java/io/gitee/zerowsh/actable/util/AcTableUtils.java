@@ -120,4 +120,27 @@ public class AcTableUtils {
         }
         return var;
     }
+
+
+
+    /**
+     * 处理字符串长度
+     *
+     * @param length
+     * @return
+     */
+    public static int handleStrLength(int length) {
+        return length < 0 ? 255 : length;
+    }
+
+    /**
+     * 处理时间长度
+     *
+     * @param length
+     * @return
+     */
+    public static int handleDateLength(int length) {
+        return length > 7 || length < 0 ? 0 : length;
+    }
+
 }

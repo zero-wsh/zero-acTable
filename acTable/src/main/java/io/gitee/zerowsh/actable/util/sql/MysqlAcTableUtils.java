@@ -1,7 +1,6 @@
 package io.gitee.zerowsh.actable.util.sql;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -9,6 +8,7 @@ import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
+import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -59,13 +59,13 @@ public class MysqlAcTableUtils {
         for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
             String[] columns = uniqueInfo.getColumns();
             for (String column : columns) {
-                propertySb.append(StrUtil.format(UNIQUE_KEY, column, UK_ + uniqueInfo.getValue())).append(StringPool.COMMA);
+                propertySb.append(StrUtil.format(UNIQUE_KEY, uniqueInfo.getValue(), column)).append(StringPool.COMMA);
             }
         }
         for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
             String[] columns = indexInfo.getColumns();
             for (String column : columns) {
-                propertySb.append(StrUtil.format(INDEX_KEY, column, IDX_ + indexInfo.getValue())).append(StringPool.COMMA);
+                propertySb.append(StrUtil.format(INDEX_KEY, indexInfo.getValue(), column)).append(StringPool.COMMA);
             }
         }
         String createTable = CREATE_TABLE;
@@ -86,123 +86,79 @@ public class MysqlAcTableUtils {
      * @param tableName
      * @param resultList
      */
-    private static void createPk(boolean flag, String tableName, List<String> keyList, List<String> resultList) {
-        if (flag && CollectionUtil.isNotEmpty(keyList)) {
+    private static void createPk(Set<String> delConstraintSet, TableInfo tableInfo) {
+        List<String> keyList = tableInfo.getKeyList();
+        String tableName = tableInfo.getName();
+        //添加主键时肯定会删除主键
+        if (delConstraintSet.contains(MYSQL_DEL_PK) && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
                 keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
             }
-            resultList.add(StrUtil.format(MYSQL_ADD_PK, tableName, keySb.deleteCharAt(keySb.length() - 1)));
+            delConstraintSet.add(StrUtil.format(MYSQL_ADD_PK, keySb.deleteCharAt(keySb.length() - 1)));
         }
     }
 
     /**
      * 创建唯一键
      *
-     * @param flag
-     * @param uniqueInfoList
-     * @param tableName
-     * @param resultList
+     * @param delConstraintSet
+     * @param tableInfo
+     * @param constraintInfoList 数据库约束信息（主键、唯一键、索引）
      */
-    private static void createUk(boolean flag, List<TableInfo.UniqueInfo> uniqueInfoList, String tableName, List<String> resultList, List<String> existUkNameList) {
-        if (flag && CollectionUtil.isNotEmpty(uniqueInfoList)) {
+    private static void createUk(Set<String> delConstraintSet, TableInfo tableInfo, List<ConstraintInfo> constraintInfoList) {
+        //实体类所有唯一键
+        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
+        if (CollectionUtil.isNotEmpty(uniqueInfoList)) {
             for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
+                String value = uniqueInfo.getValue();
                 String[] columns = uniqueInfo.getColumns();
                 StringBuilder uniqueSb = new StringBuilder();
+                if (handleUkList(constraintInfoList, columns)) {
+                    continue;
+                }
                 for (String column : columns) {
                     uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
                 }
-
-                if (CollectionUtil.isEmpty(existUkNameList) || !existUkNameList.contains(uniqueInfo.getValue())) {
-                    resultList.add(StrUtil.format(CREATE_UNIQUE, tableName, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
-                }
+                delConstraintSet.add(StrUtil.format(MYSQL_ADD_UNIQUE, value, uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
+            }
+        }
+        for (ConstraintInfo constraintInfo : constraintInfoList) {
+            if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
+                delConstraintSet.add(StrUtil.format(MYSQL_DEL_INDEX, constraintInfo.getConstraintName()));
             }
         }
     }
+
 
     /**
      * 创建索引
      *
-     * @param indexInfoList
-     * @param tableName
-     * @param resultList
+     * @param delConstraintSet
+     * @param tableInfo
+     * @param constraintInfoList 数据库约束信息（主键、唯一键、索引）
      */
-    private static void createIdx(boolean flag, List<TableInfo.IndexInfo> indexInfoList, String tableName, List<String> resultList, List<String> existIdxNameList) {
-        if (flag && CollectionUtil.isNotEmpty(indexInfoList)) {
+    private static void createIdx(Set<String> delConstraintSet, TableInfo tableInfo, List<ConstraintInfo> constraintInfoList) {
+        List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
+        if (CollectionUtil.isNotEmpty(indexInfoList)) {
             for (TableInfo.IndexInfo indexInfo : indexInfoList) {
+                String value = indexInfo.getValue();
                 String[] columns = indexInfo.getColumns();
-                StringBuilder indexSb = new StringBuilder();
+                StringBuilder uniqueSb = new StringBuilder();
+                if (handleIdxList(constraintInfoList, columns)) {
+                    continue;
+                }
                 for (String column : columns) {
-                    indexSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
                 }
-                if (CollectionUtil.isEmpty(existIdxNameList) || !existIdxNameList.contains(indexInfo.getValue())) {
-                    resultList.add(StrUtil.format(CREATE_INDEX, indexInfo.getValue(), tableName, indexSb.deleteCharAt(indexSb.length() - 1)));
-                }
+                delConstraintSet.add(StrUtil.format(MYSQL_ADD_INDEX, value, uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
             }
         }
-    }
-
-    /**
-     * 处理列备注
-     *
-     * @param tableColumnInfo
-     * @param propertyInfo
-     * @param resultList
-     * @param tableName
-     */
-    private static void handleColumnComment(TableColumnInfo tableColumnInfo, TableInfo.PropertyInfo propertyInfo, List<String> resultList, String tableName) {
-        //判断是否调整了备注
-        if (!Objects.equals(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
-            if (Objects.isNull(tableColumnInfo.getColumnComment())) {
-                //数据库为null新增备注
-                resultList.add(StrUtil.format(ADD_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
-            } else {
-                if (Objects.isNull(propertyInfo.getColumnComment())) {
-                    //字段null删除备注
-                    resultList.add(StrUtil.format(DROP_COLUMN_COMMENT, tableName, propertyInfo.getColumnName()));
-                } else {
-                    //修改备注
-                    resultList.add(StrUtil.format(UPDATE_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
-                }
-            }
-        }
-    }
-
-    /**
-     * 处理约束（主键 唯一键 索引 默认值）
-     *
-     * @param constraintInfoList
-     * @param defaultInfoList
-     */
-    private static Map<String, Collection<String>> handleConstraint(String tableName, List<ConstraintInfo> constraintInfoList) {
-        Map<String, Collection<String>> map = new HashMap<>(3);
-        //删除所有约束（唯一键、主键、索引）
-        List<String> delPkConstraintSqlList = new ArrayList<>();
-        Set<String> delUkConstraintSqlSet = new HashSet<>();
-        Set<String> delIdxConstraintSqlSet = new HashSet<>();
         for (ConstraintInfo constraintInfo : constraintInfoList) {
-            Integer constraintFlag = constraintInfo.getConstraintFlag();
-            String constraintName = constraintInfo.getConstraintName();
-            switch (constraintFlag) {
-                case PK:
-                    //主键
-                    delPkConstraintSqlList.add(StrUtil.format(MYSQL_DEL_PK, tableName, constraintName));
-                    break;
-                case UK:
-                    //唯一键
-                    delUkConstraintSqlSet.add(StrUtil.format(DROP_CONSTRAINT, tableName, constraintName));
-                    break;
-                case INDEX:
-                    //索引
-                    delIdxConstraintSqlSet.add(StrUtil.format(DROP_INDEX, constraintName, tableName));
-                    break;
-                default:
+            if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
+                delConstraintSet.add(StrUtil.format(MYSQL_DEL_INDEX, constraintInfo.getConstraintName()));
             }
         }
-        map.put(DEL_PK_C_SQL, delPkConstraintSqlList);
-        map.put(DEL_UK_C_SQL, delUkConstraintSqlSet);
-        map.put(DEL_INDEX_C_SQL, delIdxConstraintSqlSet);
-        return map;
     }
 
     /**
@@ -211,7 +167,6 @@ public class MysqlAcTableUtils {
      * @param tableInfo
      * @param tableColumnInfoList
      * @param constraintInfoList
-     * @param defaultInfoList
      * @param modelEnums
      * @return
      */
@@ -226,18 +181,16 @@ public class MysqlAcTableUtils {
         List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
         //处理表备注
         if (!Objects.equals(tableInfo.getComment(), firstTableColumnInfo.getTableComment())) {
-            resultList.add(StrUtil.format(MYSQL_UPDATE_TABLE_COMMENT, tableName, tableInfo.getComment()));
+            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, tableInfo.getComment()));
         }
 
-        //调整列信息（删除、修改、新增）
-        List<String> adjustClumnSqlList = new ArrayList<>();
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
-
-        boolean pkFlag = false;
+        //删除约束（主键，唯一键，索引）
+        Set<String> delConstraintSet = new LinkedHashSet<>();
+        StringBuilder updateColumnSql = new StringBuilder();
         for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
             boolean flag = false;
             Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
-            StringBuilder updateColumnSql = new StringBuilder();
             while (it.hasNext()) {
                 TableInfo.PropertyInfo propertyInfo = it.next();
                 if (!Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
@@ -258,33 +211,30 @@ public class MysqlAcTableUtils {
                 switch (typeEnum) {
                     case VARCHAR:
                     case CHAR:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), handleStrLength(length)));
+                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), AcTableUtils.handleStrLength(length)));
                         break;
                     case DATETIME:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), handleDateTimeLength(length)));
+                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), AcTableUtils.handleDateLength(length)));
                         break;
                     case DECIMAL:
                     case NUMERIC:
                         if (decimalLength > length) {
                             decimalLength = length;
                         }
-                        length = length > 38 || length < 0 ? 18 : length;
-                        decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
+                        length = length > 65 || length < 0 ?10 : length;
+                        decimalLength = decimalLength > 65 || decimalLength < 0 ? 2 : decimalLength;
                         existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
                                 || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
                         break;
                     default:
                 }
                 if (propertyInfo.isKey() != tableColumnInfo.isKey()) {
-                    if (propertyInfo.isKey() || tableColumnInfo.isKey()) {
-                        pkFlag = true;
-                    }
+                    delConstraintSet.add(MYSQL_DEL_PK);
                 }
                 if (existUpdate) {
                     StringBuilder propertySb = new StringBuilder();
                     splicingColumnInfo(propertySb, propertyInfo, tableName);
-                    adjustClumnSqlList.add(StrUtil.format(MYSQL_UPDATE_COLUMN,
-                            tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
+                    updateColumnSql.append(StrUtil.format(MYSQL_UPDATE_COLUMN, propertyInfo.getColumnName(), propertySb));
                 }
                 flag = true;
                 it.remove();
@@ -294,9 +244,9 @@ public class MysqlAcTableUtils {
                 //如果数据库有但是实体类没有，进行删除
                 if (!flag) {
                     if (tableColumnInfo.isKey()) {
-                        pkFlag = true;
+                        delConstraintSet.add(MYSQL_DEL_PK);
                     }
-                    adjustClumnSqlList.add(StrUtil.format(MYSQL_DEL_COLUMN, tableName, tableColumnInfo.getColumnName()));
+                    updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(StringPool.COMMA);
                 }
             }
         }
@@ -305,163 +255,29 @@ public class MysqlAcTableUtils {
         if (CollectionUtil.isNotEmpty(propertyInfoList)) {
             for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
                 if (propertyInfo.isKey()) {
-                    pkFlag = true;
+                    delConstraintSet.add(MYSQL_DEL_PK);
                 }
                 StringBuilder propertySb = new StringBuilder();
                 splicingColumnInfo(propertySb, propertyInfo, tableName);
-                adjustClumnSqlList.add(StrUtil.format(MYSQL_ADD_COLUMN, tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
+                updateColumnSql.append(StrUtil.format(MYSQL_ADD_COLUMN, propertyInfo.getColumnName(), propertySb));
             }
         }
-        //调整列信息（删除、修改、新增）
-        resultList.addAll(adjustClumnSqlList);
+        //添加主键
+        createPk(delConstraintSet, tableInfo);
+        //添加唯一键
+        createUk(delConstraintSet, tableInfo, constraintInfoList);
+//        //添加索引
+        createIdx(delConstraintSet, tableInfo, constraintInfoList);
+        if (CollectionUtil.isNotEmpty(delConstraintSet)) {
+            for (String s : delConstraintSet) {
+                updateColumnSql.append(s).append(StringPool.COMMA);
+            }
+        }
+        if (updateColumnSql.length() > 0) {
+            String resultSql = StrUtil.format(MYSQL_ALTER_TABLE, tableName) + updateColumnSql.deleteCharAt(updateColumnSql.length() - 1);
+            resultList.add(resultSql);
+        }
         return resultList;
-    }
-
-    /**
-     * 排除主键约束删除
-     *
-     * @param defaultInfoList
-     * @param pkFlag
-     */
-    public static void excludePkConstraint(List<ConstraintInfo> defaultInfoList, boolean pkFlag) {
-        if (!pkFlag) {
-            defaultInfoList.removeIf(constraintInfo -> Objects.equals(PK, constraintInfo.getConstraintFlag()));
-        }
-    }
-
-    /**
-     * 获取字段唯一键集合
-     *
-     * @param uniqueInfoList
-     * @return
-     */
-    public static Set<String> getPropertyUniqueSet(List<TableInfo.UniqueInfo> uniqueInfoList) {
-        Set<String> set = new HashSet<>();
-        for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-            String[] columns = uniqueInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                set.add(StrUtil.join(StringPool.COMMA, columns));
-            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取数据库唯一键集合
-     *
-     * @param constraintInfoList
-     * @return
-     */
-    public static Set<String> getDatabaseUniqueSet(List<ConstraintInfo> constraintInfoList) {
-        Set<String> set = new HashSet<>();
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
-                set.add(constraintInfo.getConstraintColumnName());
-            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取字段索引集合
-     *
-     * @param indexInfoList
-     * @return
-     */
-    public static Set<String> getPropertyIndexSet(List<TableInfo.IndexInfo> indexInfoList) {
-        Set<String> set = new HashSet<>();
-        for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-            String[] columns = indexInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                set.add(StrUtil.join(StringPool.COMMA, columns));
-            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取数据库索引集合
-     *
-     * @param constraintInfoList
-     * @return
-     */
-    public static Set<String> getDatabaseIndexSet(List<ConstraintInfo> constraintInfoList) {
-        Set<String> set = new HashSet<>();
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
-                set.add(constraintInfo.getConstraintColumnName());
-            }
-        }
-        return set;
-    }
-
-    private static boolean handleUkConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
-        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
-        for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-            String[] columns = uniqueInfo.getColumns();
-            for (String column : columns) {
-                if (Objects.equals(column, propertyInfo.getColumnName())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-
-    private static boolean handleIdxConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
-        List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
-        for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-            String[] columns = indexInfo.getColumns();
-            for (String column : columns) {
-                if (Objects.equals(column, propertyInfo.getColumnName())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean handleUkConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean handleIdxConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 处理字符串长度
-     *
-     * @param length
-     * @return
-     */
-    public static int handleStrLength(int length) {
-        return length < 0 ? 255 : length;
-    }
-
-    /**
-     * 处理时间长度
-     *
-     * @param length
-     * @return
-     */
-    public static int handleDateTimeLength(int length) {
-        return length > 7 || length < 0 ? 0 : length;
     }
 
     /**
@@ -542,13 +358,13 @@ public class MysqlAcTableUtils {
                     log.warn("表 [{}] 字段 [{}] {}精度长度 [{}] 大于类型长度 [{}] 存在问题，使用类型长度 [{}]", tableName, columnName, type, decimalLength, length, length);
                     decimalLength = length;
                 }
-                if (length > 38 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 38);
-                    propertySb.append(18);
+                if (length > 65 || length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 10);
+                    propertySb.append(10);
                 } else {
                     propertySb.append(length);
                 }
-                if (decimalLength > 38 || decimalLength < 0) {
+                if (decimalLength > 65 || decimalLength < 0) {
                     log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, 2);
                     propertySb.append(StringPool.COMMA).append(2);
                 } else {
@@ -561,4 +377,47 @@ public class MysqlAcTableUtils {
         }
     }
 
+    /**
+     * 获取数据库唯一键集合
+     *
+     * @param constraintInfoList
+     * @return
+     */
+    public static boolean handleUkList(List<ConstraintInfo> constraintInfoList, String[] columns) {
+        Set<String> set = new HashSet<>();
+        Iterator<ConstraintInfo> it = constraintInfoList.iterator();
+        while (it.hasNext()) {
+            ConstraintInfo constraintInfo = it.next();
+            if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
+                Arrays.sort(columns);
+                if (Objects.equals(StrUtil.join(StringPool.COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                    it.remove();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获取数据库唯一键集合
+     *
+     * @param constraintInfoList
+     * @return
+     */
+    public static boolean handleIdxList(List<ConstraintInfo> constraintInfoList, String[] columns) {
+        Set<String> set = new HashSet<>();
+        Iterator<ConstraintInfo> it = constraintInfoList.iterator();
+        while (it.hasNext()) {
+            ConstraintInfo constraintInfo = it.next();
+            if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
+                Arrays.sort(columns);
+                if (Objects.equals(StrUtil.join(StringPool.COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                    it.remove();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

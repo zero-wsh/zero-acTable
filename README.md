@@ -45,7 +45,7 @@ zero.ac-table.database-type=mysql
 |---|---|---|---|
 |name   |表名称   |   |   |
 |comment   |表注释   |   |   |
-|turn   |当字段没有标记@Column注解时，\r\njava转数据库的方式   |TurnEnums.DEFAULT   |TurnEnums   |
+|turn   |当字段没有标记@Column注解时，java转数据库的方式   |TurnEnums.DEFAULT   |TurnEnums   |
 
 2.字段注解@Column
 |属性名   |描述   |默认值   |取值范围   |

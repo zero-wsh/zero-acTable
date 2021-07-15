@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
-import io.gitee.zerowsh.actable.emnus.MysqlColumnTypeEnums;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -207,7 +207,7 @@ public class MysqlAcTableUtils {
                 int length = propertyInfo.getLength();
                 int decimalLength = propertyInfo.getDecimalLength();
                 //判断长度、精度，是否修改
-                MysqlColumnTypeEnums typeEnum = MysqlColumnTypeEnums.getByValue(type);
+                ColumnTypeEnums typeEnum = getMysqlByValue(type);
                 switch (typeEnum) {
                     case VARCHAR:
                     case CHAR:
@@ -221,7 +221,7 @@ public class MysqlAcTableUtils {
                         if (decimalLength > length) {
                             decimalLength = length;
                         }
-                        length = length > 65 || length < 0 ?10 : length;
+                        length = length > 65 || length < 0 ? 10 : length;
                         decimalLength = decimalLength > 65 || decimalLength < 0 ? 2 : decimalLength;
                         existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
                                 || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
@@ -325,13 +325,13 @@ public class MysqlAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        MysqlColumnTypeEnums typeEnum = MysqlColumnTypeEnums.getByValue(type);
+        ColumnTypeEnums typeEnum = getMysqlByValue(type);
         switch (typeEnum) {
             case VARCHAR:
             case DATETIME:
             case CHAR:
                 propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
-                if (Objects.equals(type, MysqlColumnTypeEnums.DATETIME.getType())) {
+                if (Objects.equals(type, ColumnTypeEnums.DATETIME.getType())) {
                     //对类型特殊处理
                     if (length > 6 || length < 0) {
                         log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);
@@ -419,5 +419,45 @@ public class MysqlAcTableUtils {
             }
         }
         return false;
+    }
+
+    private static final Map<String, ColumnTypeEnums> JAVA_TURN_MYSQL_MAP = new HashMap<String, ColumnTypeEnums>() {{
+        put("java.lang.String", ColumnTypeEnums.VARCHAR);
+        put("java.lang.Long", ColumnTypeEnums.BIGINT);
+        put("long", ColumnTypeEnums.BIGINT);
+        put("java.lang.Integer", ColumnTypeEnums.INT);
+        put("int", ColumnTypeEnums.INT);
+        put("java.lang.Boolean", ColumnTypeEnums.BIT);
+        put("java.lang.boolean", ColumnTypeEnums.BIT);
+        put("java.util.Date", ColumnTypeEnums.DATETIME);
+        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME);
+        put("java.time.LocalDate", ColumnTypeEnums.DATETIME);
+        put("java.time.LocalDateTime", ColumnTypeEnums.DATETIME);
+        put("java.math.BigDecimal", ColumnTypeEnums.NUMERIC);
+        put("java.lang.Double", ColumnTypeEnums.NUMERIC);
+        put("double", ColumnTypeEnums.NUMERIC);
+        put("java.lang.Float", ColumnTypeEnums.FLOAT);
+        put("float", ColumnTypeEnums.FLOAT);
+        put("char", ColumnTypeEnums.CHAR);
+    }};
+
+    /**
+     * java类型转数据库类型
+     *
+     * @param key
+     * @return
+     */
+    public static String getJavaTurnMysqlValue(String key) {
+        ColumnTypeEnums ColumnTypeEnums = JAVA_TURN_MYSQL_MAP.get(key);
+        return Objects.isNull(ColumnTypeEnums) ? ColumnTypeEnums.VARCHAR.getType() : ColumnTypeEnums.getType();
+    }
+
+    public static ColumnTypeEnums getMysqlByValue(String type) {
+        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
+            if (Objects.equals(types.getType(), type)) {
+                return types;
+            }
+        }
+        return null;
     }
 }

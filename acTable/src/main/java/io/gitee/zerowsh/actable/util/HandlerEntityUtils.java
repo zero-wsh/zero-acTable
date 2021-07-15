@@ -282,7 +282,7 @@ public class HandlerEntityUtils {
                         ? AcTableUtils.handleType(fieldName, databaseType) : sqlServerType.getType();
             case MYSQL:
                 MysqlColumnTypeEnums mysqlType = column.mysqlType();
-                return Objects.equals(mysqlType, SqlServerColumnTypeEnums.DEFAULT)
+                return Objects.equals(mysqlType, MysqlColumnTypeEnums.DEFAULT)
                         ? AcTableUtils.handleType(fieldName, databaseType) : mysqlType.getType();
             default:
         }

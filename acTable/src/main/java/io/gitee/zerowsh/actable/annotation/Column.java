@@ -20,9 +20,7 @@ import java.lang.annotation.*;
 public @interface Column {
 
     /**
-     * 建表时是否排除,默认否
-     *
-     * @return boolean
+     * 建表时是否排除
      */
     boolean exclude() default false;
 
@@ -35,27 +33,22 @@ public @interface Column {
 
 
     /**
-     * 字段类型：不填默认使用属性的数据类型进行转换，转换失败的字段不会添加
-     * 仅支持zero.mybatisplus.dynamictable.emnus.ColumnTypeEnums中的枚举数据类型
-     * 不填默认转换类：zero.mybatisplus.dynamictable.util.JavaToDatabaseColumnType
-     *
-     * @return 字段类型
+     * sqlServer字段类型：不填默认使用属性的数据类型进行转换
      */
     SqlServerColumnTypeEnums sqlServerType() default SqlServerColumnTypeEnums.DEFAULT;
 
+    /**
+     * mysql字段类型：不填默认使用属性的数据类型进行转换
+     */
     MysqlColumnTypeEnums mysqlType() default MysqlColumnTypeEnums.DEFAULT;
 
     /**
-     * 字段长度，默认是255
-     *
-     * @return 默认字段长度，默认是255
+     * 字段长度
      */
     int length() default AcTableConstants.COLUMN_LENGTH_DEF;
 
     /**
-     * 小数位数，默认是0
-     *
-     * @return 小数位数
+     * 小数位数
      */
     int decimalLength() default AcTableConstants.COLUMN_DECIMAL_LENGTH_DEF;
 
@@ -67,30 +60,22 @@ public @interface Column {
     boolean isNull() default AcTableConstants.COLUMN_IS_NULL_DEF;
 
     /**
-     * 是否是主键，默认false
-     *
-     * @return 是否是主键，默认false
+     * 是否是主键
      */
     boolean isKey() default false;
 
     /**
-     * 是否自动递增，默认false
-     *
-     * @return 是否自动递增，默认false 只有主键才能使用
+     * 是否自动递增（mysql只有主键才能使用）
      */
     boolean isAutoIncrement() default false;
 
     /**
-     * 默认值，默认为null
-     *
-     * @return 默认值
+     * 默认值
      */
     String defaultValue() default AcTableConstants.DEFAULT_VALUE;
 
     /**
      * 字段备注
-     *
-     * @return 默认值，默认为空
      */
     String comment() default AcTableConstants.DEFAULT_VALUE;
 }

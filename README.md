@@ -30,8 +30,7 @@ mysql、sql_server
 ```
 #配置实体类的包名，多个用逗号隔开
 zero.ac-table.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
-#支持的模式 none：啥也不做（默认值）、ADD_OR_UPDATE：只会新增、修改表结构（注意：不会删除多余的字段）、
-ADD_OR_UPDATE_OR_DEL：表结构和实体类保持一致（注意：可能会删除表中字段）
+#支持的模式（默认NONE）
 zero.ac-table.model=ADD_OR_UPDATE_OR_DEL
 #初始化脚本位置resources文件夹下
 zero.ac-table.script=db/*.sql
@@ -46,7 +45,8 @@ zero.ac-table.database-type=mysql
 |---|---|---|---|
 |name   |表名称   |   |   |
 |comment   |表注释   |   |   |
-|turn   |当字段没有标记@Column注解时，java转数据库的方式   |TurnEnums.DEFAULT   |TurnEnums   |
+|turn   |当字段没有标记@Column注解时，
+java转数据库的方式   |TurnEnums.DEFAULT   |TurnEnums   |
 
 2.字段注解@Column
 |属性名   |描述   |默认值   |取值范围   |

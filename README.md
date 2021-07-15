@@ -3,18 +3,6 @@
 #### 介绍
 zero-acTable是基于MP（mybatis plus）实现的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作，指定初始化脚本就能执行数据初始化，内置测试demo。
 
-#### Maven依赖
-
-```
-<dependency>
-	<groupId>io.gitee.zero-wsh</groupId>
-	<artifactId>acTable</artifactId>
-	<version>1.0.0</version>
-</dependency>
-```
-
-
-
 #### 数据库支持
 mysql、sql_server
 
@@ -26,6 +14,16 @@ mysql、sql_server
 4.  字段上没有任何注解，支持属性名转数据库列名（默认驼峰下划线），字段类型转数据库类型
 5.  支持约束（主键、唯一键、索引、默认值（sql_server才具有））的创建、修改、删除
 6.  支持数据初始化
+
+#### Maven依赖
+
+```
+<dependency>
+	<groupId>io.gitee.zero-wsh</groupId>
+	<artifactId>acTable</artifactId>
+	<version>1.0.0</version>
+</dependency>
+```
 
 #### 配置说明
 

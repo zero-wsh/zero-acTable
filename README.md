@@ -1,10 +1,18 @@
 # zero-acTable
 
 #### 介绍
-通过实体类自动创建、修改表信息，只支持sqlserver
+zero-acTable是基于mybatis plus实现的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作,指定初始化脚本就能执行数据初始化，内置demo。
 
-#### 软件架构
-软件架构说明
+#### Maven依赖
+
+```
+<dependency>
+	<groupId>io.gitee.zero-wsh</groupId>
+	<artifactId>acTable</artifactId>
+	<version>1.0.0</version>
+</dependency>
+```
+
 
 
 #### 安装教程
@@ -35,3 +43,7 @@
 4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
 5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
 6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+
+```
+这里输入代码
+```

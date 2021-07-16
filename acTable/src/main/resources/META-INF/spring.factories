@@ -2,5 +2,6 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   io.gitee.zerowsh.actable.util.AcTableUtils,\
   io.gitee.zerowsh.actable.config.AcTableConfig,\
   io.gitee.zerowsh.actable.handler.StartUpHandler,\
+  io.gitee.zerowsh.actable.service.BaseDatabaseImpl,\
   io.gitee.zerowsh.actable.service.SqlServerImpl,\
   io.gitee.zerowsh.actable.service.MysqlImpl

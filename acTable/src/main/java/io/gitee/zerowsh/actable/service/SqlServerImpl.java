@@ -1,19 +1,17 @@
 package io.gitee.zerowsh.actable.service;
 
-import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.config.AcTableConfig;
-import io.gitee.zerowsh.actable.mapper.SqlServerMapper;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
-import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
-import io.gitee.zerowsh.actable.util.AcTableUtils;
+import io.gitee.zerowsh.actable.emnus.ModelEnums;
+import io.gitee.zerowsh.actable.mapper.SqlServerMapper;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,22 +25,15 @@ public class SqlServerImpl {
 
     @Resource
     private SqlServerMapper sqlServerMapper;
-    @Resource
-    private AcTableUtils acTableUtils;
 
     @Transactional(rollbackFor = Exception.class)
-    public void acTable(AcTableConfig acTableConfig, List<TableInfo> tableInfoList) {
-        DatabaseTypeEnums databaseType = acTableConfig.getDatabaseType();
-        log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
+    public List<String> acTable(ModelEnums modelEnums, List<TableInfo> tableInfoList) {
+        List<String> resultList = new ArrayList<>();
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
             if (sqlServerMapper.isExistTable(tableName) == 0) {
                 //不存在--建表
-                List<String> createTableSql = SqlServerAcTableUtils.getCreateTableSql(tableInfo);
-                for (String sql : createTableSql) {
-                    sqlServerMapper.executeSql(sql);
-                    log.info(sql);
-                }
+                resultList.addAll(SqlServerAcTableUtils.getCreateTableSql(tableInfo));
             } else {
                 /*
                  * 存在--改表
@@ -60,14 +51,10 @@ public class SqlServerImpl {
                         tableColumnInfoList,
                         constraintInfoList,
                         defaultInfoList,
-                        acTableConfig.getModel());
-                for (String sql : updateTableSql) {
-                    sqlServerMapper.executeSql(sql);
-                    log.info(sql);
-                }
+                        modelEnums);
+                resultList.addAll(updateTableSql);
             }
         }
-        log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
-        acTableUtils.executeScript();
+        return resultList;
     }
 }

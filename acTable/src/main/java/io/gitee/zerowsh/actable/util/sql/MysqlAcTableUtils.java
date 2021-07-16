@@ -467,6 +467,6 @@ public class MysqlAcTableUtils {
                 return types;
             }
         }
-        return null;
+        return ColumnTypeEnums.VARCHAR;
     }
 }

@@ -811,6 +811,6 @@ public class SqlServerAcTableUtils {
                 return types;
             }
         }
-        return null;
+        return ColumnTypeEnums.NVARCHAR;
     }
 }

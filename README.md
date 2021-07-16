@@ -34,8 +34,6 @@ zero.ac-table.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
 zero.ac-table.model=ADD_OR_UPDATE_OR_DEL
 #初始化脚本位置resources文件夹下
 zero.ac-table.script=db/*.sql
-#数据库类型（mysql、sql_server）
-zero.ac-table.database-type=mysql
 ```
 
 #### 注解说明

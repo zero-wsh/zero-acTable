@@ -10,5 +10,5 @@ zero:
   ac-table:
     entity-package: io.gitee.zerowsh.actable.demo.entity.sqlserver
     model: ADD_OR_UPDATE_OR_DEL
-    script: db/*.sql
+    script: db/sqlserver.sql
     database-type: sql_server

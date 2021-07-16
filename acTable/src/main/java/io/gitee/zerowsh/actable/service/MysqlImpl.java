@@ -66,6 +66,6 @@ public class MysqlImpl {
             }
         }
         log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
-//        acTableUtils.executeScript();
+        acTableUtils.executeScript();
     }
 }

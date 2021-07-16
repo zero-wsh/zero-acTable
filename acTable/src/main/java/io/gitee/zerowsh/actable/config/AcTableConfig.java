@@ -1,6 +1,5 @@
 package io.gitee.zerowsh.actable.config;
 
-import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.Getter;
@@ -32,10 +31,6 @@ public class AcTableConfig {
      * java转数据库的方式，全局配置，可以通过@Table turn属性配置异类；默认驼峰
      */
     private TurnEnums turn = TurnEnums.DEFAULT;
-    /**
-     * 数据库类型，默认sql_server
-     */
-    private DatabaseTypeEnums databaseType = DatabaseTypeEnums.SQL_SERVER;
     /**
      * 初始化数据脚本
      */

@@ -13,7 +13,6 @@ import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
-import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
@@ -40,7 +39,6 @@ public class HandlerEntityUtils {
      * @return
      */
     public static List<TableInfo> getTableInfoByEntityPackage(AcTableConfig acTableConfig) {
-        DatabaseTypeEnums databaseType = acTableConfig.getDatabaseType();
         String entityPackage = acTableConfig.getEntityPackage();
         TurnEnums turn = acTableConfig.getTurn();
         //实体类表信息
@@ -77,7 +75,7 @@ public class HandlerEntityUtils {
                 if (tableList.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
                 }
-                tableName = AcTableUtils.handleKeyword(tableName, databaseType);
+                tableName = AcTableUtils.handleKeyword(tableName);
                 tableList.add(tableName);
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
@@ -132,7 +130,6 @@ public class HandlerEntityUtils {
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
                                      AcTableConfig acTableConfig) {
-        DatabaseTypeEnums databaseType = acTableConfig.getDatabaseType();
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -175,7 +172,7 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
-                        .type(AcTableUtils.handleType(field.getType().getName(), databaseType));
+                        .type(AcTableUtils.handleType(field.getType().getName()));
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);
@@ -190,7 +187,7 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(tableField)) {
                     columnName = tableField.value();
                 }
-                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName, databaseType);
+                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
@@ -206,7 +203,7 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isNull(column.isNull())
                         .length(column.length())
-                        .type(getTypeStr(field.getType().getName(), column.type(), databaseType));
+                        .type(getTypeStr(field.getType().getName(), column.type()));
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);
@@ -274,10 +271,10 @@ public class HandlerEntityUtils {
      * 处理类型
      *
      * @param var
-     * @param databaseType
      * @return
      */
-    public static String getTypeStr(String fieldType, ColumnTypeEnums type, DatabaseTypeEnums databaseType) {
+    public static String getTypeStr(String fieldType, ColumnTypeEnums type) {
+        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case SQL_SERVER:
                 if (Objects.equals(type, ColumnTypeEnums.DEFAULT)) {

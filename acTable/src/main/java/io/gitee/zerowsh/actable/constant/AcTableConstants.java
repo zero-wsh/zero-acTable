@@ -7,6 +7,11 @@ package io.gitee.zerowsh.actable.constant;
  */
 public interface AcTableConstants {
     /**
+     * 数据库类型
+     */
+    String MYSQL = "MySQL";
+    String SQL_SERVER = "Microsoft SQL Server";
+    /**
      * 当等于该值时，默认值为null
      */
     String DEFAULT_VALUE = "default_value";

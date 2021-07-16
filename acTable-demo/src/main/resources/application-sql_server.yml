@@ -8,4 +8,3 @@ zero:
     entity-package: io.gitee.zerowsh.actable.demo.entity.sqlserver
     model: ADD_OR_UPDATE_OR_DEL
     script: db/sql_server.sql
-    database-type: sql_server

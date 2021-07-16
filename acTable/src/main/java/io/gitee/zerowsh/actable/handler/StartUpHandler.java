@@ -5,8 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
-import io.gitee.zerowsh.actable.service.MysqlImpl;
-import io.gitee.zerowsh.actable.service.SqlServerImpl;
+import io.gitee.zerowsh.actable.service.BaseDatabaseImpl;
 import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,9 +24,7 @@ import java.util.Objects;
 @Slf4j
 public class StartUpHandler {
     @Resource
-    private SqlServerImpl sqlServerImpl;
-    @Resource
-    private MysqlImpl mysqlImpl;
+    private BaseDatabaseImpl baseDatabase;
 
     @Resource
     private AcTableConfig acTableConfig;
@@ -49,15 +46,6 @@ public class StartUpHandler {
             log.warn("没有找到@Table或@TableName标记的类！！！ entityPackage={}", entityPackage);
             return;
         }
-        switch (acTableConfig.getDatabaseType()) {
-            case MYSQL:
-                mysqlImpl.acTable(acTableConfig, tableInfoList);
-                break;
-            case SQL_SERVER:
-                sqlServerImpl.acTable(acTableConfig, tableInfoList);
-                break;
-            default:
-                log.info(StrUtil.format("暂不支持{}！！！", acTableConfig.getDatabaseType()));
-        }
+        baseDatabase.acTable(acTableConfig, tableInfoList);
     }
 }

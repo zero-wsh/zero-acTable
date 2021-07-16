@@ -1,14 +1,14 @@
 spring:
   datasource:
-    #    url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
-    #    username: net-dev
-    #    password: 9DQ11kkb3E
-    url: jdbc:sqlserver://localhost;databaseName=dynamic_table
-    username: sa
-    password: zero
+      url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
+      username: net-dev
+      password: 9DQ11kkb3E
+#    url: jdbc:sqlserver://localhost;databaseName=dynamic_table
+#    username: sa
+#    password: zero
 zero:
   ac-table:
     entity-package: io.gitee.zerowsh.actable.demo.entity.sqlserver
     model: ADD_OR_UPDATE_OR_DEL
-    script: db/sqlserver.sql
+    script: db/sql_server.sql
     database-type: sql_server

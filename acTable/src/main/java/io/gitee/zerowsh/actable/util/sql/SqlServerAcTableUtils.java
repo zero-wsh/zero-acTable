@@ -724,7 +724,7 @@ public class SqlServerAcTableUtils {
             case NCHAR:
             case CHAR:
                 propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
-                if (Objects.equals(typeEnum, ColumnTypeEnums.DATETIME2.getType())) {
+                if (Objects.equals(type, ColumnTypeEnums.DATETIME2.getType())) {
                     //对类型特殊处理
                     if (length > 7 || length < 0) {
                         log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);

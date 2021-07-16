@@ -52,21 +52,30 @@ public class MysqlAcTableUtils {
             propertySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, columnName));
             splicingColumnInfo(propertySb, propertyInfo, tableName);
         }
-
-        for (String key : tableInfo.getKeyList()) {
-            propertySb.append(StrUtil.format(PRIMARY_KEY, key)).append(StringPool.COMMA);
+        List<String> keyList = tableInfo.getKeyList();
+        if (CollectionUtil.isNotEmpty(keyList)) {
+            StringBuilder pkSb = new StringBuilder();
+            for (String key : tableInfo.getKeyList()) {
+                pkSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
+            }
+            propertySb.append(StrUtil.format(PRIMARY_KEY, pkSb.deleteCharAt(pkSb.length() - 1))).append(StringPool.COMMA);
         }
+
         for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
             String[] columns = uniqueInfo.getColumns();
+            StringBuilder uniqueSb = new StringBuilder();
             for (String column : columns) {
-                propertySb.append(StrUtil.format(UNIQUE_KEY, uniqueInfo.getValue(), column)).append(StringPool.COMMA);
+                uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
             }
+            propertySb.append(StrUtil.format(UNIQUE_KEY, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1))).append(StringPool.COMMA);
         }
         for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
             String[] columns = indexInfo.getColumns();
+            StringBuilder indexSb = new StringBuilder();
             for (String column : columns) {
-                propertySb.append(StrUtil.format(INDEX_KEY, indexInfo.getValue(), column)).append(StringPool.COMMA);
+                indexSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
             }
+            propertySb.append(StrUtil.format(INDEX_KEY, indexInfo.getValue(), indexSb.deleteCharAt(indexSb.length() - 1))).append(StringPool.COMMA);
         }
         String createTable = CREATE_TABLE;
         if (StrUtil.isNotBlank(comment)) {

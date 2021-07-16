@@ -5,4 +5,4 @@ server:
     time-zone: GMT+8
 spring:
   profiles:
-    active: sql_server
+    active: mysql

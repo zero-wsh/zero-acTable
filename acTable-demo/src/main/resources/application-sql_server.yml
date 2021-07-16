@@ -1,6 +1,6 @@
 spring:
   datasource:
-      url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard
+      url: jdbc:sqlserver://192.168.200.159\DEV;databaseName=data_standard;allowMultiQueries=true
       username: net-dev
       password: 9DQ11kkb3E
 #    url: jdbc:sqlserver://localhost;databaseName=dynamic_table

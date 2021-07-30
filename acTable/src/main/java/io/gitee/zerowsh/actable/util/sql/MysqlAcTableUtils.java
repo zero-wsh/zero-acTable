@@ -189,10 +189,10 @@ public class MysqlAcTableUtils {
         String tableName = firstTableColumnInfo.getTableName();
         List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
         List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
-        String comment = tableInfo.getComment();
+        String comment = Objects.isNull(tableInfo.getComment()) ? "" : tableInfo.getComment();
         //处理表备注
         if (!Objects.equals(comment, firstTableColumnInfo.getTableComment())) {
-            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, Objects.isNull(comment) ? "" : comment));
+            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, comment));
         }
 
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();

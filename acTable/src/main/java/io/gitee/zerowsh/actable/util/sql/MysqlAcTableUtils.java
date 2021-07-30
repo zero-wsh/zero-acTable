@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
+import static io.gitee.zerowsh.actable.emnus.ColumnTypeEnums.VARCHAR;
 
 /**
  * sql_server自动建表工具类
@@ -188,9 +189,10 @@ public class MysqlAcTableUtils {
         String tableName = firstTableColumnInfo.getTableName();
         List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
         List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
+        String comment = tableInfo.getComment();
         //处理表备注
-        if (!Objects.equals(tableInfo.getComment(), firstTableColumnInfo.getTableComment())) {
-            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, tableInfo.getComment()));
+        if (!Objects.equals(comment, firstTableColumnInfo.getTableComment())) {
+            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, Objects.isNull(comment) ? "" : comment));
         }
 
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
@@ -431,7 +433,7 @@ public class MysqlAcTableUtils {
     }
 
     private static final Map<String, ColumnTypeEnums> JAVA_TURN_MYSQL_MAP = new HashMap<String, ColumnTypeEnums>() {{
-        put("java.lang.String", ColumnTypeEnums.VARCHAR);
+        put("java.lang.String", VARCHAR);
         put("java.lang.Long", ColumnTypeEnums.BIGINT);
         put("long", ColumnTypeEnums.BIGINT);
         put("java.lang.Integer", ColumnTypeEnums.INT);
@@ -458,7 +460,7 @@ public class MysqlAcTableUtils {
      */
     public static String getJavaTurnMysqlValue(String key) {
         ColumnTypeEnums ColumnTypeEnums = JAVA_TURN_MYSQL_MAP.get(key);
-        return Objects.isNull(ColumnTypeEnums) ? ColumnTypeEnums.VARCHAR.getType() : ColumnTypeEnums.getType();
+        return Objects.isNull(ColumnTypeEnums) ? VARCHAR.getType() : ColumnTypeEnums.getType();
     }
 
     public static ColumnTypeEnums getMysqlByValue(String type) {
@@ -467,6 +469,6 @@ public class MysqlAcTableUtils {
                 return types;
             }
         }
-        return ColumnTypeEnums.VARCHAR;
+        return VARCHAR;
     }
 }

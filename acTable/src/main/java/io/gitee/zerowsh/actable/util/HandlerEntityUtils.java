@@ -52,6 +52,9 @@ public class HandlerEntityUtils {
             tableSet.addAll(tableClass);
             tableSet.addAll(tableNameClass);
             for (Class<?> cls : tableSet) {
+                if (Objects.nonNull(cls.getAnnotation(IgnoreTable.class))) {
+                    continue;
+                }
                 TableInfo.TableInfoBuilder builder = TableInfo.builder();
                 List<TableInfo.PropertyInfo> propertyInfoList = new ArrayList<>();
                 List<TableInfo.IndexInfo> indexInfoList = new ArrayList<>();

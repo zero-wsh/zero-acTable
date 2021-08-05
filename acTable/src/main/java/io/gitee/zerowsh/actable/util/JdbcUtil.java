@@ -1,5 +1,6 @@
 package io.gitee.zerowsh.actable.util;
 
+import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import org.slf4j.Logger;
@@ -49,14 +50,15 @@ public class JdbcUtil {
     }
 
     private static PreparedStatement handlePrepareStatement(Connection conn, String sql, Object... obj) throws SQLException {
-        PreparedStatement ps = conn.prepareStatement(sql);
-        log.info(sql);
-        //循环参数，如果没有就不走这里
-        for (int i = 1; i <= obj.length; i++) {
-            //注意：数组下标从0开始，预处理参数设置从1开始
-            ps.setObject(i, obj[i - 1]);
-            log.info("param key=[{}] value=[{}]", i, obj[i - 1]);
-        }
+        String formatSql = StrUtil.format(sql, obj);
+        PreparedStatement ps = conn.prepareStatement(formatSql);
+        log.info(formatSql);
+//        //循环参数，如果没有就不走这里
+//        for (int i = 1; i <= obj.length; i++) {
+//            //注意：数组下标从0开始，预处理参数设置从1开始
+//            ps.setObject(i, obj[i - 1]);
+//            log.info("param key=[{}] value=[{}]", i, obj[i - 1]);
+//        }
         return ps;
     }
 

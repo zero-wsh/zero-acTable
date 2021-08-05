@@ -15,24 +15,24 @@ public interface SqlConstants {
     /**
      * mysql相关语句
      */
-    String MYSQL_EXIST_SQL = "select count(1) from information_schema.tables where table_name =?";
+    String MYSQL_EXIST_SQL = "select count(1) from information_schema.tables where table_name ='{}'";
     String MYSQL_TABLE_STRUCTURE = "SELECT t.table_name tableName,t.table_comment tableComment,\n" +
             "case when c.IS_NULLABLE='YES' then 1 else 0 end isNull,\n" +
             "c.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue,\n" +
             "case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length,\n" +
             "case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength,\n" +
             "case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement \n" +
-            "FROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name=?";
+            "FROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name='{}'";
 
     String MYSQL_CONSTRAINT_INFO = "select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName,\n" +
             "\t\t\t\tcase when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag\n" +
-            "from information_schema.statistics where table_name = ? \n" +
+            "from information_schema.statistics where table_name = '{}' \n" +
             "GROUP BY constraintName,constraintFlag";
 
     /**
      * sql_server相关语句
      */
-    String SQL_SERVER_EXIST_SQL = "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID(?) AND type IN ('U')";
+    String SQL_SERVER_EXIST_SQL = "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID('{}') AND type IN ('U')";
     String SQL_SERVER_TABLE_STRUCTURE = "SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
             " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +
             " case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (" +
@@ -46,18 +46,18 @@ public interface SqlConstants {
             " left join syscomments e on a.cdefault=e.id" +
             " left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id" +
             " left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0" +
-            " where d.name=?";
+            " where d.name='{}'";
     String SQL_SERVER_CONSTRAINT_INFO = "WITH MO_Cook AS\t(SELECT  IDX.NAME AS constraintName, IDX.TYPE_DESC AS constraintType,COL.NAME AS constraintColumnName,case when IDX.IS_PRIMARY_KEY = 1 then 1 else case when \t\t\t\t\t\t\tIDX.IS_UNIQUE_CONSTRAINT = 1 then 2 else 3 end end constraintFlag FROM  SYS.INDEXES IDX JOIN\n" +
             "                SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) JOIN\n" +
             "                SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN\n" +
             "                SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID)\n" +
-            "                where  TAB.NAME=?)\n" +
+            "                where  TAB.NAME='{}')\n" +
             "\tselect constraintName,constraintType,constraintFlag,stuff((select ','+constraintColumnName from  MO_Cook  \n" +
             "            where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName\n" +
             "            for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c   \n" +
             "\t\t\t\t\t\tgroup by c.constraintName,c.constraintType,c.constraintFlag";
     String SQL_SERVER_DEFAULT_INFO = "select t.name constraintName,syscolumns.name constraintColumnName from (SELECT sysobjects.name,sysobjects.id FROM\tsysobjects \n" +
-            "where\tsysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= ? ))t \n" +
+            "where\tsysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t \n" +
             "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault";
 
     public static String getExecuteSql(SqlTypeEnums sqlTypeEnums) {

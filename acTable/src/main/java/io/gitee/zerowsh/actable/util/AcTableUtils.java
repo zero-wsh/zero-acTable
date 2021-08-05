@@ -1,12 +1,12 @@
 package io.gitee.zerowsh.actable.util;
 
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
+import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
 /**
  * 所有数据库共用工具类
@@ -25,14 +25,14 @@ public class AcTableUtils {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case MYSQL:
-                if (var.startsWith(StringPool.BACKTICK) && var.endsWith(StringPool.BACKTICK)) {
-                    var = var.replace(StringPool.BACKTICK, "");
+                if (var.startsWith(BACKTICK) && var.endsWith(BACKTICK)) {
+                    var = var.replace(BACKTICK, "");
                 }
                 break;
             case SQL_SERVER:
-                if (var.startsWith(StringPool.LEFT_SQ_BRACKET) && var.endsWith(StringPool.RIGHT_SQ_BRACKET)) {
-                    var = var.replace(StringPool.LEFT_SQ_BRACKET, "")
-                            .replace(StringPool.RIGHT_SQ_BRACKET, "");
+                if (var.startsWith(LEFT_SQ_BRACKET) && var.endsWith(RIGHT_SQ_BRACKET)) {
+                    var = var.replace(LEFT_SQ_BRACKET, "")
+                            .replace(RIGHT_SQ_BRACKET, "");
                 }
                 break;
             default:

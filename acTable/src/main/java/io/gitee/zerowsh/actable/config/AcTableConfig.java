@@ -4,7 +4,6 @@ import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.Getter;
 import lombok.Setter;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zero.ac-table")
 @Getter
 @Setter
-@MapperScan("io.gitee.zerowsh.actable.mapper")
 public class AcTableConfig {
     /**
      * 实体类的包名,多个用逗号隔开

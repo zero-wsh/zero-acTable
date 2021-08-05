@@ -2,7 +2,6 @@ package io.gitee.zerowsh.actable.util.sql;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
@@ -14,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
-import static io.gitee.zerowsh.actable.emnus.ColumnTypeEnums.VARCHAR;
+import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
 /**
  * sql_server自动建表工具类
@@ -57,26 +56,26 @@ public class MysqlAcTableUtils {
         if (CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder pkSb = new StringBuilder();
             for (String key : tableInfo.getKeyList()) {
-                pkSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
+                pkSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(COMMA);
             }
-            propertySb.append(StrUtil.format(PRIMARY_KEY, pkSb.deleteCharAt(pkSb.length() - 1))).append(StringPool.COMMA);
+            propertySb.append(StrUtil.format(PRIMARY_KEY, pkSb.deleteCharAt(pkSb.length() - 1))).append(COMMA);
         }
 
         for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
             String[] columns = uniqueInfo.getColumns();
             StringBuilder uniqueSb = new StringBuilder();
             for (String column : columns) {
-                uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(COMMA);
             }
-            propertySb.append(StrUtil.format(UNIQUE_KEY, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1))).append(StringPool.COMMA);
+            propertySb.append(StrUtil.format(UNIQUE_KEY, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1))).append(COMMA);
         }
         for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
             String[] columns = indexInfo.getColumns();
             StringBuilder indexSb = new StringBuilder();
             for (String column : columns) {
-                indexSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                indexSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(COMMA);
             }
-            propertySb.append(StrUtil.format(INDEX_KEY, indexInfo.getValue(), indexSb.deleteCharAt(indexSb.length() - 1))).append(StringPool.COMMA);
+            propertySb.append(StrUtil.format(INDEX_KEY, indexInfo.getValue(), indexSb.deleteCharAt(indexSb.length() - 1))).append(COMMA);
         }
         String createTable = CREATE_TABLE;
         if (StrUtil.isNotBlank(comment)) {
@@ -103,7 +102,7 @@ public class MysqlAcTableUtils {
         if (delConstraintSet.contains(MYSQL_DEL_PK) && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
-                keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
+                keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(COMMA);
             }
             delConstraintSet.add(StrUtil.format(MYSQL_ADD_PK, keySb.deleteCharAt(keySb.length() - 1)));
         }
@@ -128,7 +127,7 @@ public class MysqlAcTableUtils {
                     continue;
                 }
                 for (String column : columns) {
-                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(COMMA);
                 }
                 delConstraintSet.add(StrUtil.format(MYSQL_ADD_UNIQUE, value, uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
             }
@@ -159,7 +158,7 @@ public class MysqlAcTableUtils {
                     continue;
                 }
                 for (String column : columns) {
-                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    uniqueSb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, column)).append(COMMA);
                 }
                 delConstraintSet.add(StrUtil.format(MYSQL_ADD_INDEX, value, uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
             }
@@ -257,7 +256,7 @@ public class MysqlAcTableUtils {
                     if (tableColumnInfo.isKey()) {
                         delConstraintSet.add(MYSQL_DEL_PK);
                     }
-                    updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(StringPool.COMMA);
+                    updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(COMMA);
                 }
             }
         }
@@ -281,7 +280,7 @@ public class MysqlAcTableUtils {
         createIdx(delConstraintSet, tableInfo, constraintInfoList);
         if (CollectionUtil.isNotEmpty(delConstraintSet)) {
             for (String s : delConstraintSet) {
-                updateColumnSql.append(s).append(StringPool.COMMA);
+                updateColumnSql.append(s).append(COMMA);
             }
         }
         if (updateColumnSql.length() > 0) {
@@ -321,7 +320,7 @@ public class MysqlAcTableUtils {
         if (StrUtil.isNotBlank(propertyInfo.getColumnComment())) {
             propertySb.append(StrUtil.format(COMMENT, propertyInfo.getColumnComment()));
         }
-        propertySb.append(StringPool.COMMA);
+        propertySb.append(COMMA);
     }
 
     /**
@@ -341,7 +340,7 @@ public class MysqlAcTableUtils {
             case VARCHAR:
             case DATETIME:
             case CHAR:
-                propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
+                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
                 if (Objects.equals(type, ColumnTypeEnums.DATETIME.getType())) {
                     //对类型特殊处理
                     if (length > 6 || length < 0) {
@@ -358,12 +357,12 @@ public class MysqlAcTableUtils {
                         propertySb.append(length);
                     }
                 }
-                propertySb.append(StringPool.RIGHT_BRACKET);
+                propertySb.append(RIGHT_BRACKET);
                 break;
 
             case DECIMAL:
             case NUMERIC:
-                propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
+                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
 
                 if (decimalLength > length) {
                     log.warn("表 [{}] 字段 [{}] {}精度长度 [{}] 大于类型长度 [{}] 存在问题，使用类型长度 [{}]", tableName, columnName, type, decimalLength, length, length);
@@ -377,14 +376,14 @@ public class MysqlAcTableUtils {
                 }
                 if (decimalLength > 65 || decimalLength < 0) {
                     log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, 2);
-                    propertySb.append(StringPool.COMMA).append(2);
+                    propertySb.append(COMMA).append(2);
                 } else {
-                    propertySb.append(StringPool.COMMA).append(decimalLength);
+                    propertySb.append(COMMA).append(decimalLength);
                 }
-                propertySb.append(StringPool.RIGHT_BRACKET);
+                propertySb.append(RIGHT_BRACKET);
                 break;
             default:
-                propertySb.append(StringPool.SPACE).append(type);
+                propertySb.append(SPACE).append(type);
         }
     }
 
@@ -401,7 +400,7 @@ public class MysqlAcTableUtils {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(StringPool.COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())) {
                     it.remove();
                     return true;
                 }
@@ -423,7 +422,7 @@ public class MysqlAcTableUtils {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
                 Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(StringPool.COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())) {
                     it.remove();
                     return true;
                 }
@@ -433,7 +432,7 @@ public class MysqlAcTableUtils {
     }
 
     private static final Map<String, ColumnTypeEnums> JAVA_TURN_MYSQL_MAP = new HashMap<String, ColumnTypeEnums>() {{
-        put("java.lang.String", VARCHAR);
+        put("java.lang.String", ColumnTypeEnums.VARCHAR);
         put("java.lang.Long", ColumnTypeEnums.BIGINT);
         put("long", ColumnTypeEnums.BIGINT);
         put("java.lang.Integer", ColumnTypeEnums.INT);
@@ -459,8 +458,8 @@ public class MysqlAcTableUtils {
      * @return
      */
     public static String getJavaTurnMysqlValue(String key) {
-        ColumnTypeEnums ColumnTypeEnums = JAVA_TURN_MYSQL_MAP.get(key);
-        return Objects.isNull(ColumnTypeEnums) ? VARCHAR.getType() : ColumnTypeEnums.getType();
+        ColumnTypeEnums columnTypeEnums = JAVA_TURN_MYSQL_MAP.get(key);
+        return Objects.isNull(columnTypeEnums) ? ColumnTypeEnums.VARCHAR.getType() : columnTypeEnums.getType();
     }
 
     public static ColumnTypeEnums getMysqlByValue(String type) {
@@ -469,6 +468,6 @@ public class MysqlAcTableUtils {
                 return types;
             }
         }
-        return VARCHAR;
+        return ColumnTypeEnums.VARCHAR;
     }
 }

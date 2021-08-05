@@ -4,11 +4,6 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
 import io.gitee.zerowsh.actable.dto.TableInfo;
@@ -23,6 +18,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
+import static io.gitee.zerowsh.actable.constant.StringConstants.COMMA;
 
 /**
  * 处理实体工具类
@@ -45,12 +41,12 @@ public class HandlerEntityUtils {
         List<TableInfo> tableInfoList = new ArrayList<>();
         //用来判断是否有重复表名
         List<String> tableList = new ArrayList<>();
-        for (String s : entityPackage.split(StringPool.COMMA)) {
+        for (String s : entityPackage.split(COMMA)) {
             Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, Table.class);
-            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
+//            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
             Set<Class<?>> tableSet = new HashSet<>();
             tableSet.addAll(tableClass);
-            tableSet.addAll(tableNameClass);
+//            tableSet.addAll(tableNameClass);
             for (Class<?> cls : tableSet) {
                 if (Objects.nonNull(cls.getAnnotation(IgnoreTable.class))) {
                     continue;
@@ -62,16 +58,16 @@ public class HandlerEntityUtils {
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
                 Table table = cls.getAnnotation(Table.class);
-                TableName tableNameAnn = cls.getAnnotation(TableName.class);
+//                TableName tableNameAnn = cls.getAnnotation(TableName.class);
                 String tableName = null;
                 String comment = DEFAULT_VALUE;
                 if (Objects.nonNull(table)) {
                     tableName = table.name();
                     comment = table.comment();
                 }
-                if (Objects.nonNull(tableNameAnn)) {
-                    tableName = tableNameAnn.value();
-                }
+//                if (Objects.nonNull(tableNameAnn)) {
+//                    tableName = tableNameAnn.value();
+//                }
                 if (StrUtil.isBlank(tableName)) {
                     throw new RuntimeException(StrUtil.format("@Table和@TableName 都没设置表名！！！"));
                 }
@@ -153,22 +149,24 @@ public class HandlerEntityUtils {
             }
 
             Column column = field.getAnnotation(Column.class);
-            TableField tableField = field.getAnnotation(TableField.class);
-            TableId tableId = field.getAnnotation(TableId.class);
+//            TableField tableField = field.getAnnotation(TableField.class);
+//            TableId tableId = field.getAnnotation(TableId.class);
             if (Objects.isNull(column)) {
-                if (Objects.nonNull(tableField) && !tableField.exist()) {
-                    continue;
-                }
-                if (Objects.nonNull(tableField)) {
-                    columnName = tableField.value();
-                }
+//                if (Objects.nonNull(tableField) && !tableField.exist()) {
+//                    continue;
+//                }
+//                if (Objects.nonNull(tableField)) {
+//                    columnName = tableField.value();
+//                }
                 columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName;
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
-                boolean isKey = Objects.nonNull(tableId);
-                boolean isAutoIncrement = Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO);
+//                boolean isKey = Objects.nonNull(tableId);
+//                boolean isAutoIncrement = Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO);
+                boolean isKey = false;
+                boolean isAutoIncrement = false;
                 propertyInfoBuilder.columnName(columnName)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(COLUMN_IS_NULL_DEF)
@@ -181,23 +179,25 @@ public class HandlerEntityUtils {
                     keyList.add(columnName);
                 }
             } else {
-                if ((Objects.nonNull(tableField) && !tableField.exist()) || column.exclude()) {
-                    continue;
-                }
+//                if ((Objects.nonNull(tableField) && !tableField.exist()) || column.exclude()) {
+//                    continue;
+//                }
                 if (StrUtil.isNotBlank(column.name())) {
                     columnName = column.name();
                 }
-                if (Objects.nonNull(tableField)) {
-                    columnName = tableField.value();
-                }
+//                if (Objects.nonNull(tableField)) {
+//                    columnName = tableField.value();
+//                }
                 columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
 
-                boolean isKey = Objects.nonNull(tableId) || column.isKey();
-                boolean isAutoIncrement = column.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
+//                boolean isKey = Objects.nonNull(tableId) || column.isKey();
+//                boolean isAutoIncrement = column.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
+                boolean isKey = column.isKey();
+                boolean isAutoIncrement = column.isAutoIncrement();
                 propertyInfoBuilder.columnName(columnName)
                         .columnComment(judgeIsNull(column.comment()))
                         .decimalLength(column.decimalLength())

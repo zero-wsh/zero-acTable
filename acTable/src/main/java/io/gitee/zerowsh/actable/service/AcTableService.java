@@ -3,7 +3,6 @@ package io.gitee.zerowsh.actable.service;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.config.AcTableConfig;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -34,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import static cn.hutool.core.util.StrUtil.COMMA;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
 
@@ -184,7 +184,7 @@ public class AcTableService {
         }
         log.info("执行 [{}] 初始化数据。。。", databaseType);
         List<org.springframework.core.io.Resource> list = new ArrayList<>();
-        for (String s : script.split(StringPool.COMMA)) {
+        for (String s : script.split(COMMA)) {
             try {
                 list.addAll(Arrays.asList(new PathMatchingResourcePatternResolver().getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s)));
             } catch (IOException e) {

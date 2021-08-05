@@ -3,7 +3,6 @@ package io.gitee.zerowsh.actable.util.sql;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
@@ -15,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
+import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
 /**
  * sql_server自动建表工具类
@@ -98,7 +98,7 @@ public class SqlServerAcTableUtils {
         if (flag && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
-                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(StringPool.COMMA);
+                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(COMMA);
             }
             resultList.add(StrUtil.format(CREATE_PRIMARY_KEY, tableName, PK_ + tableName, keySb.deleteCharAt(keySb.length() - 1)));
         }
@@ -118,7 +118,7 @@ public class SqlServerAcTableUtils {
                 String[] columns = uniqueInfo.getColumns();
                 StringBuilder uniqueSb = new StringBuilder();
                 for (String column : columns) {
-                    uniqueSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    uniqueSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(COMMA);
                 }
 
                 if (CollectionUtil.isEmpty(existUkNameList) || !existUkNameList.contains(uniqueInfo.getValue())) {
@@ -141,7 +141,7 @@ public class SqlServerAcTableUtils {
                 String[] columns = indexInfo.getColumns();
                 StringBuilder indexSb = new StringBuilder();
                 for (String column : columns) {
-                    indexSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StringPool.COMMA);
+                    indexSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(COMMA);
                 }
                 if (CollectionUtil.isEmpty(existIdxNameList) || !existIdxNameList.contains(indexInfo.getValue())) {
                     resultList.add(StrUtil.format(CREATE_INDEX, indexInfo.getValue(), tableName, indexSb.deleteCharAt(indexSb.length() - 1)));
@@ -308,8 +308,8 @@ public class SqlServerAcTableUtils {
                 if (Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
                     //默认值
                     boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
-                            || Objects.equals(StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
-                            || Objects.equals(StringPool.LEFT_BRACKET + StringPool.LEFT_BRACKET + propertyInfo.getDefaultValue() + StringPool.RIGHT_BRACKET + StringPool.RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
+                            || Objects.equals(LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
+                            || Objects.equals(LEFT_BRACKET + LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET + RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
                     boolean judgeDef = defExistUpdate || (!(Objects.equals(tableColumnInfo.getTypeStr(), type)) && Objects.nonNull(tableColumnInfo.getDefaultValue()));
                     if (judgeDef) {
                         addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, propertyInfo.getColumnName());
@@ -443,7 +443,7 @@ public class SqlServerAcTableUtils {
             String[] columns = uniqueInfo.getColumns();
             if (ArrayUtil.isNotEmpty(columns)) {
                 Arrays.sort(columns);
-                if (!uniqueInfoSet1.contains(StrUtil.join(StringPool.COMMA, columns))) {
+                if (!uniqueInfoSet1.contains(StrUtil.join(COMMA, columns))) {
                     ukFlag = true;
                     break;
                 }
@@ -453,7 +453,7 @@ public class SqlServerAcTableUtils {
             String[] columns = indexInfo.getColumns();
             if (ArrayUtil.isNotEmpty(columns)) {
                 Arrays.sort(columns);
-                if (!indexInfoSet1.contains(StrUtil.join(StringPool.COMMA, columns))) {
+                if (!indexInfoSet1.contains(StrUtil.join(COMMA, columns))) {
                     idxFlag = true;
                     break;
                 }
@@ -554,7 +554,7 @@ public class SqlServerAcTableUtils {
             String[] columns = uniqueInfo.getColumns();
             if (ArrayUtil.isNotEmpty(columns)) {
                 Arrays.sort(columns);
-                set.add(StrUtil.join(StringPool.COMMA, columns));
+                set.add(StrUtil.join(COMMA, columns));
             }
         }
         return set;
@@ -588,7 +588,7 @@ public class SqlServerAcTableUtils {
             String[] columns = indexInfo.getColumns();
             if (ArrayUtil.isNotEmpty(columns)) {
                 Arrays.sort(columns);
-                set.add(StrUtil.join(StringPool.COMMA, columns));
+                set.add(StrUtil.join(COMMA, columns));
             }
         }
         return set;
@@ -701,7 +701,7 @@ public class SqlServerAcTableUtils {
         } else {
             propertySb.append(NOT_NULL);
         }
-        propertySb.append(StringPool.COMMA);
+        propertySb.append(COMMA);
     }
 
     /**
@@ -723,7 +723,7 @@ public class SqlServerAcTableUtils {
             case DATETIME2:
             case NCHAR:
             case CHAR:
-                propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
+                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
                 if (Objects.equals(type, ColumnTypeEnums.DATETIME2.getType())) {
                     //对类型特殊处理
                     if (length > 7 || length < 0) {
@@ -740,12 +740,12 @@ public class SqlServerAcTableUtils {
                         propertySb.append(length);
                     }
                 }
-                propertySb.append(StringPool.RIGHT_BRACKET);
+                propertySb.append(RIGHT_BRACKET);
                 break;
 
             case DECIMAL:
             case NUMERIC:
-                propertySb.append(StringPool.SPACE).append(type).append(StringPool.LEFT_BRACKET);
+                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
 
                 if (decimalLength > length) {
                     log.warn("表 [{}] 字段 [{}] {}精度长度 [{}] 大于类型长度 [{}] 存在问题，使用类型长度 [{}]", tableName, columnName, type, decimalLength, length, length);
@@ -759,14 +759,14 @@ public class SqlServerAcTableUtils {
                 }
                 if (decimalLength > 38 || decimalLength < 0) {
                     log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, 2);
-                    propertySb.append(StringPool.COMMA).append(2);
+                    propertySb.append(COMMA).append(2);
                 } else {
-                    propertySb.append(StringPool.COMMA).append(decimalLength);
+                    propertySb.append(COMMA).append(decimalLength);
                 }
-                propertySb.append(StringPool.RIGHT_BRACKET);
+                propertySb.append(RIGHT_BRACKET);
                 break;
             default:
-                propertySb.append(StringPool.SPACE).append(type);
+                propertySb.append(SPACE).append(type);
         }
     }
 

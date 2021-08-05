@@ -14,6 +14,7 @@ public class TableColumnInfo {
     private String tableName;
     private String tableComment;
     private String columnName;
+    private String columnComment;
     private boolean isKey;
     private String typeStr;
     private int length;
@@ -21,5 +22,4 @@ public class TableColumnInfo {
     private boolean isNull;
     private boolean isAutoIncrement;
     private String defaultValue;
-    private String columnComment;
 }

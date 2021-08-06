@@ -26,7 +26,7 @@ public class AcTableProperties {
      */
     private ModelEnums model = ModelEnums.NONE;
     /**
-     * java转数据库的方式，全局配置，可以通过@Table turn属性配置异类；默认驼峰
+     * java转数据库的方式，全局配置，可以通过@AcTable turn属性配置异类；默认驼峰
      */
     private TurnEnums turn = TurnEnums.DEFAULT;
     /**

@@ -15,19 +15,20 @@ public interface SqlConstants {
     /**
      * mysql相关语句
      */
-    String MYSQL_EXIST_SQL = "select count(1) from information_schema.tables where table_name ='{}'";
-    String MYSQL_TABLE_STRUCTURE = "SELECT t.table_name tableName,t.table_comment tableComment, " +
-            "case when c.IS_NULLABLE='YES' then 1 else 0 end isNull, " +
-            "c.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue, " +
-            "case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length, " +
-            "case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength, " +
-            "case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement  " +
-            "FROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name='{}'";
+    String MYSQL_EXIST_SQL = "select count(1) from information_schema.tables where table_name ='{}' and table_schema = (select database())";
+    String MYSQL_TABLE_STRUCTURE = "SELECT t.table_name tableName,t.table_comment tableComment," +
+            " case when c.IS_NULLABLE='YES' then 1 else 0 end isNull," +
+            " c.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue," +
+            " case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length," +
+            " case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength," +
+            " case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement" +
+            " FROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name='{}'" +
+            " and c.table_schema = (select database()) AND t.table_schema = (SELECT DATABASE ()) ";
 
-    String MYSQL_CONSTRAINT_INFO = "select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName, " +
-            "    case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag " +
-            "from information_schema.statistics where table_name = '{}'  " +
-            "GROUP BY constraintName,constraintFlag";
+    String MYSQL_CONSTRAINT_INFO = "select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName," +
+            " case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag" +
+            " from information_schema.statistics where table_name = '{}' and table_schema = (select database())" +
+            " GROUP BY constraintName,constraintFlag";
 
     /**
      * sql_server相关语句

@@ -2,8 +2,8 @@ package io.gitee.zerowsh.actable.demo.entity.sqlserver;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
-import io.gitee.zerowsh.actable.annotation.Column;
-import io.gitee.zerowsh.actable.annotation.Table;
+import io.gitee.zerowsh.actable.annotation.AcColumn;
+import io.gitee.zerowsh.actable.annotation.AcTable;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,20 +15,20 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @TableName("t_zero")
-@Table(name = "t_zero", comment = "测试")
+@AcTable(name = "t_zero", comment = "测试")
 public class ZeroEntity extends Model<ZeroEntity> {
-    @Column(name = "id", comment = "主键", isKey = true, isAutoIncrement = true)
+    @AcColumn(name = "id", comment = "主键", isKey = true, isAutoIncrement = true)
     private Long id;
 
-    @Column(name = "name", comment = "名称", length = 20)
+    @AcColumn(name = "name", comment = "名称", length = 20)
     private String name;
 
-    @Column(name = "create_time", comment = "创建时间", length = 5, defaultValue = "getdate()")
+    @AcColumn(name = "create_time", comment = "创建时间", length = 5, defaultValue = "getdate()")
     private Timestamp createTime;
 
-    @Column(name = "update_time", comment = "修改时间")
+    @AcColumn(name = "update_time", comment = "修改时间")
     private Timestamp updateTime;
 
-    @Column(exclude = true)
+    @AcColumn(exclude = true)
     private Long zero;
 }

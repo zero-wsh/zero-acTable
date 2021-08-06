@@ -207,12 +207,13 @@ public class MysqlAcTableUtils {
                     continue;
                 }
                 String type = propertyInfo.getType();
+                String columnComment = Objects.isNull(propertyInfo.getColumnComment()) ? "" : propertyInfo.getColumnComment();
                 //判断类型、是否为空、是否自增、默认值，这些是否存在修改
                 boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
                         || !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue()))
                         || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
                         || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
-                        || !Objects.equals(propertyInfo.getColumnComment(), tableColumnInfo.getColumnComment());
+                        || !Objects.equals(columnComment, tableColumnInfo.getColumnComment());
 
                 int length = propertyInfo.getLength();
                 int decimalLength = propertyInfo.getDecimalLength();

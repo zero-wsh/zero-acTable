@@ -21,8 +21,7 @@ public @interface Table {
 
     /**
      * 表名
-     * 1.当@Table name和mybatis plus @TableName同时存在时，优先使用@TableName的value
-     * 2.两个注解都不存在或者设置的值都无效时，使用字段配合turn进行转换
+     * 注解不存在或者设置的值都无效时，使用字段配合turn进行转换
      */
     String name() default "";
 

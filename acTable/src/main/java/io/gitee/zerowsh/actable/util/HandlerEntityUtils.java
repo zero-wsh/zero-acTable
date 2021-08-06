@@ -4,6 +4,10 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
@@ -15,6 +19,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.persistence.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -44,11 +49,15 @@ public class HandlerEntityUtils {
         //用来判断是否有重复表名
         List<String> tableList = new ArrayList<>();
         for (String s : entityPackage.split(COMMA)) {
-            Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, AcTable.class);
-//            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
+            Set<Class<?>> acTableClass = ClassUtil.scanPackageByAnnotation(s, AcTable.class);
+            //mybatis plus兼容
+            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
+            //hibernate 兼容
+            Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, Table.class);
             Set<Class<?>> tableSet = new HashSet<>();
+            tableSet.addAll(acTableClass);
+            tableSet.addAll(tableNameClass);
             tableSet.addAll(tableClass);
-//            tableSet.addAll(tableNameClass);
             for (Class<?> cls : tableSet) {
                 if (Objects.nonNull(cls.getAnnotation(IgnoreTable.class))) {
                     continue;
@@ -60,19 +69,28 @@ public class HandlerEntityUtils {
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
                 AcTable acTable = cls.getAnnotation(AcTable.class);
-//                TableName tableNameAnn = cls.getAnnotation(TableName.class);
+                //mybatis plus兼容
+                TableName tableNameAnn = cls.getAnnotation(TableName.class);
+                //hibernate 兼容
+                Table tableAnn = cls.getAnnotation(Table.class);
                 String tableName = null;
                 String comment = DEFAULT_VALUE;
+                ApiModel apiModel = cls.getAnnotation(ApiModel.class);
                 if (Objects.nonNull(acTable)) {
                     tableName = acTable.name();
-                    ApiModel apiModel = cls.getAnnotation(ApiModel.class);
-                    comment = Objects.nonNull(apiModel) && StrUtil.isNotBlank(apiModel.value()) ? apiModel.value() : acTable.comment();
+                    comment = acTable.comment();
                 }
-//                if (Objects.nonNull(tableNameAnn)) {
-//                    tableName = tableNameAnn.value();
-//                }
+                if (Objects.nonNull(apiModel)) {
+                    comment = apiModel.value();
+                }
+                if (Objects.nonNull(tableNameAnn)) {
+                    tableName = tableNameAnn.value();
+                }
+                if (Objects.nonNull(tableAnn)) {
+                    tableName = tableAnn.name();
+                }
                 if (StrUtil.isBlank(tableName)) {
-                    throw new RuntimeException(StrUtil.format("@Table和@TableName 都没设置表名！！！"));
+                    throw new RuntimeException(StrUtil.format("AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table 都没设置表名！！！"));
                 }
                 if (tableList.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
@@ -152,25 +170,34 @@ public class HandlerEntityUtils {
             }
 
             AcColumn acColumn = field.getAnnotation(AcColumn.class);
+            //swagger兼容
             ApiModelProperty apiModelProperty = field.getAnnotation(ApiModelProperty.class);
-//            TableField tableField = field.getAnnotation(TableField.class);
-//            TableId tableId = field.getAnnotation(TableId.class);
+            //mybatis plus 兼容
+            TableField tableField = field.getAnnotation(TableField.class);
+            TableId tableId = field.getAnnotation(TableId.class);
+            //hibernate 兼容
+            Column column = field.getAnnotation(Column.class);
+            Id id = field.getAnnotation(Id.class);
+            GeneratedValue generatedValue = field.getAnnotation(GeneratedValue.class);
+            Transient transientAnn = field.getAnnotation(Transient.class);
             if (Objects.isNull(acColumn)) {
-//                if (Objects.nonNull(tableField) && !tableField.exist()) {
-//                    continue;
-//                }
-//                if (Objects.nonNull(tableField)) {
-//                    columnName = tableField.value();
-//                }
+                if (Objects.nonNull(tableField) && !tableField.exist()) {
+                    continue;
+                }
+                if (Objects.nonNull(tableField)) {
+                    columnName = tableField.value();
+                }
+                if (Objects.nonNull(column)) {
+                    columnName = column.name();
+                }
                 columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName;
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
-//                boolean isKey = Objects.nonNull(tableId);
-//                boolean isAutoIncrement = Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO);
-                boolean isKey = false;
-                boolean isAutoIncrement = false;
+                boolean isKey = Objects.nonNull(tableId) || Objects.nonNull(id);
+                boolean isAutoIncrement = (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
+                        || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
                 propertyInfoBuilder.columnName(columnName)
                         .columnComment(columnComment)
@@ -185,26 +212,30 @@ public class HandlerEntityUtils {
                     keyList.add(columnName);
                 }
             } else {
-//                if ((Objects.nonNull(tableField) && !tableField.exist()) || acColumn.exclude()) {
-//                    continue;
-//                }
+                if ((Objects.nonNull(tableField) && !tableField.exist())
+                        || Objects.nonNull(transientAnn)
+                        || acColumn.exclude()) {
+                    continue;
+                }
                 if (StrUtil.isNotBlank(acColumn.name())) {
                     columnName = acColumn.name();
                 }
-//                if (Objects.nonNull(tableField)) {
-//                    columnName = tableField.value();
-//                }
+                if (Objects.nonNull(tableField)) {
+                    columnName = tableField.value();
+                }
+                if (Objects.nonNull(column)) {
+                    columnName = column.name();
+                }
                 columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
 
-//                boolean isKey = Objects.nonNull(tableId) || acColumn.isKey();
-//                boolean isAutoIncrement = acColumn.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
-                boolean isKey = acColumn.isKey();
-                boolean isAutoIncrement = acColumn.isAutoIncrement();
-
+                boolean isKey = Objects.nonNull(tableId) || Objects.nonNull(id) || acColumn.isKey();
+                boolean isAutoIncrement = acColumn.isAutoIncrement()
+                        || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
+                        || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
                 propertyInfoBuilder.columnName(columnName)
                         .columnComment(columnComment)

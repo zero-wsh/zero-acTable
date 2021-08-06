@@ -181,7 +181,8 @@ public class HandlerEntityUtils {
             GeneratedValue generatedValue = field.getAnnotation(GeneratedValue.class);
             Transient transientAnn = field.getAnnotation(Transient.class);
             if (Objects.isNull(acColumn)) {
-                if (Objects.nonNull(tableField) && !tableField.exist()) {
+                if ((Objects.nonNull(tableField) && !tableField.exist())
+                        || Objects.nonNull(transientAnn)) {
                     continue;
                 }
                 if (Objects.nonNull(tableField)) {

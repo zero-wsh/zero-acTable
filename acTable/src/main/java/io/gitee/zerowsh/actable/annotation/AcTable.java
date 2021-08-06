@@ -17,13 +17,12 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 //将此注解包含在javadoc中
 @Documented
-public @interface Table {
+public @interface AcTable {
 
     /**
      * 表名
-     * 注解不存在或者设置的值都无效时，使用字段配合turn进行转换
      */
-    String name() default "";
+    String name();
 
 
     /**

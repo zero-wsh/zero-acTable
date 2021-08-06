@@ -16,7 +16,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 // 将此注解包含在javadoc中
 @Documented
-public @interface Column {
+public @interface AcColumn {
 
     /**
      * 建表时是否排除
@@ -25,7 +25,7 @@ public @interface Column {
 
     /**
      * 字段名
-     * 1.当@Column name和mybatis plus @TableField同时存在时，优先使用@TableField的value
+     * 1.当@AcColumn name和mybatis plus @TableField同时存在时，优先使用@TableField的value
      * 2.两个注解都不存在或者设置的值都无效时，使用字段配合turn进行转换
      */
     String name() default "";

@@ -5,12 +5,14 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.annotation.*;
-import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -42,7 +44,7 @@ public class HandlerEntityUtils {
         //用来判断是否有重复表名
         List<String> tableList = new ArrayList<>();
         for (String s : entityPackage.split(COMMA)) {
-            Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, Table.class);
+            Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, AcTable.class);
 //            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
             Set<Class<?>> tableSet = new HashSet<>();
             tableSet.addAll(tableClass);
@@ -57,13 +59,14 @@ public class HandlerEntityUtils {
                 List<TableInfo.UniqueInfo> uniqueInfoList = new ArrayList<>();
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
-                Table table = cls.getAnnotation(Table.class);
+                AcTable acTable = cls.getAnnotation(AcTable.class);
 //                TableName tableNameAnn = cls.getAnnotation(TableName.class);
                 String tableName = null;
                 String comment = DEFAULT_VALUE;
-                if (Objects.nonNull(table)) {
-                    tableName = table.name();
-                    comment = table.comment();
+                if (Objects.nonNull(acTable)) {
+                    tableName = acTable.name();
+                    ApiModel apiModel = cls.getAnnotation(ApiModel.class);
+                    comment = Objects.nonNull(apiModel) && StrUtil.isNotBlank(apiModel.value()) ? apiModel.value() : acTable.comment();
                 }
 //                if (Objects.nonNull(tableNameAnn)) {
 //                    tableName = tableNameAnn.value();
@@ -79,7 +82,7 @@ public class HandlerEntityUtils {
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
-                        uniqueInfoList, keyList, propertyList, table,
+                        uniqueInfoList, keyList, propertyList, acTable,
                         null, turn, acTableProperties);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
@@ -115,7 +118,7 @@ public class HandlerEntityUtils {
      * @param uniqueInfoList
      * @param keyList
      * @param propertyList      判断类中是否有重复字段
-     * @param table
+     * @param acTable
      * @param excludeSuperField
      * @param turn
      * @return
@@ -125,7 +128,7 @@ public class HandlerEntityUtils {
                                      List<TableInfo.UniqueInfo> uniqueInfoList,
                                      List<String> keyList,
                                      List<String> propertyList,
-                                     Table table,
+                                     AcTable acTable,
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
                                      AcTableProperties acTableProperties) {
@@ -148,17 +151,18 @@ public class HandlerEntityUtils {
                 continue;
             }
 
-            Column column = field.getAnnotation(Column.class);
+            AcColumn acColumn = field.getAnnotation(AcColumn.class);
+            ApiModelProperty apiModelProperty = field.getAnnotation(ApiModelProperty.class);
 //            TableField tableField = field.getAnnotation(TableField.class);
 //            TableId tableId = field.getAnnotation(TableId.class);
-            if (Objects.isNull(column)) {
+            if (Objects.isNull(acColumn)) {
 //                if (Objects.nonNull(tableField) && !tableField.exist()) {
 //                    continue;
 //                }
 //                if (Objects.nonNull(tableField)) {
 //                    columnName = tableField.value();
 //                }
-                columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName;
+                columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName;
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
@@ -167,7 +171,9 @@ public class HandlerEntityUtils {
 //                boolean isAutoIncrement = Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO);
                 boolean isKey = false;
                 boolean isAutoIncrement = false;
+                String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
                 propertyInfoBuilder.columnName(columnName)
+                        .columnComment(columnComment)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(COLUMN_IS_NULL_DEF)
                         .isKey(isKey)
@@ -179,34 +185,36 @@ public class HandlerEntityUtils {
                     keyList.add(columnName);
                 }
             } else {
-//                if ((Objects.nonNull(tableField) && !tableField.exist()) || column.exclude()) {
+//                if ((Objects.nonNull(tableField) && !tableField.exist()) || acColumn.exclude()) {
 //                    continue;
 //                }
-                if (StrUtil.isNotBlank(column.name())) {
-                    columnName = column.name();
+                if (StrUtil.isNotBlank(acColumn.name())) {
+                    columnName = acColumn.name();
                 }
 //                if (Objects.nonNull(tableField)) {
 //                    columnName = tableField.value();
 //                }
-                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, table) : columnName);
+                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
                 propertyList.add(columnName);
 
-//                boolean isKey = Objects.nonNull(tableId) || column.isKey();
-//                boolean isAutoIncrement = column.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
-                boolean isKey = column.isKey();
-                boolean isAutoIncrement = column.isAutoIncrement();
+//                boolean isKey = Objects.nonNull(tableId) || acColumn.isKey();
+//                boolean isAutoIncrement = acColumn.isAutoIncrement() || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO));
+                boolean isKey = acColumn.isKey();
+                boolean isAutoIncrement = acColumn.isAutoIncrement();
+
+                String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
                 propertyInfoBuilder.columnName(columnName)
-                        .columnComment(judgeIsNull(column.comment()))
-                        .decimalLength(column.decimalLength())
-                        .defaultValue(judgeIsNull(column.defaultValue()))
+                        .columnComment(columnComment)
+                        .decimalLength(acColumn.decimalLength())
+                        .defaultValue(judgeIsNull(acColumn.defaultValue()))
                         .isAutoIncrement(isAutoIncrement)
                         .isKey(isKey)
-                        .isNull(column.isNull())
-                        .length(column.length())
-                        .type(getTypeStr(field.getType().getName(), column.type()));
+                        .isNull(acColumn.isNull())
+                        .length(acColumn.length())
+                        .type(getTypeStr(field.getType().getName(), acColumn.type()));
                 //处理主键
                 if (isKey) {
                     keyList.add(columnName);
@@ -223,7 +231,7 @@ public class HandlerEntityUtils {
                 String value = index.value();
                 TableInfo.IndexInfo indexInfo = TableInfo.IndexInfo.builder()
                         .value(StrUtil.isBlank(value) ? IDX_ + fieldName : IDX_ + value)
-                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, table)} : columns).build();
+                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, acTable)} : columns).build();
                 indexInfoList.add(indexInfo);
             }
             /*
@@ -235,7 +243,7 @@ public class HandlerEntityUtils {
                 String value = unique.value();
                 TableInfo.UniqueInfo uniqueInfo = TableInfo.UniqueInfo.builder()
                         .value(StrUtil.isBlank(value) ? UK_ + fieldName : UK_ + value)
-                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, table)} : columns).build();
+                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, acTable)} : columns).build();
                 uniqueInfoList.add(uniqueInfo);
             }
 
@@ -245,7 +253,7 @@ public class HandlerEntityUtils {
             return;
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
-                uniqueInfoList, keyList, propertyList, table,
+                uniqueInfoList, keyList, propertyList, acTable,
                 cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties);
     }
 
@@ -256,8 +264,8 @@ public class HandlerEntityUtils {
      * @param turn
      * @return
      */
-    private static String fieldNameTurnDatabaseColumn(String fieldName, TurnEnums turn, Table table) {
-        TurnEnums columnTurn = Objects.nonNull(table) ? table.turn() : TurnEnums.DEFAULT;
+    private static String fieldNameTurnDatabaseColumn(String fieldName, TurnEnums turn, AcTable acTable) {
+        TurnEnums columnTurn = Objects.nonNull(acTable) ? acTable.turn() : TurnEnums.DEFAULT;
         if (Objects.equals(columnTurn, TurnEnums.DEFAULT)) {
             if (turn == TurnEnums.SOURCE) {
                 return fieldName;

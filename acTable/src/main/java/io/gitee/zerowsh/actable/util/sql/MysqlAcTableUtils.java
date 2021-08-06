@@ -48,7 +48,6 @@ public class MysqlAcTableUtils {
         StringBuilder propertySb = new StringBuilder();
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
-            String columnComment = propertyInfo.getColumnComment();
             propertySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, columnName));
             splicingColumnInfo(propertySb, propertyInfo, tableName);
         }
@@ -212,7 +211,8 @@ public class MysqlAcTableUtils {
                 boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
                         || !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue()))
                         || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
-                        || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
+                        || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
+                        || !Objects.equals(propertyInfo.getColumnComment(), tableColumnInfo.getColumnComment());
 
                 int length = propertyInfo.getLength();
                 int decimalLength = propertyInfo.getDecimalLength();

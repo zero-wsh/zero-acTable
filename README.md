@@ -29,11 +29,11 @@ mysql、sql_server
 
 ```
 #配置实体类的包名，多个用逗号隔开
-zero.ac-table.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
+zero.ac-acTable.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
 #支持的模式（默认NONE）
-zero.ac-table.model=ADD_OR_UPDATE_OR_DEL
+zero.ac-acTable.model=ADD_OR_UPDATE_OR_DEL
 #初始化脚本位置resources文件夹下
-zero.ac-table.script=db/*.sql
+zero.ac-acTable.script=db/*.sql
 ```
 
 #### 注解说明

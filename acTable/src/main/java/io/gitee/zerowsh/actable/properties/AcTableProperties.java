@@ -1,4 +1,4 @@
-package io.gitee.zerowsh.actable.config;
+package io.gitee.zerowsh.actable.properties;
 
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zero.ac-table")
 @Getter
 @Setter
-public class AcTableConfig {
+public class AcTableProperties {
     /**
      * 实体类的包名,多个用逗号隔开
      */

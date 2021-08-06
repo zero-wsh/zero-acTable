@@ -3,7 +3,7 @@ package io.gitee.zerowsh.actable.service;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.config.AcTableConfig;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
@@ -18,11 +18,8 @@ import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
@@ -42,26 +39,23 @@ import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
  *
  * @author zero
  */
-@Component
 @Slf4j
 public class AcTableService {
-    @Resource
-    private AcTableConfig acTableConfig;
-    @Resource
-    private DataSource dataSource;
 
-    @PostConstruct
-    public void startHandler() {
-        this.acTable();
+    private AcTableService() {
     }
 
-    public void acTable() {
-        if (Objects.isNull(acTableConfig.getModel())
-                || Objects.equals(acTableConfig.getModel(), ModelEnums.NONE)) {
+    public AcTableService(DataSource dataSource, AcTableProperties acTableProperties) {
+        this.acTable(dataSource, acTableProperties);
+    }
+
+    public void acTable(DataSource dataSource, AcTableProperties acTableProperties) {
+        if (Objects.isNull(acTableProperties.getModel())
+                || Objects.equals(acTableProperties.getModel(), ModelEnums.NONE)) {
             log.info("自动建表不做任何操作！！！");
             return;
         }
-        String entityPackage = acTableConfig.getEntityPackage();
+        String entityPackage = acTableProperties.getEntityPackage();
         if (StrUtil.isBlank(entityPackage)) {
             log.warn("请设置实体类包路径！！！");
             return;
@@ -69,20 +63,18 @@ public class AcTableService {
         Connection connection = null;
         try {
             connection = dataSource.getConnection();
-            //设置手动提交
-            connection.setAutoCommit(false);
             String databaseType = connection.getMetaData().getDatabaseProductName();
             AcTableThreadLocalUtils.setDatabaseType(databaseType);
             if (StrUtil.isBlank(databaseType)) {
                 throw new RuntimeException("获取数据库类型失败！！！");
             }
-            List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableConfig);
+            List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties);
             if (CollectionUtil.isEmpty(tableInfoList)) {
-                log.warn("没有找到@Table或@TableName标记的类！！！ entityPackage={}", entityPackage);
+                log.warn("没有找到@Table标记的类！！！ entityPackage={}", entityPackage);
                 return;
             }
 
-            ModelEnums modelEnums = acTableConfig.getModel();
+            ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
             boolean exist = handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList);
             if (!exist) {
@@ -95,20 +87,11 @@ public class AcTableService {
                 }
                 log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
             }
-            this.executeScript(connection, acTableConfig.getScript());
-            //提交事务
-            connection.commit();
+            this.executeScript(connection, acTableProperties.getScript());
             AcTableThreadLocalUtils.remove();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (Objects.nonNull(connection)) {
-                try {
-                    connection.setAutoCommit(true);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
             IoUtil.close(connection);
         }
     }

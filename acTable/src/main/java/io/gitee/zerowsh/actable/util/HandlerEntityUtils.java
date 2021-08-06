@@ -5,7 +5,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.annotation.*;
-import io.gitee.zerowsh.actable.config.AcTableConfig;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
@@ -31,12 +31,12 @@ public class HandlerEntityUtils {
     /**
      * 通过实体类包名获取所有表信息 (字段 索引 唯一值等)
      *
-     * @param acTableConfig
+     * @param acTableProperties
      * @return
      */
-    public static List<TableInfo> getTableInfoByEntityPackage(AcTableConfig acTableConfig) {
-        String entityPackage = acTableConfig.getEntityPackage();
-        TurnEnums turn = acTableConfig.getTurn();
+    public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties) {
+        String entityPackage = acTableProperties.getEntityPackage();
+        TurnEnums turn = acTableProperties.getTurn();
         //实体类表信息
         List<TableInfo> tableInfoList = new ArrayList<>();
         //用来判断是否有重复表名
@@ -80,7 +80,7 @@ public class HandlerEntityUtils {
                 builder.comment(judgeIsNull(comment));
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
                         uniqueInfoList, keyList, propertyList, table,
-                        null, turn, acTableConfig);
+                        null, turn, acTableProperties);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
                 }
@@ -128,7 +128,7 @@ public class HandlerEntityUtils {
                                      Table table,
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
-                                     AcTableConfig acTableConfig) {
+                                     AcTableProperties acTableProperties) {
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -246,7 +246,7 @@ public class HandlerEntityUtils {
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
                 uniqueInfoList, keyList, propertyList, table,
-                cls.getAnnotation(ExcludeSuperField.class), turn, acTableConfig);
+                cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties);
     }
 
     /**

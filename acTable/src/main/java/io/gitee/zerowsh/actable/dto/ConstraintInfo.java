@@ -16,6 +16,7 @@ public class ConstraintInfo {
      * 1 主键
      * 2 唯一键
      * 3 索引
+     * 4 默认值 （基本没用）
      */
     private Integer constraintFlag;
 }

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import io.gitee.zerowsh.actable.annotation.AcColumn;
 import io.gitee.zerowsh.actable.annotation.AcTable;
+import io.gitee.zerowsh.actable.annotation.Index;
+import io.gitee.zerowsh.actable.annotation.Unique;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,9 +26,12 @@ public class ZeroEntity extends Model<ZeroEntity> {
     private String name;
 
     @AcColumn(name = "create_time", comment = "创建时间", length = 5, defaultValue = "getdate()")
+    @Unique
+    @Index(columns = {"update_time", "create_time"})
     private Timestamp createTime;
 
     @AcColumn(name = "update_time", comment = "修改时间")
+    @Index
     private Timestamp updateTime;
 
     @AcColumn(exclude = true)

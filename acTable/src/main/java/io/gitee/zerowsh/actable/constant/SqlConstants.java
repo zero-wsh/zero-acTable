@@ -57,7 +57,7 @@ public interface SqlConstants {
             "            where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName " +
             "            for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c    " +
             "      group by c.constraintName,c.constraintType,c.constraintFlag";
-    String SQL_SERVER_DEFAULT_INFO = "select t.name constraintName,syscolumns.name constraintColumnName from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
+    String SQL_SERVER_DEFAULT_INFO = "select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
             "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
             "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault";
 

@@ -3,13 +3,13 @@ package io.gitee.zerowsh.actable.service;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.util.AcTableThreadLocalUtils;
 import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
 import io.gitee.zerowsh.actable.util.IoUtil;
@@ -90,7 +90,8 @@ public class AcTableService {
             this.executeScript(connection, acTableProperties.getScript());
             AcTableThreadLocalUtils.remove();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("执行自动建表异常：", e);
+            throw new RuntimeException("执行自动建表异常");
         } finally {
             IoUtil.close(connection);
         }

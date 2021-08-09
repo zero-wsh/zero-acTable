@@ -2,6 +2,7 @@ package io.gitee.zerowsh.actable.util.sql;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
@@ -94,16 +95,17 @@ public class MysqlAcTableUtils {
      * @param tableName
      * @param resultList
      */
-    private static void createPk(Set<String> delConstraintSet, TableInfo tableInfo) {
+    private static void createPk(Set<String> delConstraintSet, TableInfo tableInfo, boolean tableExistPk) {
         List<String> keyList = tableInfo.getKeyList();
-        String tableName = tableInfo.getName();
-        //添加主键时肯定会删除主键
-        if (delConstraintSet.contains(MYSQL_DEL_PK) && CollectionUtil.isNotEmpty(keyList)) {
-            StringBuilder keySb = new StringBuilder();
-            for (String key : keyList) {
-                keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(COMMA);
+        //添加主键
+        if (CollectionUtil.isNotEmpty(keyList)) {
+            if ((tableExistPk && delConstraintSet.contains(MYSQL_DEL_PK)) || !tableExistPk) {
+                StringBuilder keySb = new StringBuilder();
+                for (String key : keyList) {
+                    keySb.append(StrUtil.format(MYSQL_KEYWORD_HANDLE, key)).append(COMMA);
+                }
+                delConstraintSet.add(StrUtil.format(MYSQL_ADD_PK, keySb.deleteCharAt(keySb.length() - 1)));
             }
-            delConstraintSet.add(StrUtil.format(MYSQL_ADD_PK, keySb.deleteCharAt(keySb.length() - 1)));
         }
     }
 
@@ -122,7 +124,7 @@ public class MysqlAcTableUtils {
                 String value = uniqueInfo.getValue();
                 String[] columns = uniqueInfo.getColumns();
                 StringBuilder uniqueSb = new StringBuilder();
-                if (handleUkList(constraintInfoList, columns)) {
+                if (handleUkList(constraintInfoList, uniqueInfo)) {
                     continue;
                 }
                 for (String column : columns) {
@@ -153,7 +155,7 @@ public class MysqlAcTableUtils {
                 String value = indexInfo.getValue();
                 String[] columns = indexInfo.getColumns();
                 StringBuilder uniqueSb = new StringBuilder();
-                if (handleIdxList(constraintInfoList, columns)) {
+                if (handleIdxList(constraintInfoList, indexInfo)) {
                     continue;
                 }
                 for (String column : columns) {
@@ -182,6 +184,12 @@ public class MysqlAcTableUtils {
                                                  List<TableColumnInfo> tableColumnInfoList,
                                                  List<ConstraintInfo> constraintInfoList,
                                                  ModelEnums modelEnums) {
+        boolean tableExistPk = false;
+        if (CollectionUtil.isNotEmpty(constraintInfoList)) {
+            tableExistPk = constraintInfoList.stream().filter(constraintInfo -> {
+                return Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK);
+            }).count() > 0;
+        }
         List<String> resultList = new ArrayList<>();
         TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
         String tableName = firstTableColumnInfo.getTableName();
@@ -239,7 +247,7 @@ public class MysqlAcTableUtils {
                         break;
                     default:
                 }
-                if (propertyInfo.isKey() != tableColumnInfo.isKey()) {
+                if ((propertyInfo.isKey() != tableColumnInfo.isKey()) && tableExistPk) {
                     delConstraintSet.add(MYSQL_DEL_PK);
                 }
                 if (existUpdate) {
@@ -254,7 +262,7 @@ public class MysqlAcTableUtils {
             if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
                 //如果数据库有但是实体类没有，进行删除
                 if (!flag) {
-                    if (tableColumnInfo.isKey()) {
+                    if (tableColumnInfo.isKey() && tableExistPk) {
                         delConstraintSet.add(MYSQL_DEL_PK);
                     }
                     updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(COMMA);
@@ -265,7 +273,7 @@ public class MysqlAcTableUtils {
         //如果实体类有但是数据库没有，进行新增
         if (CollectionUtil.isNotEmpty(propertyInfoList)) {
             for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
-                if (propertyInfo.isKey()) {
+                if (propertyInfo.isKey() && tableExistPk) {
                     delConstraintSet.add(MYSQL_DEL_PK);
                 }
                 StringBuilder propertySb = new StringBuilder();
@@ -274,10 +282,10 @@ public class MysqlAcTableUtils {
             }
         }
         //添加主键
-        createPk(delConstraintSet, tableInfo);
+        createPk(delConstraintSet, tableInfo, tableExistPk);
         //添加唯一键
         createUk(delConstraintSet, tableInfo, constraintInfoList);
-//        //添加索引
+        //添加索引
         createIdx(delConstraintSet, tableInfo, constraintInfoList);
         if (CollectionUtil.isNotEmpty(delConstraintSet)) {
             for (String s : delConstraintSet) {
@@ -394,14 +402,17 @@ public class MysqlAcTableUtils {
      * @param constraintInfoList
      * @return
      */
-    public static boolean handleUkList(List<ConstraintInfo> constraintInfoList, String[] columns) {
+    public static boolean handleUkList(List<ConstraintInfo> constraintInfoList, TableInfo.UniqueInfo uniqueInfo) {
         Set<String> set = new HashSet<>();
         Iterator<ConstraintInfo> it = constraintInfoList.iterator();
         while (it.hasNext()) {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
+                String[] columns = uniqueInfo.getColumns();
+                String value = uniqueInfo.getValue();
                 Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())
+                        || Objects.equals(constraintInfo.getConstraintName(), value)) {
                     it.remove();
                     return true;
                 }
@@ -416,14 +427,17 @@ public class MysqlAcTableUtils {
      * @param constraintInfoList
      * @return
      */
-    public static boolean handleIdxList(List<ConstraintInfo> constraintInfoList, String[] columns) {
+    public static boolean handleIdxList(List<ConstraintInfo> constraintInfoList, TableInfo.IndexInfo indexInfo) {
         Set<String> set = new HashSet<>();
         Iterator<ConstraintInfo> it = constraintInfoList.iterator();
         while (it.hasNext()) {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
+                String[] columns = indexInfo.getColumns();
+                String value = indexInfo.getValue();
                 Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())) {
+                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())
+                        || Objects.equals(constraintInfo.getConstraintName(), value)) {
                     it.remove();
                     return true;
                 }

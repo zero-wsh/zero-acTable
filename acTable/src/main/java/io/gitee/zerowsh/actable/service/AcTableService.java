@@ -77,8 +77,9 @@ public class AcTableService {
 
             List<String> executeSqlList = new ArrayList<>();
             List<String> acTableHistoryList = new ArrayList<>();
-            boolean exist = handleExecuteSql(connection, acTableProperties, tableInfoList, executeSqlList, acTableHistoryList);
-            if (!exist) {
+            boolean supportDatabase = handleExecuteSql(connection, acTableProperties, tableInfoList, executeSqlList, acTableHistoryList);
+            //判断是否支持数据库
+            if (!supportDatabase) {
                 return;
             }
             if (CollectionUtil.isNotEmpty(executeSqlList)) {

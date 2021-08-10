@@ -13,6 +13,13 @@ import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
  */
 public interface SqlConstants {
     /**
+     * 数据库相同语句
+     */
+    String GET_HISTORY = "select table_info_md5 from {} where table_name='{}'";
+    String INSERT_HISTORY = "insert into {}(table_name,table_info_md5,create_time) values('{}','{}',{})";
+    String UPDATE_HISTORY = "update {} set update_time={},table_info_md5='{}' where table_name='{}'";
+
+    /**
      * mysql相关语句
      */
     String MYSQL_EXIST_SQL = "select count(1) from information_schema.tables where table_name ='{}' and table_schema = (select database())";
@@ -38,9 +45,6 @@ public interface SqlConstants {
             "  PRIMARY KEY (`table_name`)" +
             " )COMMENT='自动建表历史记录'";
 
-    String MYSQL_GET_HISTORY = "select table_info_md5 from {} where table_name='{}'";
-    String MYSQL_INSERT_HISTORY = "insert into {}(table_name,table_info_md5,create_time) values('{}','{}',{})";
-    String MYSQL_UPDATE_HISTORY = "update {} set update_time={},table_info_md5='{}' where table_name='{}'";
 
     /**
      * sql_server相关语句
@@ -72,6 +76,15 @@ public interface SqlConstants {
     String SQL_SERVER_DEFAULT_INFO = "select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
             "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
             "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault";
+    /**
+     * sqlserver创建备注需要多条语句，这里就不创建备注了
+     */
+    String SQL_SERVER_CREATE_HISTORY = "CREATE TABLE [{}] (" +
+            " [table_name] nvarchar(50) NOT NULL," +
+            " [table_info_md5] nvarchar(50) NOT NULL," +
+            " [create_time] bigint  NULL," +
+            " [update_time] bigint  NULL," +
+            "   CONSTRAINT [PK__ac_table_history] PRIMARY KEY CLUSTERED ([table_name]))";
 
     /**
      * 通过不同类型获取执行的sql语句
@@ -95,16 +108,16 @@ public interface SqlConstants {
                         sql = MYSQL_CONSTRAINT_INFO;
                         break;
                     case GET_HISTORY:
-                        sql = MYSQL_GET_HISTORY;
+                        sql = GET_HISTORY;
                         break;
                     case CREATE_HISTORY:
                         sql = MYSQL_CREATE_HISTORY;
                         break;
                     case INSERT_HISTORY:
-                        sql = MYSQL_INSERT_HISTORY;
+                        sql = INSERT_HISTORY;
                         break;
                     case UPDATE_HISTORY:
-                        sql = MYSQL_UPDATE_HISTORY;
+                        sql = UPDATE_HISTORY;
                         break;
                     default:
                 }
@@ -122,6 +135,18 @@ public interface SqlConstants {
                         break;
                     case DEFAULT_INFO:
                         sql = SQL_SERVER_DEFAULT_INFO;
+                        break;
+                    case GET_HISTORY:
+                        sql = GET_HISTORY;
+                        break;
+                    case CREATE_HISTORY:
+                        sql = SQL_SERVER_CREATE_HISTORY;
+                        break;
+                    case INSERT_HISTORY:
+                        sql = INSERT_HISTORY;
+                        break;
+                    case UPDATE_HISTORY:
+                        sql = UPDATE_HISTORY;
                         break;
                     default:
                 }

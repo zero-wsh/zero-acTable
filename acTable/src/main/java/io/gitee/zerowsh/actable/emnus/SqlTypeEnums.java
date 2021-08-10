@@ -22,5 +22,21 @@ public enum SqlTypeEnums {
     /**
      * 获取表默认值约束
      */
-    DEFAULT_INFO
+    DEFAULT_INFO,
+    /**
+     * 创建历史表
+     */
+    CREATE_HISTORY,
+    /**
+     * 获取建表历史数据
+     */
+    GET_HISTORY,
+    /**
+     * 添加历史数据
+     */
+    INSERT_HISTORY,
+    /**
+     * 修改历史数据
+     */
+    UPDATE_HISTORY
 }

@@ -3,6 +3,7 @@ package io.gitee.zerowsh.actable.dto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+@ToString
 public class TableInfo {
     private String name;
     private String comment;
@@ -37,6 +39,7 @@ public class TableInfo {
     @Getter
     @Setter
     @Builder
+    @ToString
     public static class PropertyInfo {
         private String columnName;
         private boolean isKey;
@@ -52,6 +55,7 @@ public class TableInfo {
     @Getter
     @Setter
     @Builder
+    @ToString
     public static class IndexInfo {
         private String value;
         private String[] columns;
@@ -60,6 +64,7 @@ public class TableInfo {
     @Getter
     @Setter
     @Builder
+    @ToString
     public static class UniqueInfo {
         private String value;
         private String[] columns;

@@ -127,6 +127,29 @@ public class JdbcUtil {
         }
     }
 
+    /**
+     * 查询返回List集合
+     *
+     * @param conn
+     * @param sql
+     * @param obj
+     * @return
+     */
+    public static String getAcTableInfo(Connection conn, String sql, Object... obj) throws SQLException {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = handlePrepareStatement(conn, sql, obj);
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                return rs.getString("table_info_md5");
+            }
+        } finally {
+            IoUtil.close(ps, rs);
+        }
+        return null;
+    }
+
 
 //    /**
 //     * 查询返回List集合

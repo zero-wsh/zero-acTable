@@ -3,6 +3,7 @@ package io.gitee.zerowsh.actable.service;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
@@ -74,15 +75,19 @@ public class AcTableService {
                 return;
             }
 
-            ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
-            boolean exist = handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList);
+            List<String> acTableHistoryList = new ArrayList<>();
+            boolean exist = handleExecuteSql(connection, acTableProperties, tableInfoList, executeSqlList, acTableHistoryList);
             if (!exist) {
                 return;
             }
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
                 log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
                 for (String sql : executeSqlList) {
+                    JdbcUtil.executeSql(connection, sql);
+                }
+                //处理历史数据
+                for (String sql : acTableHistoryList) {
                     JdbcUtil.executeSql(connection, sql);
                 }
                 log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
@@ -101,21 +106,45 @@ public class AcTableService {
      * 处理sql语句
      *
      * @param connection
-     * @param modelEnums
+     * @param acTableProperties
      * @param tableInfoList
      * @param executeSqlList
      * @return 是否支持数据库
      * @throws SQLException
      */
 
-    public boolean handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
+    public boolean handleExecuteSql(Connection connection,
+                                    AcTableProperties acTableProperties,
+                                    List<TableInfo> tableInfoList,
+                                    List<String> executeSqlList,
+                                    List<String> acTableHistoryList) throws SQLException {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+        ModelEnums modelEnums = acTableProperties.getModel();
+        String historyTable = acTableProperties.getHistoryTable();
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
+            String encrypt = SecureUtil.md5(tableInfo.toString());
             if (JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), tableName)) {
-                /*
-                 * 存在--改表
-                 */
+                if (JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), historyTable)) {
+                    //查询数据
+                    String acTableInfo = JdbcUtil.getAcTableInfo(connection, SqlConstants.getExecuteSql(SqlTypeEnums.GET_HISTORY), historyTable, tableName);
+                    if (StrUtil.isBlank(acTableInfo)) {
+                        //新增
+                        acTableHistoryList.add(StrUtil.format(SqlConstants.getExecuteSql(SqlTypeEnums.INSERT_HISTORY), historyTable, tableName, encrypt, System.currentTimeMillis()));
+                    } else {
+                        if (Objects.equals(encrypt, acTableInfo)) {
+                            continue;
+                        }
+                        //修改
+                        acTableHistoryList.add(StrUtil.format(SqlConstants.getExecuteSql(SqlTypeEnums.UPDATE_HISTORY),
+                                historyTable, System.currentTimeMillis(), encrypt, tableName));
+                    }
+
+                } else {
+                    JdbcUtil.executeSql(connection, SqlConstants.getExecuteSql(SqlTypeEnums.CREATE_HISTORY), historyTable);
+                    //新增
+                    acTableHistoryList.add(StrUtil.format(SqlConstants.getExecuteSql(SqlTypeEnums.INSERT_HISTORY), historyTable, tableName, encrypt, System.currentTimeMillis()));
+                }
                 List<TableColumnInfo> tableColumnInfoList = JdbcUtil.getTableColumnInfoList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.TABLE_STRUCTURE), tableName);
                 List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.CONSTRAINT_INFO), tableName);
                 switch (databaseType) {
@@ -150,6 +179,11 @@ public class AcTableService {
                         log.warn(StrUtil.format("自动建表暂不支持 [{}]！！！", databaseType));
                         return false;
                 }
+                if (!JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), historyTable)) {
+                    JdbcUtil.executeSql(connection, SqlConstants.getExecuteSql(SqlTypeEnums.CREATE_HISTORY), historyTable);
+                }
+                //新增
+                acTableHistoryList.add(StrUtil.format(SqlConstants.getExecuteSql(SqlTypeEnums.INSERT_HISTORY), historyTable, tableName, encrypt, System.currentTimeMillis()));
             }
         }
         return true;

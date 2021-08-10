@@ -30,6 +30,18 @@ public interface SqlConstants {
             " from information_schema.statistics where table_name = '{}' and table_schema = (select database())" +
             " GROUP BY constraintName,constraintFlag";
 
+    String MYSQL_CREATE_HISTORY = "CREATE TABLE `{}` (" +
+            " `table_name` varchar(50) NOT NULL COMMENT '表名'," +
+            " `table_info_md5` varchar(50) NOT NULL COMMENT '表信息'," +
+            " `create_time` bigint(20) DEFAULT NULL COMMENT '创建时间'," +
+            " `update_time` bigint(20) DEFAULT NULL COMMENT '修改时间'," +
+            "  PRIMARY KEY (`table_name`)" +
+            " )COMMENT='自动建表历史记录'";
+
+    String MYSQL_GET_HISTORY = "select table_info_md5 from {} where table_name='{}'";
+    String MYSQL_INSERT_HISTORY = "insert into {}(table_name,table_info_md5,create_time) values('{}','{}',{})";
+    String MYSQL_UPDATE_HISTORY = "update {} set update_time={},table_info_md5='{}' where table_name='{}'";
+
     /**
      * sql_server相关语句
      */
@@ -61,6 +73,12 @@ public interface SqlConstants {
             "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
             "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault";
 
+    /**
+     * 通过不同类型获取执行的sql语句
+     *
+     * @param sqlTypeEnums
+     * @return
+     */
     static String getExecuteSql(SqlTypeEnums sqlTypeEnums) {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         String sql = null;
@@ -75,6 +93,18 @@ public interface SqlConstants {
                         break;
                     case CONSTRAINT_INFO:
                         sql = MYSQL_CONSTRAINT_INFO;
+                        break;
+                    case GET_HISTORY:
+                        sql = MYSQL_GET_HISTORY;
+                        break;
+                    case CREATE_HISTORY:
+                        sql = MYSQL_CREATE_HISTORY;
+                        break;
+                    case INSERT_HISTORY:
+                        sql = MYSQL_INSERT_HISTORY;
+                        break;
+                    case UPDATE_HISTORY:
+                        sql = MYSQL_UPDATE_HISTORY;
                         break;
                     default:
                 }

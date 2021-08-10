@@ -33,5 +33,9 @@ public class AcTableProperties {
      * 初始化数据脚本
      */
     private String script;
+    /**
+     * 历史记录表名
+     */
+    private String historyTable = "ac_table_history";
 
 }

@@ -1,7 +1,7 @@
 # zero-acTable
 
 #### 介绍
-zero-acTable是基于MP（mybatis plus）实现的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作，指定初始化脚本就能执行数据初始化，内置测试demo。
+zero-acTable是基于实体类创建表的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作，指定初始化脚本就能执行数据初始化，内置测试demo。
 
 #### 数据库支持
 mysql、sql_server
@@ -18,8 +18,8 @@ mysql、sql_server
 9、支持数据初始化（数据库连接需要配置allowMultiQueries=true）
 10、忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
 11、排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
-
-#### Maven依赖
+###您只需三步即可集成
+#### 1、Maven依赖
 
 ```
 <dependency>
@@ -29,7 +29,7 @@ mysql、sql_server
 </dependency>
 ```
 
-#### 配置说明
+#### 2、配置说明
 
 ```
 #配置实体类的包名，多个用逗号隔开
@@ -38,6 +38,15 @@ zero.ac-acTable.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
 zero.ac-acTable.model=ADD_OR_UPDATE_OR_DEL
 #初始化脚本位置resources文件夹下
 zero.ac-acTable.script=db/*.sql
+```
+
+#### 3、注入Bean
+
+```
+@Bean
+ public AcTableService acTableService(DataSource dataSource, AcTableProperties acTableProperties) {
+     return new AcTableService(dataSource, acTableProperties);
+ }
 ```
 
 #### 注解说明
@@ -76,7 +85,7 @@ zero.ac-acTable.script=db/*.sql
 |columns   |列名   |   |   |
 
 #### 注意事项
-暂无
+1、注入acTableService时，请保证业务系统查询数据前执行，否则将导致查询不到表
 
 #### 联系方式
 QQ：254353372

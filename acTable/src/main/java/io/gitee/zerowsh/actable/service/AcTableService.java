@@ -76,10 +76,7 @@ public class AcTableService {
 
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
-            boolean exist = handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList);
-            if (!exist) {
-                return;
-            }
+            handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList);
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
                 log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
                 for (String sql : executeSqlList) {
@@ -104,11 +101,10 @@ public class AcTableService {
      * @param modelEnums
      * @param tableInfoList
      * @param executeSqlList
-     * @return 是否支持数据库
      * @throws SQLException
      */
 
-    public boolean handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
+    public void handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
@@ -134,8 +130,7 @@ public class AcTableService {
                                 modelEnums));
                         break;
                     default:
-                        log.warn(StrUtil.format("自动建表暂不支持 [{}]！！！", databaseType));
-                        return false;
+                        throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
                 }
 
             } else {
@@ -147,12 +142,10 @@ public class AcTableService {
                         executeSqlList.addAll(SqlServerAcTableUtils.getCreateTableSql(tableInfo));
                         break;
                     default:
-                        log.warn(StrUtil.format("自动建表暂不支持 [{}]！！！", databaseType));
-                        return false;
+                        throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
                 }
             }
         }
-        return true;
     }
 
     /**
@@ -190,8 +183,7 @@ public class AcTableService {
                 }
             }
         } catch (IOException | SQLException e) {
-            log.warn("执行 [{}] 初始化数据失败！！！读取文件异常 [{}]", databaseType, fileUrl);
-            return;
+            throw new RuntimeException(StrUtil.format("初始化数据失败， fileUrl={} message={}", fileUrl, e.getMessage()));
         }
         log.info("执行 [{}] 初始化数据完成！！！", databaseType);
     }

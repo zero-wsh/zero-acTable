@@ -1,7 +1,6 @@
 package io.gitee.zerowsh.actable.service;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -17,16 +16,15 @@ import io.gitee.zerowsh.actable.util.JdbcUtil;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ResourceUtils;
 
 import javax.sql.DataSource;
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -160,31 +158,20 @@ public class AcTableService {
             return;
         }
         log.info("执行 [{}] 初始化数据。。。", databaseType);
-        List<org.springframework.core.io.Resource> list = new ArrayList<>();
         for (String s : script.split(COMMA)) {
+            Resource resource = new PathMatchingResourcePatternResolver().getResource(ResourceUtils.CLASSPATH_URL_PREFIX + s);
             try {
-                list.addAll(Arrays.asList(new PathMatchingResourcePatternResolver().getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s)));
-            } catch (IOException e) {
-                log.warn("[{}] 没找到初始化数据文件 [{}]！！！", databaseType, s);
-                return;
-            }
-        }
-
-        String fileUrl = null;
-        try {
-            for (org.springframework.core.io.Resource resource : list) {
-                File file = resource.getFile();
-                if (file.isFile()) {
-                    fileUrl = file.getAbsolutePath();
-                    String sql = FileUtil.readUtf8String(file);
+                if (resource.isFile()) {
+                    String sql = cn.hutool.core.io.IoUtil.readUtf8(resource.getInputStream());
                     if (StrUtil.isNotBlank(sql)) {
                         JdbcUtil.executeSql(connection, sql);
                     }
                 }
+            } catch (IOException | SQLException e) {
+                throw new RuntimeException(StrUtil.format("初始化数据失败，fileUrl={} message={}", s, e.getMessage()));
             }
-        } catch (IOException | SQLException e) {
-            throw new RuntimeException(StrUtil.format("初始化数据失败， fileUrl={} message={}", fileUrl, e.getMessage()));
         }
+
         log.info("执行 [{}] 初始化数据完成！！！", databaseType);
     }
 }

@@ -159,16 +159,17 @@ public class AcTableService {
         }
         log.info("执行 [{}] 初始化数据。。。", databaseType);
         for (String s : script.split(COMMA)) {
-            Resource resource = new PathMatchingResourcePatternResolver().getResource(ResourceUtils.CLASSPATH_URL_PREFIX + s);
             try {
-                if (resource.isFile()) {
+                Resource[] resources = new PathMatchingResourcePatternResolver()
+                        .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
+                for (Resource resource : resources) {
                     String sql = cn.hutool.core.io.IoUtil.readUtf8(resource.getInputStream());
                     if (StrUtil.isNotBlank(sql)) {
                         JdbcUtil.executeSql(connection, sql);
                     }
                 }
             } catch (IOException | SQLException e) {
-                throw new RuntimeException(StrUtil.format("初始化数据失败，fileUrl={} message={}", s, e.getMessage()));
+                throw new RuntimeException(StrUtil.format("初始化数据失败， message={}", e.getMessage()));
             }
         }
 

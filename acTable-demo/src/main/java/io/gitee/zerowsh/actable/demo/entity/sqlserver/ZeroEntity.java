@@ -6,6 +6,7 @@ import io.gitee.zerowsh.actable.annotation.AcColumn;
 import io.gitee.zerowsh.actable.annotation.AcTable;
 import io.gitee.zerowsh.actable.annotation.Index;
 import io.gitee.zerowsh.actable.annotation.Unique;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -34,6 +35,6 @@ public class ZeroEntity extends Model<ZeroEntity> {
     @Index
     private Timestamp updateTime;
 
-    @AcColumn(exclude = true)
-    private Long zero;
+    @AcColumn(type = ColumnTypeEnums.VARBINARY_MAX)
+    private byte[] zero;
 }

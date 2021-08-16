@@ -315,8 +315,12 @@ public class SqlServerAcTableUtils {
                         addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, propertyInfo.getColumnName());
                         defFlag = true;
                     }
+                    boolean typeNotExistUpdate = (Objects.equals(tableColumnInfo.getTypeStr(), type)
+                            || (type.contains("max") && tableColumnInfo.getLength() == -1
+                            && (Objects.equals(tableColumnInfo.getTypeStr(), "varbinary")
+                            || Objects.equals(tableColumnInfo.getTypeStr(), "varchar") || Objects.equals(tableColumnInfo.getTypeStr(), "nvarchar"))));
                     //类型、是否为空、是否自增
-                    boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
+                    boolean existUpdate = !typeNotExistUpdate
                             || defExistUpdate
                             || propertyInfo.isKey() != tableColumnInfo.isKey()
                             || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))

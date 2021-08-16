@@ -33,6 +33,7 @@ public enum ColumnTypeEnums {
      */
 
     TIME("time"),
+    LONGBLOB("longblob"),
     /**
      * sqlserver才有的
      */
@@ -42,6 +43,8 @@ public enum ColumnTypeEnums {
     XML("xml"),
     DATETIME2("datetime2"),
     MONEY("money"),
+    VARBINARY("varbinary"),
+    VARBINARY_MAX("varbinary(max)"),
     NCHAR("nchar");
 
     private String type;
@@ -57,10 +60,11 @@ public enum ColumnTypeEnums {
     /**
      * mysql不存在的类型
      */
-    public static final List<ColumnTypeEnums> MYSQL_NOT_EXIST_TYPE = Arrays.asList(NVARCHAR, NVARCHAR_MAX, VARCHAR_MAX, XML, DATETIME2, MONEY, NCHAR);
+    public static final List<ColumnTypeEnums> MYSQL_NOT_EXIST_TYPE = Arrays.asList(NVARCHAR,
+            NVARCHAR_MAX, VARCHAR_MAX, XML, DATETIME2, MONEY, NCHAR, VARBINARY, VARBINARY_MAX);
 
     /**
      * sqlServer不存在的类型
      */
-    public static final List<ColumnTypeEnums> SQL_SERVER_NOT_EXIST_TYPE = Arrays.asList(TIME);
+    public static final List<ColumnTypeEnums> SQL_SERVER_NOT_EXIST_TYPE = Arrays.asList(TIME, LONGBLOB);
 }

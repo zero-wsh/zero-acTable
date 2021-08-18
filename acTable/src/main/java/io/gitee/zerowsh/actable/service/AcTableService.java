@@ -9,7 +9,10 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
-import io.gitee.zerowsh.actable.util.*;
+import io.gitee.zerowsh.actable.util.AcTableThreadLocalUtils;
+import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
+import io.gitee.zerowsh.actable.util.IoUtil;
+import io.gitee.zerowsh.actable.util.JdbcUtil;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +21,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ResourceUtils;
 
 import javax.sql.DataSource;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -28,6 +35,7 @@ import java.util.Objects;
 import static cn.hutool.core.util.StrUtil.COMMA;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
+import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
 /**
  * mysql实现
@@ -160,12 +168,9 @@ public class AcTableService {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    String sqls = cn.hutool.core.io.IoUtil.readUtf8(resource.getInputStream());
-                    if (StrUtil.isNotBlank(sqls)) {
-                        List<String> strings = AcTableUtils.splitSql(sqls);
-                        for (String sql : strings) {
-                            JdbcUtil.executeSql(connection, sql);
-                        }
+                    List<String> strings = inputStreamToString(resource.getInputStream());
+                    for (String sql : strings) {
+                        JdbcUtil.executeSql(connection, sql);
                     }
                 }
             } catch (IOException | SQLException e) {
@@ -174,5 +179,50 @@ public class AcTableService {
         }
 
         log.info("执行 [{}] 初始化数据完成！！！", databaseType);
+    }
+
+    /**
+     * input流转字符串
+     *
+     * @param inputStream
+     * @return
+     */
+    public List<String> inputStreamToString(InputStream inputStream) {
+        List<String> resultList = new ArrayList<>();
+        try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+            String str;
+            String oneSqL = "";
+            while ((str = bufferedReader.readLine()) != null) {
+                //按分号拆分
+                String[] split = str.split(SEMICOLON);
+                for (String s : split) {
+                    oneSqL = oneSqL + s;
+                    //统计当前sqZ里面单引号的个数(所有个数减去注释个数即正常个数)
+                    int allCount = StrUtil.count(oneSqL, QUOTATION);
+                    int noUseCount = StrUtil.count(oneSqL, BACK_SLASH + QUOTATION);
+                    allCount -= noUseCount;
+                    allCount -= noUseCount;
+                    //如果对称代表分号有效
+                    if (allCount % 2 == 0) {
+                        if (StrUtil.isNotBlank(oneSqL)) {
+                            if (oneSqL.toLowerCase().contains(INSERT)
+                                    || oneSqL.toLowerCase().contains(UPDATE)
+                                    || oneSqL.toLowerCase().contains(DELETE)) {
+                                resultList.add(oneSqL.trim());
+                                //重新初始化
+                                oneSqL = "";
+                            } else {
+                                oneSqL = oneSqL + "\r\n";
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("读取初始化文件文件异常", e);
+        }
+        return resultList;
     }
 }

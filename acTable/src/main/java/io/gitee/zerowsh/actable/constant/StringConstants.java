@@ -17,4 +17,7 @@ public interface StringConstants {
     String QUOTATION = "'";
     String QUOTE = "\"";
     String BACK_SLASH = "\\";
+    String INSERT = "insert";
+    String UPDATE = "update";
+    String DELETE = "delete";
 }

@@ -107,7 +107,7 @@ public class AcTableUtils {
             allCount -= noUseCount;
             allCount1 -= noUseCount1;
             //如果对称代表分号有效
-            if (allCount % 2 == 0 || allCount1 % 2 == 0) {
+            if (allCount % 2 == 0 && allCount1 % 2 == 0) {
                 if (StrUtil.isNotBlank(oneSqL)) {
                     resultList.add(oneSqL.trim());
                 }

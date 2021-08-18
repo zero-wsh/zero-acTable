@@ -9,10 +9,7 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
-import io.gitee.zerowsh.actable.util.AcTableThreadLocalUtils;
-import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
-import io.gitee.zerowsh.actable.util.IoUtil;
-import io.gitee.zerowsh.actable.util.JdbcUtil;
+import io.gitee.zerowsh.actable.util.*;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -163,9 +160,12 @@ public class AcTableService {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    String sql = cn.hutool.core.io.IoUtil.readUtf8(resource.getInputStream());
-                    if (StrUtil.isNotBlank(sql)) {
-                        JdbcUtil.executeSql(connection, sql);
+                    String sqls = cn.hutool.core.io.IoUtil.readUtf8(resource.getInputStream());
+                    if (StrUtil.isNotBlank(sqls)) {
+                        List<String> strings = AcTableUtils.splitSql(sqls);
+                        for (String sql : strings) {
+                            JdbcUtil.executeSql(connection, sql);
+                        }
                     }
                 }
             } catch (IOException | SQLException e) {

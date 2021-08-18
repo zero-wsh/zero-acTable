@@ -15,7 +15,7 @@ mysql、sql_server
 6、兼容swagger @ApiModel、@ApiModelProperty注解设置（表、字段）备注
 7、字段上没有任何注解，支持属性名转数据库列名（默认驼峰下划线），字段类型转数据库类型
 8、支持约束（主键、唯一键、索引、默认值（sql_server才具有））的创建、修改、删除
-9、支持数据初始化（数据库连接需要配置allowMultiQueries=true）
+9、支持数据初始化
 10、忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
 11、排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
 ###您只需三步即可集成

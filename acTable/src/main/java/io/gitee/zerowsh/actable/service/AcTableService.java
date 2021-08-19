@@ -16,6 +16,7 @@ import io.gitee.zerowsh.actable.util.JdbcUtil;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ResourceUtils;
@@ -35,7 +36,7 @@ import java.util.Objects;
 import static cn.hutool.core.util.StrUtil.COMMA;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
-import static io.gitee.zerowsh.actable.constant.StringConstants.*;
+import static io.gitee.zerowsh.actable.constant.StringConstants.SEMICOLON;
 
 /**
  * mysql实现
@@ -197,29 +198,23 @@ public class AcTableService {
                 //按分号拆分
                 String[] split = str.split(SEMICOLON);
                 for (String s : split) {
-                    oneSqL = oneSqL + s;
-                    //统计当前sqZ里面单引号的个数(所有个数减去注释个数即正常个数)
-                    int allCount = StrUtil.count(oneSqL, QUOTATION);
-                    int noUseCount = StrUtil.count(oneSqL, BACK_SLASH + QUOTATION);
-                    allCount -= noUseCount;
-                    allCount -= noUseCount;
-                    //如果对称代表分号有效
-                    if (allCount % 2 == 0) {
-                        if (StrUtil.isNotBlank(oneSqL)) {
-                            if (oneSqL.toLowerCase().contains(INSERT)
-                                    || oneSqL.toLowerCase().contains(UPDATE)
-                                    || oneSqL.toLowerCase().contains(DELETE)) {
-                                resultList.add(oneSqL.trim());
-                                //重新初始化
-                                oneSqL = "";
-                            } else {
-                                oneSqL = oneSqL + "\r\n";
-                            }
-                        }
+                    if (StrUtil.isNotBlank(oneSqL)) {
+                        s = oneSqL + s;
+                    }
+                    try {
+                        CCJSqlParserUtil.parse(s,
+                                parser -> parser.withSquareBracketQuotation(true));
+                        oneSqL = "";
+                        resultList.add(s);
+                    } catch (Exception e) {
+                        oneSqL = s;
                     }
                 }
-            }
 
+                if (StrUtil.isNotBlank(oneSqL)) {
+                    oneSqL = oneSqL + "\r\n";
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException("读取初始化文件文件异常", e);
         }

@@ -5,16 +5,16 @@ server:
     time-zone: GMT+8
 spring:
   profiles:
-    active: sql_server
+    active: mysql
   datasource:
     druid:
       # 配置测试查询语句
       validation-query: SELECT 1
       filters: stat,slf4j
-      filter:
-        wall:
-          config:
-            variantCheck: false
-            noneBaseStatementAllow: true
-            commentAllow: true
-            multiStatementAllow: true
+#      filter:
+#        wall:
+#          config:
+#            variantCheck: false
+#            noneBaseStatementAllow: true
+#            commentAllow: true
+#            multiStatementAllow: true

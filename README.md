@@ -7,9 +7,9 @@ zero-acTable是基于实体类创建表的开源项目。您只需要在实体�
 mysql、sql_server
 
 #### 功能介绍
-1、兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
-2、兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
-3、兼容MP @TableId注解设置自增
+- 1、兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
+- 2、兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
+- 3、兼容MP @TableId注解设置自增
 4、兼容hibernate @Table、@Column、@Id、@Transient注解
 5、兼容hibernate @GeneratedValue注解设置自增
 6、兼容swagger @ApiModel、@ApiModelProperty注解设置（表、字段）备注

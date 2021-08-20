@@ -2,10 +2,14 @@ package io.gitee.zerowsh.actable.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLIfStatement;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
 import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.DatabaseEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
@@ -16,7 +20,6 @@ import io.gitee.zerowsh.actable.util.JdbcUtil;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ResourceUtils;
@@ -169,7 +172,7 @@ public class AcTableService {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    List<String> strings = inputStreamToString(resource.getInputStream());
+                    List<String> strings = inputStreamToString(resource.getInputStream(), DatabaseEnums.getDruidTypeByType(databaseType));
                     for (String sql : strings) {
                         JdbcUtil.executeSql(connection, sql);
                     }
@@ -188,7 +191,7 @@ public class AcTableService {
      * @param inputStream
      * @return
      */
-    public List<String> inputStreamToString(InputStream inputStream) {
+    public List<String> inputStreamToString(InputStream inputStream, String druidType) {
         List<String> resultList = new ArrayList<>();
         try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
@@ -199,20 +202,29 @@ public class AcTableService {
                 String[] split = str.split(SEMICOLON);
                 for (String s : split) {
                     if (StrUtil.isNotBlank(oneSqL)) {
-                        s = oneSqL + s;
+                        s = oneSqL + "\r\n" + s;
                     }
                     try {
-                        CCJSqlParserUtil.parse(s,
-                                parser -> parser.withSquareBracketQuotation(true));
+                        if (StrUtil.isBlank(s)) {
+                            continue;
+                        }
+                        List<SQLStatement> sqlStatements = SQLParserUtils.createSQLStatementParser(s, druidType).parseStatementList();
+                        if (Objects.equals(druidType, DatabaseEnums.SQL_SERVER.getDruidType())) {
+                            SQLIfStatement sqlIfStatement = (SQLIfStatement) sqlStatements.get(0);
+                            if (sqlIfStatement.getStatements().size() == 0) {
+                                oneSqL = s;
+                                continue;
+                            }
+                        }
                         oneSqL = "";
+                        //排除注释
+                        if (s.trim().startsWith("--") || s.trim().startsWith("/*")) {
+                            continue;
+                        }
                         resultList.add(s);
                     } catch (Exception e) {
                         oneSqL = s;
                     }
-                }
-
-                if (StrUtil.isNotBlank(oneSqL)) {
-                    oneSqL = oneSqL + "\r\n";
                 }
             }
         } catch (Exception e) {

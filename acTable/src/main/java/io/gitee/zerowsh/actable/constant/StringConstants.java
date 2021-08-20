@@ -14,4 +14,5 @@ public interface StringConstants {
     String LEFT_SQ_BRACKET = "[";
     String RIGHT_SQ_BRACKET = "]";
     String SEMICOLON = ";";
+
 }

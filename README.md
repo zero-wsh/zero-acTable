@@ -7,18 +7,19 @@ zero-acTable是基于实体类创建表的开源项目。您只需要在实体�
 mysql、sql_server
 
 #### 功能介绍
-1、兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
-2、兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
-3、兼容MP @TableId注解设置自增
-4、兼容hibernate @Table、@Column、@Id、@Transient注解
-5、兼容hibernate @GeneratedValue注解设置自增
-6、兼容swagger @ApiModel、@ApiModelProperty注解设置（表、字段）备注
-7、字段上没有任何注解，支持属性名转数据库列名（默认驼峰下划线），字段类型转数据库类型
-8、支持约束（主键、唯一键、索引、默认值（sql_server才具有））的创建、修改、删除
-9、支持数据初始化
-10、忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
-11、排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
-###您只需三步即可集成
+- 兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
+- 兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
+- 兼容MP @TableId注解设置自增
+- 兼容hibernate @Table、@Column、@Id、@Transient注解
+- 兼容hibernate @GeneratedValue注解设置自增
+- 兼容swagger @ApiModel、@ApiModelProperty注解设置（表、字段）备注
+- 字段上没有任何注解，支持属性名转数据库列名（默认驼峰下划线），字段类型转数据库类型
+- 支持约束（主键、唯一键、索引、默认值（sql_server才具有））的创建、修改、删除
+- 支持数据初始化
+- 忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
+- 排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
+
+### 您只需三步即可集成
 #### 1、Maven依赖
 
 ```
@@ -85,10 +86,10 @@ zero.ac-acTable.script=db/*.sql
 |columns   |列名   |   |   |
 
 #### 注意事项
-1、注入acTableService时，请保证业务系统查询数据前执行，否则将导致查询不到表
-2、有初始化脚本时，必须保证可重复执行，多个插入语句使用);隔开
-3、有初始化脚本时，在字符串和注释中不要出现);分割符
-4、有初始化脚本时，并且使用了druid连接池filters不要配置wall
+- 注入acTableService时，请保证业务系统查询数据前执行，否则将导致查询不到表
+- 有初始化脚本时，必须保证可重复执行，多个插入语句使用);隔开
+- 有初始化脚本时，在字符串和注释中不要出现);分割符
+- 有初始化脚本时，并且使用了druid连接池filters不要配置wall
 
 #### 联系方式
 QQ：254353372

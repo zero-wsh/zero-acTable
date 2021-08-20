@@ -6,3 +6,15 @@ server:
 spring:
   profiles:
     active: sql_server
+  datasource:
+    druid:
+      # 配置测试查询语句
+      validation-query: SELECT 1
+      filters: stat,slf4j
+      filter:
+        wall:
+          config:
+            variantCheck: false
+            noneBaseStatementAllow: true
+            commentAllow: true
+            multiStatementAllow: true

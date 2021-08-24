@@ -8,7 +8,7 @@ mysql、sql_server
 
 #### 功能介绍
 - 兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
-- 兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
+- 兼容MP @TableField、@TableName,@TableId注解
 - 兼容MP @TableId注解设置自增
 - 兼容hibernate @Table、@Column、@Id、@Transient注解
 - 兼容hibernate @GeneratedValue注解设置自增
@@ -64,6 +64,7 @@ zero.ac-acTable.script=db/*.sql
 |---|---|---|---|
 |exclude   |排除该字段   |false   |true/false   |
 |name   |列名称   |   |   |
+|order   |字段排序   |0   |整数   |
 |comment   |列注释   |   |   |
 |length   |字段长度   |255   |   |
 |decimalLength   |小数位数   |0   |   |

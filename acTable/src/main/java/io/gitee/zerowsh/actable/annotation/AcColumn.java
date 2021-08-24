@@ -30,8 +30,6 @@ public @interface AcColumn {
 
     /**
      * 字段名
-     * 1.当@AcColumn name和mybatis plus @TableField同时存在时，优先使用@TableField的value
-     * 2.两个注解都不存在或者设置的值都无效时，使用字段配合turn进行转换
      */
     String name() default "";
 
@@ -53,8 +51,6 @@ public @interface AcColumn {
 
     /**
      * 是否为可以为null，true是可以，false是不可以，默认为true
-     *
-     * @return 是否为可以为null，true是可以，false是不可以，默认为true
      */
     boolean isNull() default AcTableConstants.COLUMN_IS_NULL_DEF;
 
@@ -64,7 +60,7 @@ public @interface AcColumn {
     boolean isKey() default false;
 
     /**
-     * 是否自动递增（mysql只有主键才能使用）
+     * 是否自动递增（mysql只有主键才能设置自增）
      */
     boolean isAutoIncrement() default false;
 

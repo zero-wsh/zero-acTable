@@ -27,16 +27,12 @@ public @interface AcTable {
 
     /**
      * 表注释
-     *
-     * @return 表注释
      */
     String comment() default AcTableConstants.DEFAULT_VALUE;
 
 
     /**
      * 当字段没有标记@Column注解时，java转数据库的方式
-     *
-     * @return boolean
      */
     TurnEnums turn() default TurnEnums.DEFAULT;
 }

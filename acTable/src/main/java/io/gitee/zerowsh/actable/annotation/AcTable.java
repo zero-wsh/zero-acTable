@@ -22,7 +22,7 @@ public @interface AcTable {
     /**
      * 表名
      */
-    String name();
+    String name() default "";
 
 
     /**

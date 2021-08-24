@@ -349,6 +349,7 @@ public class MysqlAcTableUtils {
             case VARCHAR:
             case DATETIME:
             case CHAR:
+            case BIGINT:
                 propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
                 if (Objects.equals(type, ColumnTypeEnums.DATETIME.getType())) {
                     //对类型特殊处理
@@ -453,7 +454,7 @@ public class MysqlAcTableUtils {
         put("java.lang.Integer", ColumnTypeEnums.INT);
         put("int", ColumnTypeEnums.INT);
         put("java.lang.Boolean", ColumnTypeEnums.BIT);
-        put("java.lang.boolean", ColumnTypeEnums.BIT);
+        put("boolean", ColumnTypeEnums.BIT);
         put("java.util.Date", ColumnTypeEnums.DATETIME);
         put("java.sql.Timestamp", ColumnTypeEnums.DATETIME);
         put("java.time.LocalDate", ColumnTypeEnums.DATETIME);

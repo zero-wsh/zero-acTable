@@ -785,7 +785,7 @@ public class SqlServerAcTableUtils {
         put("java.lang.Integer", ColumnTypeEnums.INT);
         put("int", ColumnTypeEnums.INT);
         put("java.lang.Boolean", ColumnTypeEnums.BIT);
-        put("java.lang.boolean", ColumnTypeEnums.BIT);
+        put("boolean", ColumnTypeEnums.BIT);
         put("java.util.Date", ColumnTypeEnums.DATETIME2);
         put("java.sql.Timestamp", ColumnTypeEnums.DATETIME2);
         put("java.time.LocalDate", ColumnTypeEnums.DATETIME2);

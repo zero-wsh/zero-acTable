@@ -75,6 +75,7 @@ public class HandlerEntityUtils {
                 Table tableAnn = cls.getAnnotation(Table.class);
                 String tableName = null;
                 String comment = DEFAULT_VALUE;
+                //swagger 兼容
                 ApiModel apiModel = cls.getAnnotation(ApiModel.class);
                 if (Objects.nonNull(acTable)) {
                     tableName = acTable.name();
@@ -83,10 +84,10 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(apiModel)) {
                     comment = apiModel.value();
                 }
-                if (Objects.nonNull(tableNameAnn)) {
+                if (Objects.nonNull(tableNameAnn) && StrUtil.isNotBlank(tableName)) {
                     tableName = tableNameAnn.value();
                 }
-                if (Objects.nonNull(tableAnn)) {
+                if (Objects.nonNull(tableAnn) && StrUtil.isNotBlank(tableName)) {
                     tableName = tableAnn.name();
                 }
                 if (StrUtil.isBlank(tableName)) {
@@ -100,10 +101,22 @@ public class HandlerEntityUtils {
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
-                        uniqueInfoList, keyList, propertyList, acTable,
+                        uniqueInfoList, propertyList, acTable,
                         null, turn, acTableProperties);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
+                }
+                //通过order字段排序
+                Collections.sort(propertyInfoList, new Comparator<TableInfo.PropertyInfo>() {  //排序
+                    @Override
+                    public int compare(TableInfo.PropertyInfo o1, TableInfo.PropertyInfo o2) {
+                        return o1.getOrder() - o2.getOrder();
+                    }
+                });
+                for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
+                    if (propertyInfo.isKey()) {
+                        keyList.add(propertyInfo.getColumnName());
+                    }
                 }
                 TableInfo tableInfo = builder.keyList(keyList)
                         .propertyInfoList(propertyInfoList)
@@ -134,7 +147,6 @@ public class HandlerEntityUtils {
      * @param propertyInfoList
      * @param indexInfoList
      * @param uniqueInfoList
-     * @param keyList
      * @param propertyList      判断类中是否有重复字段
      * @param acTable
      * @param excludeSuperField
@@ -144,7 +156,6 @@ public class HandlerEntityUtils {
     private static void getFieldInfo(Class<?> cls, List<TableInfo.PropertyInfo> propertyInfoList,
                                      List<TableInfo.IndexInfo> indexInfoList,
                                      List<TableInfo.UniqueInfo> uniqueInfoList,
-                                     List<String> keyList,
                                      List<String> propertyList,
                                      AcTable acTable,
                                      ExcludeSuperField excludeSuperField,
@@ -170,7 +181,7 @@ public class HandlerEntityUtils {
             }
 
             AcColumn acColumn = field.getAnnotation(AcColumn.class);
-            //swagger兼容
+            //swagger 兼容
             ApiModelProperty apiModelProperty = field.getAnnotation(ApiModelProperty.class);
             //mybatis plus 兼容
             TableField tableField = field.getAnnotation(TableField.class);
@@ -208,23 +219,17 @@ public class HandlerEntityUtils {
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
                         .type(AcTableUtils.handleType(field.getType().getName()));
-                //处理主键
-                if (isKey) {
-                    keyList.add(columnName);
-                }
             } else {
                 if ((Objects.nonNull(tableField) && !tableField.exist())
                         || Objects.nonNull(transientAnn)
                         || acColumn.exclude()) {
                     continue;
                 }
-                if (StrUtil.isNotBlank(acColumn.name())) {
-                    columnName = acColumn.name();
-                }
-                if (Objects.nonNull(tableField)) {
+                columnName = acColumn.name();
+                if (Objects.nonNull(tableField) && StrUtil.isBlank(columnName)) {
                     columnName = tableField.value();
                 }
-                if (Objects.nonNull(column)) {
+                if (Objects.nonNull(column) && StrUtil.isBlank(columnName)) {
                     columnName = column.name();
                 }
                 columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
@@ -244,13 +249,10 @@ public class HandlerEntityUtils {
                         .defaultValue(judgeIsNull(acColumn.defaultValue()))
                         .isAutoIncrement(isAutoIncrement)
                         .isKey(isKey)
+                        .order(acColumn.order())
                         .isNull(acColumn.isNull())
                         .length(acColumn.length())
                         .type(getTypeStr(field.getType().getName(), acColumn.type()));
-                //处理主键
-                if (isKey) {
-                    keyList.add(columnName);
-                }
             }
             propertyInfoList.add(propertyInfoBuilder.build());
 
@@ -285,7 +287,7 @@ public class HandlerEntityUtils {
             return;
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
-                uniqueInfoList, keyList, propertyList, acTable,
+                uniqueInfoList, propertyList, acTable,
                 cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties);
     }
 

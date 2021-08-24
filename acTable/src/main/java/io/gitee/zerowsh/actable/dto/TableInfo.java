@@ -40,6 +40,7 @@ public class TableInfo {
     public static class PropertyInfo {
         private String columnName;
         private boolean isKey;
+        private int order;
         private String type;
         private int length;
         private int decimalLength;

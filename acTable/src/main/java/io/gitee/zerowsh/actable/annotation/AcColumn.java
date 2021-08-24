@@ -24,6 +24,11 @@ public @interface AcColumn {
     boolean exclude() default false;
 
     /**
+     * 建表时字段顺序
+     */
+    int order() default 0;
+
+    /**
      * 字段名
      * 1.当@AcColumn name和mybatis plus @TableField同时存在时，优先使用@TableField的value
      * 2.两个注解都不存在或者设置的值都无效时，使用字段配合turn进行转换

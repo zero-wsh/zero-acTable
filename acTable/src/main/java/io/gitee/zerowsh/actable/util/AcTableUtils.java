@@ -50,10 +50,10 @@ public class AcTableUtils {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case SQL_SERVER:
-                var = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(var).getSqlServer();
+                var = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(var);
                 break;
             case MYSQL:
-                var = JavaTypeTurnColumnTypeEnums.getMysqlByValue(var).getMysql();
+                var = JavaTypeTurnColumnTypeEnums.getMysqlByValue(var);
                 break;
             default:
         }

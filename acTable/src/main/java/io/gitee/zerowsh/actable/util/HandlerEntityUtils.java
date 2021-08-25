@@ -14,8 +14,6 @@ import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
-import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
-import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
@@ -323,9 +321,9 @@ public class HandlerEntityUtils {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case SQL_SERVER:
-                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType).getSqlServer() : type.getSqlServer();
+                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : type.getSqlServer();
             case MYSQL:
-                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getMysqlByValue(fieldType).getMysql() : type.getMysql();
+                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getMysqlByValue(fieldType) : type.getMysql();
             default:
         }
         return null;

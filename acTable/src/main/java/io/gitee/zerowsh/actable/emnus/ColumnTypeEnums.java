@@ -3,6 +3,8 @@ package io.gitee.zerowsh.actable.emnus;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
+
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.DEFAULT_VALUE;
 
 /**
@@ -72,5 +74,23 @@ public enum ColumnTypeEnums {
 
     public String getSqlServer() {
         return StrUtil.isBlank(sqlServer) ? NVARCHAR.getSqlServer() : sqlServer;
+    }
+
+    public static ColumnTypeEnums getMysqlByValue(String type) {
+        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
+            if (Objects.equals(types.getMysql(), type)) {
+                return types;
+            }
+        }
+        return ColumnTypeEnums.VARCHAR;
+    }
+
+    public static ColumnTypeEnums getSqlServerByValue(String type) {
+        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
+            if (Objects.equals(types.getSqlServer(), type)) {
+                return types;
+            }
+        }
+        return ColumnTypeEnums.NVARCHAR;
     }
 }

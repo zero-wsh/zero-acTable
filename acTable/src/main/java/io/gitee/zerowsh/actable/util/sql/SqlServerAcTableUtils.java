@@ -328,7 +328,7 @@ public class SqlServerAcTableUtils {
                             || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
                     int length = propertyInfo.getLength();
                     int decimalLength = propertyInfo.getDecimalLength();
-                    ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(type);
+                    ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
                     //长度、精度
                     switch (typeEnum) {
                         case NVARCHAR:
@@ -721,7 +721,7 @@ public class SqlServerAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(type);
+        ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
         switch (typeEnum) {
             case VARCHAR:
             case NVARCHAR:

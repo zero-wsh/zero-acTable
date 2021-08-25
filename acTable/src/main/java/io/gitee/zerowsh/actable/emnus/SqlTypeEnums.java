@@ -7,6 +7,14 @@ package io.gitee.zerowsh.actable.emnus;
  */
 public enum SqlTypeEnums {
     /**
+     * 删除表
+     */
+    DROP_TABLE,
+    /**
+     * 获取所有表
+     */
+    GET_ALL_TABLE,
+    /**
      * 判断是否存在表
      */
     EXIST_TABLE,

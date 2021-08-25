@@ -110,9 +110,16 @@ public class AcTableService {
 
     public void handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+        if (Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)) {
+            List<String> tableNameList = JdbcUtil.getTableNameList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.GET_ALL_TABLE));
+            for (String tableName : tableNameList) {
+                JdbcUtil.executeSql(connection, SqlConstants.getExecuteSql(SqlTypeEnums.DROP_TABLE), tableName);
+            }
+        }
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
-            if (JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), tableName)) {
+            if (!Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)
+                    && JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), tableName)) {
                 /*
                  * 存在--改表
                  */

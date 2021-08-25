@@ -120,4 +120,29 @@ public class JdbcUtil {
             IoUtil.close(ps, rs);
         }
     }
+
+    /**
+     * 获取数据库中所有表
+     *
+     * @param conn
+     * @param sql
+     * @param obj
+     * @return
+     */
+    public static List<String> getTableNameList(Connection conn, String sql, Object... obj) throws SQLException {
+        //创建一个list集合对象来存储查询数据
+        List<String> list = new ArrayList<>();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = handlePrepareStatement(conn, sql, obj);
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(rs.getString("name"));
+            }
+            return list;
+        } finally {
+            IoUtil.close(ps, rs);
+        }
+    }
 }

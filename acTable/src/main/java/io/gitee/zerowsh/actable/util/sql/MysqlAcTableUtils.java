@@ -227,7 +227,7 @@ public class MysqlAcTableUtils {
                 int length = propertyInfo.getLength();
                 int decimalLength = propertyInfo.getDecimalLength();
                 //判断长度、精度，是否修改
-                ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getMysqlByValue(type);
+                ColumnTypeEnums typeEnum = ColumnTypeEnums.getMysqlByValue(type);
                 switch (typeEnum) {
                     case VARCHAR:
                     case CHAR:
@@ -345,7 +345,7 @@ public class MysqlAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getMysqlByValue(type);
+        ColumnTypeEnums typeEnum = ColumnTypeEnums.getMysqlByValue(type);
         switch (typeEnum) {
             case VARCHAR:
             case DATETIME:

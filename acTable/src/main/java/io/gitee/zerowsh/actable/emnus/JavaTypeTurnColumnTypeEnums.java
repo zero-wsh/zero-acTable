@@ -1,8 +1,7 @@
 package io.gitee.zerowsh.actable.emnus;
 
 /**
- * 数据库列类型
- * 当等于DEFAULT_VALUE是代表根据字段类型转
+ * java类型转数据库类型
  *
  * @author zero
  */
@@ -47,21 +46,21 @@ public enum JavaTypeTurnColumnTypeEnums {
         return sqlServer;
     }
 
-    public static ColumnTypeEnums getMysqlByValue(String filedType) {
+    public static String getMysqlByValue(String filedType) {
         for (JavaTypeTurnColumnTypeEnums types : JavaTypeTurnColumnTypeEnums.values()) {
             if (types.getJavaType().contains(filedType)) {
-                return types.getMysql();
+                return types.getMysql().getMysql();
             }
         }
-        return ColumnTypeEnums.VARCHAR;
+        return ColumnTypeEnums.VARCHAR.getMysql();
     }
 
-    public static ColumnTypeEnums getSqlServerByValue(String filedType) {
+    public static String getSqlServerByValue(String filedType) {
         for (JavaTypeTurnColumnTypeEnums types : JavaTypeTurnColumnTypeEnums.values()) {
             if (types.getJavaType().contains(filedType)) {
-                return types.getSqlServer();
+                return types.getSqlServer().getSqlServer();
             }
         }
-        return ColumnTypeEnums.NVARCHAR;
+        return ColumnTypeEnums.NVARCHAR.getSqlServer();
     }
 }

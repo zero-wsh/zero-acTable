@@ -7,6 +7,7 @@ import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -226,7 +227,7 @@ public class MysqlAcTableUtils {
                 int length = propertyInfo.getLength();
                 int decimalLength = propertyInfo.getDecimalLength();
                 //判断长度、精度，是否修改
-                ColumnTypeEnums typeEnum = getMysqlByValue(type);
+                ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getMysqlByValue(type);
                 switch (typeEnum) {
                     case VARCHAR:
                     case CHAR:
@@ -344,14 +345,14 @@ public class MysqlAcTableUtils {
         int length = propertyInfo.getLength();
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
-        ColumnTypeEnums typeEnum = getMysqlByValue(type);
+        ColumnTypeEnums typeEnum = JavaTypeTurnColumnTypeEnums.getMysqlByValue(type);
         switch (typeEnum) {
             case VARCHAR:
             case DATETIME:
             case CHAR:
             case BIGINT:
                 propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
-                if (Objects.equals(type, ColumnTypeEnums.DATETIME.getType())) {
+                if (Objects.equals(type, ColumnTypeEnums.DATETIME.getSqlServer())) {
                     //对类型特殊处理
                     if (length > 6 || length < 0) {
                         log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);
@@ -445,45 +446,5 @@ public class MysqlAcTableUtils {
             }
         }
         return false;
-    }
-
-    private static final Map<String, ColumnTypeEnums> JAVA_TURN_MYSQL_MAP = new HashMap<String, ColumnTypeEnums>() {{
-        put("java.lang.String", ColumnTypeEnums.VARCHAR);
-        put("java.lang.Long", ColumnTypeEnums.BIGINT);
-        put("long", ColumnTypeEnums.BIGINT);
-        put("java.lang.Integer", ColumnTypeEnums.INT);
-        put("int", ColumnTypeEnums.INT);
-        put("java.lang.Boolean", ColumnTypeEnums.BIT);
-        put("boolean", ColumnTypeEnums.BIT);
-        put("java.util.Date", ColumnTypeEnums.DATETIME);
-        put("java.sql.Timestamp", ColumnTypeEnums.DATETIME);
-        put("java.time.LocalDate", ColumnTypeEnums.DATETIME);
-        put("java.time.LocalDateTime", ColumnTypeEnums.DATETIME);
-        put("java.math.BigDecimal", ColumnTypeEnums.NUMERIC);
-        put("java.lang.Double", ColumnTypeEnums.NUMERIC);
-        put("double", ColumnTypeEnums.NUMERIC);
-        put("java.lang.Float", ColumnTypeEnums.FLOAT);
-        put("float", ColumnTypeEnums.FLOAT);
-        put("char", ColumnTypeEnums.CHAR);
-    }};
-
-    /**
-     * java类型转数据库类型
-     *
-     * @param key
-     * @return
-     */
-    public static String getJavaTurnMysqlValue(String key) {
-        ColumnTypeEnums columnTypeEnums = JAVA_TURN_MYSQL_MAP.get(key);
-        return Objects.isNull(columnTypeEnums) ? ColumnTypeEnums.VARCHAR.getType() : columnTypeEnums.getType();
-    }
-
-    public static ColumnTypeEnums getMysqlByValue(String type) {
-        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
-            if (Objects.equals(types.getType(), type)) {
-                return types;
-            }
-        }
-        return ColumnTypeEnums.VARCHAR;
     }
 }

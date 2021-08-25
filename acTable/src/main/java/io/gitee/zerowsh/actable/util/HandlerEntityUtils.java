@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
@@ -322,29 +323,9 @@ public class HandlerEntityUtils {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case SQL_SERVER:
-                if (Objects.equals(type, ColumnTypeEnums.DEFAULT)) {
-                    return SqlServerAcTableUtils.getJavaTurnSqlServerValue(fieldType);
-                } else {
-                    boolean contains = ColumnTypeEnums.SQL_SERVER_NOT_EXIST_TYPE.contains(type);
-                    if (contains) {
-                        log.warn(COLUMN_TYPE_FAIL, databaseType, type, ColumnTypeEnums.NVARCHAR);
-                        return ColumnTypeEnums.NVARCHAR.getType();
-                    } else {
-                        return type.getType();
-                    }
-                }
+                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType).getSqlServer() : type.getSqlServer();
             case MYSQL:
-                if (Objects.equals(type, ColumnTypeEnums.DEFAULT)) {
-                    return MysqlAcTableUtils.getJavaTurnMysqlValue(fieldType);
-                } else {
-                    boolean contains = ColumnTypeEnums.MYSQL_NOT_EXIST_TYPE.contains(type);
-                    if (contains) {
-                        log.warn(COLUMN_TYPE_FAIL, databaseType, type, ColumnTypeEnums.VARCHAR);
-                        return ColumnTypeEnums.VARCHAR.getType();
-                    } else {
-                        return type.getType();
-                    }
-                }
+                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getMysqlByValue(fieldType).getMysql() : type.getMysql();
             default:
         }
         return null;

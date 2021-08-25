@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.AcColumn;
 import io.gitee.zerowsh.actable.annotation.AcTable;
 import io.gitee.zerowsh.actable.demo.entity.BaseEntity;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +16,9 @@ import lombok.Setter;
 @TableName("t_zero")
 @AcTable(name = "t_zero", comment = "测试")
 public class ZeroEntity extends BaseEntity {
-    @AcColumn(name = "name", comment = "名称", length = 20, isNull = false, isKey = true, order = 1)
+    @AcColumn(name = "name", comment = "名称",
+            length = 20, isNull = false,
+            isKey = true, order = 1,type = ColumnTypeEnums.NVARCHAR)
     private String name;
 
 

@@ -19,6 +19,8 @@ public interface SqlConstants {
      * mysql相关语句
      */
     HashMap<SqlTypeEnums, String> MYSQL_EXECUTE_SQL = new HashMap<SqlTypeEnums, String>() {{
+        put(SqlTypeEnums.GET_ALL_TABLE, "select table_name as name from information_schema.tables where table_schema = (select database())");
+        put(SqlTypeEnums.DROP_TABLE, "drop table if exists `{}`");
         put(SqlTypeEnums.EXIST_TABLE, "select count(1) from information_schema.tables where table_name ='{}' and table_schema = (select database())");
         put(SqlTypeEnums.TABLE_STRUCTURE, "SELECT t.table_name tableName,t.table_comment tableComment," +
                 " case when c.IS_NULLABLE='YES' then 1 else 0 end isNull," +
@@ -38,6 +40,8 @@ public interface SqlConstants {
      * sql_server相关语句
      */
     HashMap<SqlTypeEnums, String> SQL_SERVER_EXECUTE_SQL = new HashMap<SqlTypeEnums, String>() {{
+        put(SqlTypeEnums.GET_ALL_TABLE, "select name from sys.tables");
+        put(SqlTypeEnums.DROP_TABLE, "drop table if exists [{}]");
         put(SqlTypeEnums.EXIST_TABLE, "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID('{}') AND type IN ('U')");
         put(SqlTypeEnums.TABLE_STRUCTURE, "SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
                 " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +

@@ -1,6 +1,6 @@
 package io.gitee.zerowsh.actable.util;
 
-import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
+import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,10 +50,10 @@ public class AcTableUtils {
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         switch (databaseType) {
             case SQL_SERVER:
-                var = SqlServerAcTableUtils.getJavaTurnSqlServerValue(var);
+                var = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(var).getSqlServer();
                 break;
             case MYSQL:
-                var = MysqlAcTableUtils.getJavaTurnMysqlValue(var);
+                var = JavaTypeTurnColumnTypeEnums.getMysqlByValue(var).getMysql();
                 break;
             default:
         }

@@ -5,7 +5,6 @@ package io.gitee.zerowsh.actable.emnus;
  *
  * @author zero
  */
-@SuppressWarnings("all")
 public enum TurnEnums {
     /**
      * 默认

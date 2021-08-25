@@ -13,6 +13,7 @@ public interface StringConstants {
     String SPACE = " ";
     String LEFT_SQ_BRACKET = "[";
     String RIGHT_SQ_BRACKET = "]";
-    String SEMICOLON = ";";
+    String SQL_SPLIT_STR = ");";
+    String CRLF = "\r\n";
 
 }

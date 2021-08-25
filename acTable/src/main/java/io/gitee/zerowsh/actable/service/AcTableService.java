@@ -35,6 +35,8 @@ import java.util.Objects;
 import static cn.hutool.core.util.StrUtil.COMMA;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
+import static io.gitee.zerowsh.actable.constant.StringConstants.CRLF;
+import static io.gitee.zerowsh.actable.constant.StringConstants.SQL_SPLIT_STR;
 
 /**
  * mysql实现
@@ -193,11 +195,11 @@ public class AcTableService {
             String str;
             StringBuilder oneSql = new StringBuilder();
             while ((str = bufferedReader.readLine()) != null) {
-                if (str.contains(");")) {
+                if (str.contains(SQL_SPLIT_STR)) {
                     resultList.add(oneSql + str);
                     oneSql = new StringBuilder();
                 } else {
-                    oneSql.append(str).append("\r\n");
+                    oneSql.append(str).append(CRLF);
                 }
             }
         } catch (Exception e) {

@@ -10,10 +10,9 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.dto.TableInfo;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
-import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
+import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +40,7 @@ public class HandlerEntityUtils {
      * @return
      */
     public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties) {
+        DatabaseService databaseService = AcTableUtils.getDatabaseService();
         String entityPackage = acTableProperties.getEntityPackage();
         TurnEnums turn = acTableProperties.getTurn();
         //实体类表信息
@@ -95,7 +95,7 @@ public class HandlerEntityUtils {
                 if (tableList.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
                 }
-                tableName = AcTableUtils.handleKeyword(tableName);
+                tableName = databaseService.handleKeyword(tableName);
                 tableList.add(tableName);
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
@@ -160,6 +160,7 @@ public class HandlerEntityUtils {
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
                                      AcTableProperties acTableProperties) {
+        DatabaseService databaseService = AcTableUtils.getDatabaseService();
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -217,7 +218,7 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
-                        .type(AcTableUtils.handleType(field.getType().getName()));
+                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName()));
             } else {
                 if ((Objects.nonNull(tableField) && !tableField.exist())
                         || Objects.nonNull(transientAnn)
@@ -231,7 +232,7 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(column) && StrUtil.isBlank(columnName)) {
                     columnName = column.name();
                 }
-                columnName = AcTableUtils.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
+                columnName = databaseService.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
                 }
@@ -251,7 +252,7 @@ public class HandlerEntityUtils {
                         .order(acColumn.order())
                         .isNull(acColumn.isNull())
                         .length(acColumn.length())
-                        .type(getTypeStr(field.getType().getName(), acColumn.type()));
+                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()));
             }
             propertyInfoList.add(propertyInfoBuilder.build());
 
@@ -309,23 +310,5 @@ public class HandlerEntityUtils {
             }
         }
         return StrUtil.toUnderlineCase(fieldName);
-    }
-
-    /**
-     * 处理类型
-     *
-     * @param var
-     * @return
-     */
-    public static String getTypeStr(String fieldType, ColumnTypeEnums type) {
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
-        switch (databaseType) {
-            case SQL_SERVER:
-                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : type.getSqlServer();
-            case MYSQL:
-                return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getMysqlByValue(fieldType) : type.getMysql();
-            default:
-        }
-        return null;
     }
 }

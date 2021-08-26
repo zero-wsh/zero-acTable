@@ -1,12 +1,12 @@
 package io.gitee.zerowsh.actable.util;
 
-import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
-import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
+import cn.hutool.core.util.StrUtil;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
+import io.gitee.zerowsh.actable.service.DatabaseService;
+import io.gitee.zerowsh.actable.service.impl.MysqlImpl;
+import io.gitee.zerowsh.actable.service.impl.SqlServerImpl;
 import lombok.extern.slf4j.Slf4j;
 
-import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
-import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
-import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
 /**
  * 所有数据库共用工具类
@@ -15,52 +15,6 @@ import static io.gitee.zerowsh.actable.constant.StringConstants.*;
  */
 @Slf4j
 public class AcTableUtils {
-    /**
-     * 处理关键字
-     *
-     * @param var
-     * @return
-     */
-    public static String handleKeyword(String var) {
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
-        switch (databaseType) {
-            case MYSQL:
-                if (var.startsWith(BACKTICK) && var.endsWith(BACKTICK)) {
-                    var = var.replace(BACKTICK, "");
-                }
-                break;
-            case SQL_SERVER:
-                if (var.startsWith(LEFT_SQ_BRACKET) && var.endsWith(RIGHT_SQ_BRACKET)) {
-                    var = var.replace(LEFT_SQ_BRACKET, "")
-                            .replace(RIGHT_SQ_BRACKET, "");
-                }
-                break;
-            default:
-        }
-        return var;
-    }
-
-    /**
-     * 处理类型
-     *
-     * @param var
-     * @return
-     */
-    public static String handleType(String var) {
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
-        switch (databaseType) {
-            case SQL_SERVER:
-                var = JavaTypeTurnColumnTypeEnums.getSqlServerByValue(var);
-                break;
-            case MYSQL:
-                var = JavaTypeTurnColumnTypeEnums.getMysqlByValue(var);
-                break;
-            default:
-        }
-        return var;
-    }
-
-
     /**
      * 处理字符串长度
      *
@@ -79,5 +33,17 @@ public class AcTableUtils {
      */
     public static int handleDateLength(int length) {
         return length > 7 || length < 0 ? 0 : length;
+    }
+
+    public static DatabaseService getDatabaseService() {
+        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+        switch (databaseType) {
+            case AcTableConstants.MYSQL:
+                return new MysqlImpl();
+            case AcTableConstants.SQL_SERVER:
+                return new SqlServerImpl();
+            default:
+                throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
+        }
     }
 }

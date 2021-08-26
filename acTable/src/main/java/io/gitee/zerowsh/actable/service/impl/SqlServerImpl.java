@@ -1,4 +1,4 @@
-package io.gitee.zerowsh.actable.util.sql;
+package io.gitee.zerowsh.actable.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
@@ -9,6 +9,8 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
+import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
+import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,14 +19,39 @@ import java.util.*;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
 import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
-/**
- * sql_server自动建表工具类
- *
- * @author zero
- */
 @Slf4j
-@SuppressWarnings("all")
-public class SqlServerAcTableUtils {
+public class SqlServerImpl implements DatabaseService {
+    public static final HashMap<SqlTypeEnums, String> SQL_SERVER_EXECUTE_SQL = new HashMap<SqlTypeEnums, String>() {{
+        put(SqlTypeEnums.GET_ALL_TABLE, "select name from sys.tables");
+        put(SqlTypeEnums.DROP_TABLE, "drop table if exists [{}]");
+        put(SqlTypeEnums.EXIST_TABLE, "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID('{}') AND type IN ('U')");
+        put(SqlTypeEnums.TABLE_STRUCTURE, "SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
+                " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +
+                " case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (" +
+                " SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then 1 else 0 end isKey," +
+                " b.name typeStr, COLUMNPROPERTY(a.id,a.name,'PRECISION') length," +
+                " isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) decimalLength," +
+                " case when a.isnullable=1 then 1 else 0 end isNull,convert(nvarchar(255), e.text) defaultValue,convert(nvarchar(255), g.value) columnComment" +
+                " FROM syscolumns a" +
+                " left join systypes b on a.xusertype=b.xusertype" +
+                " inner join sysobjects d on a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties'" +
+                " left join syscomments e on a.cdefault=e.id" +
+                " left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id" +
+                " left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0 where d.name='{}'");
+        put(SqlTypeEnums.CONSTRAINT_INFO, "WITH MO_Cook AS (SELECT  IDX.NAME AS constraintName, IDX.TYPE_DESC AS constraintType,COL.NAME AS constraintColumnName,case when IDX.IS_PRIMARY_KEY = 1 then 1 else case when        IDX.IS_UNIQUE_CONSTRAINT = 1 then 2 else 3 end end constraintFlag FROM  SYS.INDEXES IDX JOIN " +
+                " SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) JOIN " +
+                " SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN " +
+                " SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) " +
+                " where  TAB.NAME='{}') " +
+                " select constraintName,constraintType,constraintFlag,stuff((select ','+constraintColumnName from  MO_Cook   " +
+                " where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName " +
+                " for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c" +
+                " group by c.constraintName,c.constraintType,c.constraintFlag");
+        put(SqlTypeEnums.DEFAULT_INFO, "select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
+                "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
+                "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault");
+    }};
+
     /**
      * 获取创建表sql
      * <p>
@@ -51,7 +78,8 @@ public class SqlServerAcTableUtils {
      * @param tableInfo
      * @return
      */
-    public static List<String> getCreateTableSql(TableInfo tableInfo) {
+    @Override
+    public List<String> getCreateTableSql(TableInfo tableInfo) {
         List<String> resultList = new ArrayList<>();
         List<String> addColumnCommentSqlList = new ArrayList<>();
         String tableName = tableInfo.getName();
@@ -261,11 +289,12 @@ public class SqlServerAcTableUtils {
      * @param modelEnums
      * @return
      */
-    public static List<String> getUpdateTableSql(TableInfo tableInfo,
-                                                 List<TableColumnInfo> tableColumnInfoList,
-                                                 List<ConstraintInfo> constraintInfoList,
-                                                 List<ConstraintInfo> defaultInfoList,
-                                                 ModelEnums modelEnums) {
+    @Override
+    public List<String> getUpdateTableSql(TableInfo tableInfo,
+                                          List<TableColumnInfo> tableColumnInfoList,
+                                          List<ConstraintInfo> constraintInfoList,
+                                          List<ConstraintInfo> defaultInfoList,
+                                          ModelEnums modelEnums) {
         List<String> resultList = new ArrayList<>();
         TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
         String tableName = firstTableColumnInfo.getTableName();
@@ -519,6 +548,25 @@ public class SqlServerAcTableUtils {
             resultList.addAll(addColumnDefSqlList);
         }
         return resultList;
+    }
+
+    @Override
+    public String handleKeyword(String var) {
+        if (var.startsWith(LEFT_SQ_BRACKET) && var.endsWith(RIGHT_SQ_BRACKET)) {
+            var = var.replace(LEFT_SQ_BRACKET, "")
+                    .replace(RIGHT_SQ_BRACKET, "");
+        }
+        return var;
+    }
+
+    @Override
+    public String javaTypeTurnColumnType(String fieldType, ColumnTypeEnums type) {
+        return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : type.getSqlServer();
+    }
+
+    @Override
+    public String getExecuteSql(SqlTypeEnums sqlTypeEnums) {
+        return SQL_SERVER_EXECUTE_SQL.get(sqlTypeEnums);
     }
 
     /**

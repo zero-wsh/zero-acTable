@@ -2,19 +2,13 @@ package io.gitee.zerowsh.actable.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.constant.SqlConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
-import io.gitee.zerowsh.actable.util.AcTableThreadLocalUtils;
-import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
-import io.gitee.zerowsh.actable.util.IoUtil;
-import io.gitee.zerowsh.actable.util.JdbcUtil;
-import io.gitee.zerowsh.actable.util.sql.MysqlAcTableUtils;
-import io.gitee.zerowsh.actable.util.sql.SqlServerAcTableUtils;
+import io.gitee.zerowsh.actable.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -33,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static cn.hutool.core.util.StrUtil.COMMA;
-import static io.gitee.zerowsh.actable.constant.AcTableConstants.MYSQL;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
 import static io.gitee.zerowsh.actable.constant.StringConstants.CRLF;
 import static io.gitee.zerowsh.actable.constant.StringConstants.SQL_SPLIT_STR;
@@ -109,52 +102,35 @@ public class AcTableService {
      */
 
     public void handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
+        DatabaseService databaseService = AcTableUtils.getDatabaseService();
         String databaseType = AcTableThreadLocalUtils.getDatabaseType();
         if (Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)) {
-            List<String> tableNameList = JdbcUtil.getTableNameList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.GET_ALL_TABLE));
+            List<String> tableNameList = JdbcUtil.getTableNameList(connection, databaseService.getExecuteSql(SqlTypeEnums.GET_ALL_TABLE));
             for (String tableName : tableNameList) {
-                JdbcUtil.executeSql(connection, SqlConstants.getExecuteSql(SqlTypeEnums.DROP_TABLE), tableName);
+                JdbcUtil.executeSql(connection, databaseService.getExecuteSql(SqlTypeEnums.DROP_TABLE), tableName);
             }
         }
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
             if (!Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)
-                    && JdbcUtil.isExist(connection, SqlConstants.getExecuteSql(SqlTypeEnums.EXIST_TABLE), tableName)) {
+                    && JdbcUtil.isExist(connection, databaseService.getExecuteSql(SqlTypeEnums.EXIST_TABLE), tableName)) {
                 /*
                  * 存在--改表
                  */
-                List<TableColumnInfo> tableColumnInfoList = JdbcUtil.getTableColumnInfoList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.TABLE_STRUCTURE), tableName);
-                List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.CONSTRAINT_INFO), tableName);
-                switch (databaseType) {
-                    case MYSQL:
-                        executeSqlList.addAll(MysqlAcTableUtils.getUpdateTableSql(tableInfo,
-                                tableColumnInfoList,
-                                constraintInfoList,
-                                modelEnums));
-                        break;
-                    case SQL_SERVER:
-                        List<ConstraintInfo> defaultInfoList = JdbcUtil.getConstraintInfoList(connection, SqlConstants.getExecuteSql(SqlTypeEnums.DEFAULT_INFO), tableName);
-                        executeSqlList.addAll(SqlServerAcTableUtils.getUpdateTableSql(tableInfo,
-                                tableColumnInfoList,
-                                constraintInfoList,
-                                defaultInfoList,
-                                modelEnums));
-                        break;
-                    default:
-                        throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
+                List<TableColumnInfo> tableColumnInfoList = JdbcUtil.getTableColumnInfoList(connection, databaseService.getExecuteSql(SqlTypeEnums.TABLE_STRUCTURE), tableName);
+                List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getExecuteSql(SqlTypeEnums.CONSTRAINT_INFO), tableName);
+                List<ConstraintInfo> defaultInfoList = null;
+                //sqlserver默认值处理
+                if (Objects.equals(databaseType, SQL_SERVER)) {
+                    defaultInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getExecuteSql(SqlTypeEnums.DEFAULT_INFO), tableName);
                 }
-
+                executeSqlList.addAll(databaseService.getUpdateTableSql(tableInfo,
+                        tableColumnInfoList,
+                        constraintInfoList,
+                        defaultInfoList,
+                        modelEnums));
             } else {
-                switch (databaseType) {
-                    case MYSQL:
-                        executeSqlList.addAll(MysqlAcTableUtils.getCreateTableSql(tableInfo));
-                        break;
-                    case SQL_SERVER:
-                        executeSqlList.addAll(SqlServerAcTableUtils.getCreateTableSql(tableInfo));
-                        break;
-                    default:
-                        throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
-                }
+                executeSqlList.addAll(databaseService.getCreateTableSql(tableInfo));
             }
         }
     }

@@ -75,10 +75,17 @@ public enum ColumnTypeEnums {
     public String getSqlServer() {
         return StrUtil.isBlank(sqlServer) ? NVARCHAR.getSqlServer() : sqlServer;
     }
+    public String getMysql1() {
+        return mysql;
+    }
+
+    public String getSqlServer1() {
+        return sqlServer;
+    }
 
     public static ColumnTypeEnums getMysqlByValue(String type) {
         for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
-            if (Objects.equals(types.getMysql(), type)) {
+            if (Objects.equals(types.getMysql1(), type)) {
                 return types;
             }
         }
@@ -87,7 +94,7 @@ public enum ColumnTypeEnums {
 
     public static ColumnTypeEnums getSqlServerByValue(String type) {
         for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
-            if (Objects.equals(types.getSqlServer(), type)) {
+            if (Objects.equals(types.getSqlServer1(), type)) {
                 return types;
             }
         }

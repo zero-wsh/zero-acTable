@@ -1,4 +1,4 @@
-package io.gitee.zerowsh.actable.util.sql;
+package io.gitee.zerowsh.actable.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
@@ -9,6 +9,8 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
+import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
+import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,14 +19,27 @@ import java.util.*;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
 import static io.gitee.zerowsh.actable.constant.StringConstants.*;
 
-/**
- * sql_server自动建表工具类
- *
- * @author zero
- */
 @Slf4j
-@SuppressWarnings("all")
-public class MysqlAcTableUtils {
+public class MysqlImpl implements DatabaseService {
+
+    public static final HashMap<SqlTypeEnums, String> MYSQL_EXECUTE_SQL = new HashMap<SqlTypeEnums, String>() {{
+        put(SqlTypeEnums.GET_ALL_TABLE, "select table_name as name from information_schema.tables where table_schema = (select database())");
+        put(SqlTypeEnums.DROP_TABLE, "drop table if exists `{}`");
+        put(SqlTypeEnums.EXIST_TABLE, "select count(1) from information_schema.tables where table_name ='{}' and table_schema = (select database())");
+        put(SqlTypeEnums.TABLE_STRUCTURE, "SELECT t.table_name tableName,t.table_comment tableComment," +
+                " case when c.IS_NULLABLE='YES' then 1 else 0 end isNull," +
+                " c.column_name columnName,c.column_comment columnComment,c.DATA_TYPE typeStr,c.COLUMN_DEFAULT defaultValue," +
+                " case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length," +
+                " case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength," +
+                " case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement" +
+                " FROM information_schema.columns c,information_schema.tables t WHERE c.table_name = t.table_name and c.table_name='{}'" +
+                " and c.table_schema = (select database()) AND t.table_schema = (SELECT DATABASE ())");
+        put(SqlTypeEnums.CONSTRAINT_INFO, "select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName," +
+                " case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag" +
+                " from information_schema.statistics where table_name = '{}' and table_schema = (select database())" +
+                " GROUP BY constraintName,constraintFlag");
+    }};
+
     /**
      * 获取创建表sql
      * CREATE TABLE `t_zero` (
@@ -42,7 +57,8 @@ public class MysqlAcTableUtils {
      * @param tableInfo
      * @return
      */
-    public static List<String> getCreateTableSql(TableInfo tableInfo) {
+    @Override
+    public List<String> getCreateTableSql(TableInfo tableInfo) {
         List<String> resultList = new ArrayList<>();
         String tableName = tableInfo.getName();
         String comment = tableInfo.getComment();
@@ -91,10 +107,9 @@ public class MysqlAcTableUtils {
     /**
      * 创建主键
      *
-     * @param flag
-     * @param keyList
-     * @param tableName
-     * @param resultList
+     * @param delConstraintSet
+     * @param tableInfo
+     * @param tableExistPk
      */
     private static void createPk(Set<String> delConstraintSet, TableInfo tableInfo, boolean tableExistPk) {
         List<String> keyList = tableInfo.getKeyList();
@@ -181,21 +196,19 @@ public class MysqlAcTableUtils {
      * @param modelEnums
      * @return
      */
-    public static List<String> getUpdateTableSql(TableInfo tableInfo,
-                                                 List<TableColumnInfo> tableColumnInfoList,
-                                                 List<ConstraintInfo> constraintInfoList,
-                                                 ModelEnums modelEnums) {
+    @Override
+    public List<String> getUpdateTableSql(TableInfo tableInfo,
+                                          List<TableColumnInfo> tableColumnInfoList,
+                                          List<ConstraintInfo> constraintInfoList,
+                                          List<ConstraintInfo> defaultInfoList,
+                                          ModelEnums modelEnums) {
         boolean tableExistPk = false;
         if (CollectionUtil.isNotEmpty(constraintInfoList)) {
-            tableExistPk = constraintInfoList.stream().filter(constraintInfo -> {
-                return Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK);
-            }).count() > 0;
+            tableExistPk = constraintInfoList.stream().anyMatch(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK));
         }
         List<String> resultList = new ArrayList<>();
         TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
         String tableName = firstTableColumnInfo.getTableName();
-        List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
-        List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
         String comment = Objects.isNull(tableInfo.getComment()) ? "" : tableInfo.getComment();
         //处理表备注
         if (!Objects.equals(comment, firstTableColumnInfo.getTableComment())) {
@@ -300,14 +313,30 @@ public class MysqlAcTableUtils {
         return resultList;
     }
 
+    @Override
+    public String handleKeyword(String var) {
+        if (var.startsWith(BACKTICK) && var.endsWith(BACKTICK)) {
+            var = var.replace(BACKTICK, "");
+        }
+        return var;
+    }
+
+    @Override
+    public String javaTypeTurnColumnType(String fieldType, ColumnTypeEnums type) {
+        return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getMysqlByValue(fieldType) : type.getMysql();
+    }
+
+    @Override
+    public String getExecuteSql(SqlTypeEnums sqlTypeEnums) {
+        return MYSQL_EXECUTE_SQL.get(sqlTypeEnums);
+    }
+
     /**
      * 拼接列信息
      *
      * @param propertySb
      * @param propertyInfo
      * @param tableName
-     * @param isUpdate
-     * @param addColumnDefSqlList
      */
     private static void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
         splicingColumnType(propertySb, propertyInfo, tableName);
@@ -430,7 +459,6 @@ public class MysqlAcTableUtils {
      * @return
      */
     public static boolean handleIdxList(List<ConstraintInfo> constraintInfoList, TableInfo.IndexInfo indexInfo) {
-        Set<String> set = new HashSet<>();
         Iterator<ConstraintInfo> it = constraintInfoList.iterator();
         while (it.hasNext()) {
             ConstraintInfo constraintInfo = it.next();

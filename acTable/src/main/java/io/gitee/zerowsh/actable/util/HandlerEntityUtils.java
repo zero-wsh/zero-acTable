@@ -83,10 +83,10 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(apiModel)) {
                     comment = apiModel.value();
                 }
-                if (Objects.nonNull(tableNameAnn) && StrUtil.isNotBlank(tableName)) {
+                if (Objects.nonNull(tableNameAnn) && StrUtil.isBlank(tableName)) {
                     tableName = tableNameAnn.value();
                 }
-                if (Objects.nonNull(tableAnn) && StrUtil.isNotBlank(tableName)) {
+                if (Objects.nonNull(tableAnn) && StrUtil.isBlank(tableName)) {
                     tableName = tableAnn.name();
                 }
                 if (StrUtil.isBlank(tableName)) {

@@ -35,8 +35,7 @@ public class AcTableUtils {
         return length > 7 || length < 0 ? 0 : length;
     }
 
-    public static DatabaseService getDatabaseService() {
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+    public static DatabaseService getDatabaseService(String databaseType) {
         switch (databaseType) {
             case AcTableConstants.MYSQL:
                 return new MysqlImpl();

@@ -8,7 +8,10 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
-import io.gitee.zerowsh.actable.util.*;
+import io.gitee.zerowsh.actable.util.AcTableUtils;
+import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
+import io.gitee.zerowsh.actable.util.IoUtil;
+import io.gitee.zerowsh.actable.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -61,11 +64,10 @@ public class AcTableService {
         try {
             connection = dataSource.getConnection();
             String databaseType = connection.getMetaData().getDatabaseProductName();
-            AcTableThreadLocalUtils.setDatabaseType(databaseType);
             if (StrUtil.isBlank(databaseType)) {
                 throw new RuntimeException("获取数据库类型失败！！！");
             }
-            List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties);
+            List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties, databaseType);
             if (CollectionUtil.isEmpty(tableInfoList)) {
                 log.warn("没有找到@Table标记的类！！！ entityPackage={}", entityPackage);
                 return;
@@ -73,7 +75,7 @@ public class AcTableService {
 
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
-            handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList);
+            handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseType);
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
                 log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
                 for (String sql : executeSqlList) {
@@ -81,8 +83,7 @@ public class AcTableService {
                 }
                 log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
             }
-            this.executeScript(connection, acTableProperties.getScript());
-            AcTableThreadLocalUtils.remove();
+            this.executeScript(connection, acTableProperties.getScript(), databaseType);
         } catch (Exception e) {
             log.error("执行自动建表异常：", e);
             throw new RuntimeException("执行自动建表异常");
@@ -101,9 +102,8 @@ public class AcTableService {
      * @throws SQLException
      */
 
-    public void handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList) throws SQLException {
-        DatabaseService databaseService = AcTableUtils.getDatabaseService();
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+    public void handleExecuteSql(Connection connection, ModelEnums modelEnums, List<TableInfo> tableInfoList, List<String> executeSqlList, String databaseType) throws SQLException {
+        DatabaseService databaseService = AcTableUtils.getDatabaseService(databaseType);
         if (Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)) {
             List<String> tableNameList = JdbcUtil.getTableNameList(connection, databaseService.getExecuteSql(SqlTypeEnums.GET_ALL_TABLE));
             for (String tableName : tableNameList) {
@@ -141,8 +141,7 @@ public class AcTableService {
      * @param connection
      * @param script
      */
-    public void executeScript(Connection connection, String script) {
-        String databaseType = AcTableThreadLocalUtils.getDatabaseType();
+    public void executeScript(Connection connection, String script, String databaseType) {
         if (StrUtil.isBlank(script)) {
             return;
         }

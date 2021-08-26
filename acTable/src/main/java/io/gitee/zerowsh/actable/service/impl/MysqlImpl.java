@@ -187,15 +187,6 @@ public class MysqlImpl implements DatabaseService {
         }
     }
 
-    /**
-     * 获取修改表sql
-     *
-     * @param tableInfo
-     * @param tableColumnInfoList
-     * @param constraintInfoList
-     * @param modelEnums
-     * @return
-     */
     @Override
     public List<String> getUpdateTableSql(TableInfo tableInfo,
                                           List<TableColumnInfo> tableColumnInfoList,

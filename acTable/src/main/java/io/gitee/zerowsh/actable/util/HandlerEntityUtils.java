@@ -39,8 +39,8 @@ public class HandlerEntityUtils {
      * @param acTableProperties
      * @return
      */
-    public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties) {
-        DatabaseService databaseService = AcTableUtils.getDatabaseService();
+    public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties, String databaseType) {
+        DatabaseService databaseService = AcTableUtils.getDatabaseService(databaseType);
         String entityPackage = acTableProperties.getEntityPackage();
         TurnEnums turn = acTableProperties.getTurn();
         //实体类表信息
@@ -101,7 +101,7 @@ public class HandlerEntityUtils {
                 builder.comment(judgeIsNull(comment));
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
                         uniqueInfoList, propertyList, acTable,
-                        null, turn, acTableProperties);
+                        null, turn, acTableProperties, databaseService);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
                 }
@@ -159,8 +159,8 @@ public class HandlerEntityUtils {
                                      AcTable acTable,
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
-                                     AcTableProperties acTableProperties) {
-        DatabaseService databaseService = AcTableUtils.getDatabaseService();
+                                     AcTableProperties acTableProperties,
+                                     DatabaseService databaseService) {
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -288,7 +288,7 @@ public class HandlerEntityUtils {
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
                 uniqueInfoList, propertyList, acTable,
-                cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties);
+                cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties, databaseService);
     }
 
     /**

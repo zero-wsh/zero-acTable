@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  io.gitee.zerowsh.actable.properties.AcTableProperties
+  io.gitee.zerowsh.actable.autoconfig.AcTableAutoConfiguration

@@ -12,10 +12,9 @@ import org.springframework.stereotype.Component;
  *
  * @author zero
  */
-@Component
-@ConfigurationProperties(prefix = "zero.ac-table")
 @Getter
 @Setter
+@ConfigurationProperties(prefix = "zero.ac-table")
 public class AcTableProperties {
     /**
      * 实体类的包名,多个用逗号隔开

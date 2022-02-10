@@ -342,8 +342,8 @@ public class MysqlImpl implements DatabaseService {
             propertySb.append(MYSQL_IDENTITY);
         } else {
             //默认值
-            if (StrUtil.isNotBlank(propertyInfo.getDefaultValue())) {
-                propertySb.append(DEFAULT).append(propertyInfo.getDefaultValue());
+            if (Objects.nonNull(propertyInfo.getDefaultValue())) {
+                propertySb.append(StrUtil.format(DEFAULT, propertyInfo.getDefaultValue()));
             }
         }
         //列备注

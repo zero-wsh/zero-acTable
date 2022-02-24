@@ -22,7 +22,7 @@ public class ZeroEntity extends BaseEntity {
     private String name;
 
 
-    @AcColumn(exclude = true)
+    @AcColumn(type=ColumnTypeEnums.JSON)
     private Long zero;
 
 

@@ -37,6 +37,7 @@ public enum ColumnTypeEnums {
      */
     TIME("time", null),
     LONGBLOB("longblob", null),
+    JSON("json", null),
     /**
      * sqlserver才有的
      */
@@ -75,6 +76,7 @@ public enum ColumnTypeEnums {
     public String getSqlServer() {
         return StrUtil.isBlank(sqlServer) ? NVARCHAR.getSqlServer() : sqlServer;
     }
+
     public String getMysql1() {
         return mysql;
     }

@@ -23,4 +23,9 @@ public @interface Unique {
      * <p>可设置多个建立联合唯一{"login_mobile","login_name"}
      */
     String[] columns() default {};
+
+    /**
+     * 触发唯一键约束后的错误提示信息
+     */
+    String message() default "";
 }

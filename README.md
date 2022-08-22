@@ -8,7 +8,7 @@ mysql、sql_server
 
 #### 功能介绍
 - 兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
-- 兼容MP @TableField、@TableName,@TableId注解，并且优先使用MP注解值
+- 兼容MP @TableField、@TableName,@TableId注解
 - 兼容MP @TableId注解设置自增
 - 兼容hibernate @Table、@Column、@Id、@Transient注解
 - 兼容hibernate @GeneratedValue注解设置自增
@@ -19,14 +19,14 @@ mysql、sql_server
 - 忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
 - 排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
 
-### 您只需三步即可集成
+### 您只需两步即可集成
 #### 1、Maven依赖
 
 ```
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>2.0.0</version>
+	<version>2.0.2</version>
 </dependency>
 ```
 
@@ -39,15 +39,6 @@ zero.ac-acTable.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
 zero.ac-acTable.model=ADD_OR_UPDATE_OR_DEL
 #初始化脚本位置resources文件夹下
 zero.ac-acTable.script=db/*.sql
-```
-
-#### 3、注入Bean
-
-```
-@Bean
- public AcTableService acTableService(DataSource dataSource, AcTableProperties acTableProperties) {
-     return new AcTableService(dataSource, acTableProperties);
- }
 ```
 
 #### 注解说明
@@ -64,6 +55,7 @@ zero.ac-acTable.script=db/*.sql
 |---|---|---|---|
 |exclude   |排除该字段   |false   |true/false   |
 |name   |列名称   |   |   |
+|order   |字段排序   |0   |整数   |
 |comment   |列注释   |   |   |
 |length   |字段长度   |255   |   |
 |decimalLength   |小数位数   |0   |   |
@@ -86,7 +78,6 @@ zero.ac-acTable.script=db/*.sql
 |columns   |列名   |   |   |
 
 #### 注意事项
-- 注入acTableService时，请保证业务系统查询数据前执行，否则将导致查询不到表
 - 有初始化脚本时，必须保证可重复执行，多个插入语句使用);隔开
 - 有初始化脚本时，在字符串和注释中不要出现);分割符
 - 有初始化脚本时，并且使用了druid连接池filters不要配置wall

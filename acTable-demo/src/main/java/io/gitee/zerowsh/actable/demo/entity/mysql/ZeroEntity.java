@@ -22,8 +22,8 @@ public class ZeroEntity extends BaseEntity {
     private String name;
 
 
-    @AcColumn(type=ColumnTypeEnums.JSON)
-    private Long zero;
+    @AcColumn(type=ColumnTypeEnums.LONGTEXT)
+    private String zero;
 
 
 }

@@ -17,7 +17,7 @@ public class TableColumnInfo {
     private String columnComment;
     private boolean isKey;
     private String typeStr;
-    private int length;
+    private long length;
     private int decimalLength;
     private boolean isNull;
     private boolean isAutoIncrement;

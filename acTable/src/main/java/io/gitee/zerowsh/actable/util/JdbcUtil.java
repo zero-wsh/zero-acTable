@@ -79,7 +79,7 @@ public class JdbcUtil {
                 tableColumnInfo.setColumnComment(rs.getString("columnComment"));
                 tableColumnInfo.setKey(rs.getBoolean("isKey"));
                 tableColumnInfo.setTypeStr(rs.getString("typeStr"));
-                tableColumnInfo.setLength(rs.getInt("length"));
+                tableColumnInfo.setLength(rs.getLong("length"));
                 tableColumnInfo.setDecimalLength(rs.getInt("decimalLength"));
                 tableColumnInfo.setNull(rs.getBoolean("isNull"));
                 tableColumnInfo.setAutoIncrement(rs.getBoolean("isAutoIncrement"));

@@ -52,12 +52,12 @@ public class AcTableService {
     public void acTable(DataSource dataSource, AcTableProperties acTableProperties) {
         if (Objects.isNull(acTableProperties.getModel())
                 || Objects.equals(acTableProperties.getModel(), ModelEnums.NONE)) {
-            log.info("自动建表不做任何操作！！！");
+            log.info("自动建表不做任何操作！");
             return;
         }
         String entityPackage = acTableProperties.getEntityPackage();
         if (StrUtil.isBlank(entityPackage)) {
-            log.warn("请设置实体类包路径！！！");
+            log.warn("没有需要操作的类，请设置实体类包路径！");
             return;
         }
         Connection connection = null;
@@ -65,28 +65,29 @@ public class AcTableService {
             connection = dataSource.getConnection();
             String databaseType = connection.getMetaData().getDatabaseProductName();
             if (StrUtil.isBlank(databaseType)) {
-                throw new RuntimeException("获取数据库类型失败！！！");
+                throw new RuntimeException("获取数据库类型失败！");
             }
+            //执行自动建表前先执行sql脚本，用于表存在时先更改相关字段，如mysql自增字段。
+            this.executeScript(connection, acTableProperties.getBeforeScript(), databaseType, "之前");
             List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties, databaseType);
             if (CollectionUtil.isEmpty(tableInfoList)) {
-                log.warn("没有找到@Table标记的类！！！ entityPackage={}", entityPackage);
+                log.warn("没有找到io.gitee.zerowsh.actable.annotation.AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table注解标记的类！ entityPackage={}", entityPackage);
                 return;
             }
 
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
-            handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseType);
+            this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseType);
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
-                log.info(StrUtil.format("执行 [{}] 自动建表。。。", databaseType));
+                log.info(StrUtil.format("开始 [{}] 自动建表。。。", databaseType));
                 for (String sql : executeSqlList) {
                     JdbcUtil.executeSql(connection, sql);
                 }
-                log.info(StrUtil.format("执行 [{}] 自动建表完成！！！", databaseType));
+                log.info(StrUtil.format("完成 [{}] 自动建表！", databaseType));
             }
-            this.executeScript(connection, acTableProperties.getScript(), databaseType);
+            this.executeScript(connection, acTableProperties.getAfterScript(), databaseType, "之后");
         } catch (Exception e) {
-            log.error("执行自动建表异常：", e);
-            throw new RuntimeException("执行自动建表异常");
+            throw new RuntimeException("自动建表异常", e);
         } finally {
             IoUtil.close(connection);
         }
@@ -141,27 +142,27 @@ public class AcTableService {
      * @param connection
      * @param script
      */
-    public void executeScript(Connection connection, String script, String databaseType) {
+    public void executeScript(Connection connection, String script, String databaseType, String describe) {
         if (StrUtil.isBlank(script)) {
             return;
         }
-        log.info("执行 [{}] 初始化数据。。。", databaseType);
+        log.info("自动建表{}，执行 [{}] SQL脚本。。。", describe, databaseType);
         for (String s : script.split(COMMA)) {
             try {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    List<String> strings = inputStreamToString(resource.getInputStream());
+                    List<String> strings = this.inputStreamToString(resource.getInputStream(), describe, script);
                     for (String sql : strings) {
                         JdbcUtil.executeSql(connection, sql);
                     }
                 }
             } catch (IOException | SQLException e) {
-                throw new RuntimeException(StrUtil.format("初始化数据失败， message={}", e.getMessage()));
+                throw new RuntimeException(StrUtil.format("自动建表{}，执行 [{}] SQL脚本失败， message={}", describe, e.getMessage()));
             }
         }
 
-        log.info("执行 [{}] 初始化数据完成！！！", databaseType);
+        log.info("自动建表{}，执行 [{}] SQL脚本完成！", describe, databaseType);
     }
 
     /**
@@ -170,7 +171,7 @@ public class AcTableService {
      * @param inputStream
      * @return
      */
-    public List<String> inputStreamToString(InputStream inputStream) {
+    public List<String> inputStreamToString(InputStream inputStream, String describe, String script) {
         List<String> resultList = new ArrayList<>();
         try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
@@ -185,7 +186,7 @@ public class AcTableService {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("读取初始化文件文件异常", e);
+            throw new RuntimeException(StrUtil.format("自动建表{}，读取初始化文件 [{}] 异常", describe, script), e);
         }
         return resultList;
     }

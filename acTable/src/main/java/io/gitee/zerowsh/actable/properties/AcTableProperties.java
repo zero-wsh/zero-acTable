@@ -5,7 +5,6 @@ import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * 配置类
@@ -29,8 +28,12 @@ public class AcTableProperties {
      */
     private TurnEnums turn = TurnEnums.DEFAULT;
     /**
-     * 初始化数据脚本
+     * 建表之前脚本
      */
-    private String script;
+    private String beforeScript;
+    /**
+     * 建表之后脚本
+     */
+    private String afterScript;
 
 }

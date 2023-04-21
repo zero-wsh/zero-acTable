@@ -62,8 +62,7 @@ public interface AcTableConstants {
      * 验证字符串
      */
     String COLUMN_LENGTH_VALID_STR = "表 [{}] 字段 [{}] {}类型长度 [{}] 存在问题，使用默认值 [{}]";
-    String COLUMN_DUPLICATE_VALID_STR = "[{}] 字段名或@Column name重复";
-    String COLUMN_TYPE_FAIL = "[{}] 字段类型错误 [{}]，自动转换成默认类型 [{}]";
+    String COLUMN_DUPLICATE_VALID_STR = "类 [{}]，[{}] 字段名或@Column name重复";
 
     /**
      * 数据库操作部分sql

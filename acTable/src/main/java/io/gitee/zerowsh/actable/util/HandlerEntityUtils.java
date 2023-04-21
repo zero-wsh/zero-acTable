@@ -90,7 +90,7 @@ public class HandlerEntityUtils {
                     tableName = tableAnn.name();
                 }
                 if (StrUtil.isBlank(tableName)) {
-                    throw new RuntimeException(StrUtil.format("AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table 都没设置表名！！！"));
+                    throw new RuntimeException(StrUtil.format("io.gitee.zerowsh.actable.annotation.AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table 注解都没设置表名！"));
                 }
                 if (tableList.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
@@ -204,7 +204,7 @@ public class HandlerEntityUtils {
                 }
                 columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName;
                 if (propertyList.contains(columnName)) {
-                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
+                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, cls.getName(), fieldName));
                 }
                 propertyList.add(columnName);
                 boolean isKey = Objects.nonNull(tableId) || Objects.nonNull(id);
@@ -234,7 +234,7 @@ public class HandlerEntityUtils {
                 }
                 columnName = databaseService.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
-                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, fieldName));
+                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, cls.getName(), fieldName));
                 }
                 propertyList.add(columnName);
 

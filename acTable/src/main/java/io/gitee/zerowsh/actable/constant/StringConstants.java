@@ -13,7 +13,7 @@ public interface StringConstants {
     String SPACE = " ";
     String LEFT_SQ_BRACKET = "[";
     String RIGHT_SQ_BRACKET = "]";
-    String SQL_SPLIT_STR = ");";
+    String SQL_SPLIT_STR = "endFlag";
     String CRLF = "\r\n";
 
 }

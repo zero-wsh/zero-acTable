@@ -11,6 +11,9 @@ import lombok.Data;
 public class ConstraintInfo {
     private String constraintName;
     private String constraintType;
+    /**
+     * 约束名称多个使用逗号连接
+     */
     private String constraintColumnName;
     /**
      * 1 主键

@@ -1,5 +1,6 @@
 package io.gitee.zerowsh.actable.properties;
 
+import io.gitee.zerowsh.actable.constant.StringConstants;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.Getter;
@@ -28,12 +29,20 @@ public class AcTableProperties {
      */
     private TurnEnums turn = TurnEnums.DEFAULT;
     /**
-     * 建表之前脚本
+     * 建表之前脚本，用来处理修改表字段
      */
     private String beforeScript;
     /**
      * 建表之后脚本
      */
     private String afterScript;
+    /**
+     * 结束标识，实际使用中发现默认的sql分隔符无法满足业务需求，支持自定义结束标识符
+     */
+    private String endFlag = StringConstants.SQL_SPLIT_STR;
+    /**
+     * 是否将结束标识符当作sql的一部分，默认true
+     */
+    private Boolean sqlPart = false;
 
 }

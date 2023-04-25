@@ -7,4 +7,4 @@ zero:
   ac-table:
     entity-package: io.gitee.zerowsh.actable.demo.entity.mysql
     model: ADD_OR_UPDATE_OR_DEL
-    before-script: db/mysql.sql
+    after-script: db/mysql.sql

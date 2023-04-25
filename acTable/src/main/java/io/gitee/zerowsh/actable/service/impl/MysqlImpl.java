@@ -1,6 +1,7 @@
 package io.gitee.zerowsh.actable.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -425,16 +426,13 @@ public class MysqlImpl implements DatabaseService {
      * @return
      */
     public static boolean handleUkList(List<ConstraintInfo> constraintInfoList, TableInfo.UniqueInfo uniqueInfo) {
-        Set<String> set = new HashSet<>();
         Iterator<ConstraintInfo> it = constraintInfoList.iterator();
         while (it.hasNext()) {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 String[] columns = uniqueInfo.getColumns();
-                String value = uniqueInfo.getValue();
-                Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())
-                        || Objects.equals(constraintInfo.getConstraintName(), value)) {
+                String[] constraintColumnName = constraintInfo.getConstraintColumnName().split(COMMA);
+                if (ArrayUtil.containsAll(constraintColumnName, columns)) {
                     it.remove();
                     return true;
                 }
@@ -455,10 +453,8 @@ public class MysqlImpl implements DatabaseService {
             ConstraintInfo constraintInfo = it.next();
             if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
                 String[] columns = indexInfo.getColumns();
-                String value = indexInfo.getValue();
-                Arrays.sort(columns);
-                if (Objects.equals(StrUtil.join(COMMA, columns), constraintInfo.getConstraintColumnName())
-                        || Objects.equals(constraintInfo.getConstraintName(), value)) {
+                String[] constraintColumnName = constraintInfo.getConstraintColumnName().split(COMMA);
+                if (ArrayUtil.containsAll(constraintColumnName, columns)) {
                     it.remove();
                     return true;
                 }

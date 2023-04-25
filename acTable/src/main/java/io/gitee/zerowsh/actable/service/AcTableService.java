@@ -32,7 +32,6 @@ import java.util.Objects;
 import static cn.hutool.core.util.StrUtil.COMMA;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.SQL_SERVER;
 import static io.gitee.zerowsh.actable.constant.StringConstants.CRLF;
-import static io.gitee.zerowsh.actable.constant.StringConstants.SQL_SPLIT_STR;
 
 /**
  * mysql实现
@@ -68,7 +67,7 @@ public class AcTableService {
                 throw new RuntimeException("获取数据库类型失败！");
             }
             //执行自动建表前先执行sql脚本，用于表存在时先更改相关字段，如mysql自增字段。
-            this.executeScript(connection, acTableProperties.getBeforeScript(), databaseType, "之前");
+            this.executeScript(connection, acTableProperties, acTableProperties.getBeforeScript(), databaseType, "之前");
             List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties, databaseType);
             if (CollectionUtil.isEmpty(tableInfoList)) {
                 log.warn("没有找到io.gitee.zerowsh.actable.annotation.AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table注解标记的类！ entityPackage={}", entityPackage);
@@ -85,7 +84,7 @@ public class AcTableService {
                 }
                 log.info(StrUtil.format("完成 [{}] 自动建表！", databaseType));
             }
-            this.executeScript(connection, acTableProperties.getAfterScript(), databaseType, "之后");
+            this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType, "之后");
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
         } finally {
@@ -140,9 +139,12 @@ public class AcTableService {
      * 执行脚本
      *
      * @param connection
+     * @param acTableProperties
      * @param script
+     * @param databaseType
+     * @param describe
      */
-    public void executeScript(Connection connection, String script, String databaseType, String describe) {
+    public void executeScript(Connection connection, AcTableProperties acTableProperties, String script, String databaseType, String describe) {
         if (StrUtil.isBlank(script)) {
             return;
         }
@@ -152,7 +154,7 @@ public class AcTableService {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    List<String> strings = this.inputStreamToString(resource.getInputStream(), describe, script);
+                    List<String> strings = this.inputStreamToString(resource.getInputStream(), describe, script, acTableProperties);
                     for (String sql : strings) {
                         JdbcUtil.executeSql(connection, sql);
                     }
@@ -169,17 +171,25 @@ public class AcTableService {
      * input流转字符串
      *
      * @param inputStream
+     * @param describe
+     * @param script
+     * @param acTableProperties
      * @return
      */
-    public List<String> inputStreamToString(InputStream inputStream, String describe, String script) {
+    public List<String> inputStreamToString(InputStream inputStream, String describe, String script, AcTableProperties acTableProperties) {
         List<String> resultList = new ArrayList<>();
         try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
             String str;
             StringBuilder oneSql = new StringBuilder();
+            //一行一行读取
             while ((str = bufferedReader.readLine()) != null) {
-                if (str.contains(SQL_SPLIT_STR)) {
-                    resultList.add(oneSql + str);
+                if (str.contains(acTableProperties.getEndFlag())) {
+                    if (acTableProperties.getSqlPart()) {
+                        resultList.add(oneSql + str);
+                    } else {
+                        resultList.add(oneSql + str.replaceAll(acTableProperties.getEndFlag(), ""));
+                    }
                     oneSql = new StringBuilder();
                 } else {
                     oneSql.append(str).append(CRLF);

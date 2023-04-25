@@ -213,12 +213,20 @@ public class MysqlImpl implements DatabaseService {
         StringBuilder updateColumnSql = new StringBuilder();
         for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
             boolean flag = false;
+            boolean updateNameFlag = false;
             Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
             while (it.hasNext()) {
                 TableInfo.PropertyInfo propertyInfo = it.next();
                 if (!Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
-                    //todo 这里可以写修改列名的逻辑
-                    continue;
+                    //修改列名的逻辑
+                    String oldColumnName = propertyInfo.getOldColumnName();
+                    if (Objects.equals(tableColumnInfo.getColumnName(), oldColumnName)) {
+                        //满足条件，字段从propertyInfo.getOldColumnName()修改成propertyInfo.getColumnName()
+                        updateNameFlag = true;
+                    } else {
+                        //根据io.gitee.zerowsh.actable.emnus.ModelEnums策略判断是否保留改字段
+                        continue;
+                    }
                 }
                 String type = propertyInfo.getType();
                 String columnComment = Objects.isNull(propertyInfo.getColumnComment()) ? "" : propertyInfo.getColumnComment();
@@ -236,10 +244,10 @@ public class MysqlImpl implements DatabaseService {
                 switch (typeEnum) {
                     case VARCHAR:
                     case CHAR:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), AcTableUtils.handleStrLength(length)));
+                        existUpdate = existUpdate || tableColumnInfo.getLength() != AcTableUtils.handleStrLength(length);
                         break;
                     case DATETIME:
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), AcTableUtils.handleDateLength(length)));
+                        existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != AcTableUtils.handleDateLength(length);
                         break;
                     case DECIMAL:
                     case NUMERIC:
@@ -248,19 +256,27 @@ public class MysqlImpl implements DatabaseService {
                         }
                         length = length > 65 || length < 0 ? 10 : length;
                         decimalLength = decimalLength > 65 || decimalLength < 0 ? 2 : decimalLength;
-                        existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
-                                || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
+                        existUpdate = existUpdate || tableColumnInfo.getLength() != length
+                                || tableColumnInfo.getDecimalLength() != decimalLength;
                         break;
                     default:
                 }
                 if ((propertyInfo.isKey() != tableColumnInfo.isKey()) && tableExistPk) {
                     delConstraintSet.add(MYSQL_DEL_PK);
                 }
-                if (existUpdate) {
+                if (updateNameFlag) {
+                    //从字段上判断是否修改了字段名
                     StringBuilder propertySb = new StringBuilder();
                     splicingColumnInfo(propertySb, propertyInfo, tableName);
-                    updateColumnSql.append(StrUtil.format(MYSQL_UPDATE_COLUMN, propertyInfo.getColumnName(), propertySb));
+                    updateColumnSql.append(StrUtil.format(MYSQL_CHANGE_COLUMN, propertyInfo.getOldColumnName(), propertyInfo.getColumnName(), propertySb));
+                } else {
+                    if (existUpdate) {
+                        StringBuilder propertySb = new StringBuilder();
+                        splicingColumnInfo(propertySb, propertyInfo, tableName);
+                        updateColumnSql.append(StrUtil.format(MYSQL_MODIFY_COLUMN, propertyInfo.getColumnName(), propertySb));
+                    }
                 }
+
                 flag = true;
                 it.remove();
                 break;

@@ -39,6 +39,7 @@ public class TableInfo {
     @Builder
     public static class PropertyInfo {
         private String columnName;
+        private String oldColumnName;
         private boolean isKey;
         private int order;
         private String type;

@@ -98,7 +98,8 @@ public interface AcTableConstants {
      */
     String MYSQL_ALTER_TABLE = "ALTER TABLE " + MYSQL_KEYWORD_HANDLE;
     String MYSQL_COMMENT = " COMMENT='{}'";
-    String MYSQL_UPDATE_COLUMN = " MODIFY COLUMN `{}` {}";
+    String MYSQL_MODIFY_COLUMN = " MODIFY COLUMN `{}` {}";
+    String MYSQL_CHANGE_COLUMN = " CHANGE COLUMN `{}` `{}` {}";
     String MYSQL_ADD_PK = " ADD PRIMARY KEY ({})";
     String MYSQL_DEL_PK = " DROP PRIMARY KEY";
     String MYSQL_DEL_COLUMN = " DROP COLUMN `{}`";

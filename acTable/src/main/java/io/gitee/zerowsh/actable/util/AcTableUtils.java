@@ -21,7 +21,7 @@ public class AcTableUtils {
      * @param length
      * @return
      */
-    public static int handleStrLength(int length) {
+    public static long handleStrLength(int length) {
         return length < 0 ? 255 : length;
     }
 

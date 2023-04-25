@@ -15,5 +15,6 @@ public interface StringConstants {
     String RIGHT_SQ_BRACKET = "]";
     String SQL_SPLIT_STR = "endFlag";
     String CRLF = "\r\n";
+    String CONVERT_STR = "->";
 
 }

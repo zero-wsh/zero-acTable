@@ -24,6 +24,7 @@ import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
 import static io.gitee.zerowsh.actable.constant.StringConstants.COMMA;
+import static io.gitee.zerowsh.actable.constant.StringConstants.CONVERT_STR;
 
 /**
  * 处理实体工具类
@@ -68,6 +69,7 @@ public class HandlerEntityUtils {
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
                 AcTable acTable = cls.getAnnotation(AcTable.class);
+                UpdateColumnName updateColumnName = cls.getAnnotation(UpdateColumnName.class);
                 //mybatis plus兼容
                 TableName tableNameAnn = cls.getAnnotation(TableName.class);
                 //hibernate 兼容
@@ -99,8 +101,19 @@ public class HandlerEntityUtils {
                 tableList.add(tableName);
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
+                HashMap<String, String> updateColumnNameMap = new HashMap();
+                //需要修改的字段
+                if (Objects.nonNull(updateColumnName)) {
+                    String[] value = updateColumnName.value();
+                    if (ArrayUtil.isNotEmpty(value)) {
+                        for (String updateColumnNameStr : value) {
+                            String[] split = updateColumnNameStr.split(CONVERT_STR);
+                            updateColumnNameMap.put(split[1], split[0]);
+                        }
+                    }
+                }
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
-                        uniqueInfoList, propertyList, acTable,
+                        uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                         null, turn, acTableProperties, databaseService);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
@@ -148,6 +161,7 @@ public class HandlerEntityUtils {
      * @param uniqueInfoList
      * @param propertyList      判断类中是否有重复字段
      * @param acTable
+     * @param updateColumnName
      * @param excludeSuperField
      * @param turn
      * @return
@@ -157,10 +171,12 @@ public class HandlerEntityUtils {
                                      List<TableInfo.UniqueInfo> uniqueInfoList,
                                      List<String> propertyList,
                                      AcTable acTable,
+                                     HashMap<String, String> updateColumnNameMap,
                                      ExcludeSuperField excludeSuperField,
                                      TurnEnums turn,
                                      AcTableProperties acTableProperties,
                                      DatabaseService databaseService) {
+
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -174,6 +190,7 @@ public class HandlerEntityUtils {
                     }
                 }
             }
+
             //需要排除修饰符的方法
             String modifier = Modifier.toString(field.getModifiers());
             if (modifier.contains(STATIC) || modifier.contains(TRANSIENT)) {
@@ -244,6 +261,7 @@ public class HandlerEntityUtils {
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
                 propertyInfoBuilder.columnName(columnName)
+                        .oldColumnName(StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : updateColumnNameMap.get(columnName))
                         .columnComment(columnComment)
                         .decimalLength(acColumn.decimalLength())
                         .defaultValue(judgeIsNull(acColumn.defaultValue()))
@@ -287,7 +305,7 @@ public class HandlerEntityUtils {
             return;
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
-                uniqueInfoList, propertyList, acTable,
+                uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                 cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties, databaseService);
     }
 

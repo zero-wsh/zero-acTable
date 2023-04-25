@@ -364,10 +364,10 @@ public class SqlServerImpl implements DatabaseService {
                         case VARCHAR:
                         case NCHAR:
                         case CHAR:
-                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), AcTableUtils.handleStrLength(length)));
+                            existUpdate = existUpdate || tableColumnInfo.getLength() != AcTableUtils.handleStrLength(length);
                             break;
                         case DATETIME2:
-                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getDecimalLength(), AcTableUtils.handleDateLength(length)));
+                            existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != AcTableUtils.handleDateLength(length);
                             break;
                         case DECIMAL:
                         case NUMERIC:
@@ -376,8 +376,8 @@ public class SqlServerImpl implements DatabaseService {
                             }
                             length = length > 38 || length < 0 ? 18 : length;
                             decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
-                            existUpdate = existUpdate || !(Objects.equals(tableColumnInfo.getLength(), length))
-                                    || !(Objects.equals(tableColumnInfo.getDecimalLength(), decimalLength));
+                            existUpdate = existUpdate || tableColumnInfo.getLength() != length
+                                    || tableColumnInfo.getDecimalLength() != decimalLength;
                             break;
                         default:
                     }

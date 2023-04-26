@@ -4,7 +4,7 @@
 zero-acTable是基于实体类创建表的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作，指定初始化脚本就能执行数据初始化，内置测试demo。
 
 #### 数据库支持
-mysql、sql_server
+mysql
 
 #### 功能介绍
 - 兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
@@ -26,7 +26,7 @@ mysql、sql_server
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>2.0.2</version>
+	<version>2.1.1</version>
 </dependency>
 ```
 
@@ -37,8 +37,10 @@ mysql、sql_server
 zero.ac-acTable.entity-package=io.gitee.zerowsh.actable.demo.entity.mysql
 #支持的模式（默认NONE）
 zero.ac-acTable.model=ADD_OR_UPDATE_OR_DEL
-#初始化脚本位置resources文件夹下
-zero.ac-acTable.script=db/*.sql
+#建表之前执行的sql脚本
+zero.ac-acTable.before-script=db/*.sql
+#建表之后执行的sql脚本
+zero.ac-acTable.after-script=db/*.sql
 ```
 
 #### 注解说明
@@ -68,18 +70,30 @@ zero.ac-acTable.script=db/*.sql
 3、索引@Index，设置表索引
 |属性名   |描述   |默认值   |取值范围   |
 |---|---|---|---|
-|value   |索引名后缀   |   |   |
+|value   |索引名后缀，前缀固定idx_   |   |   |
 |columns   |列名   |   |   |
 
 4、唯一键@Unique，设置表唯一键
 |属性名   |描述   |默认值   |取值范围   |
 |---|---|---|---|
-|value   |唯一键后缀   |   |   |
+|value   |唯一键后缀，前缀固定uk_   |   |   |
 |columns   |列名   |   |   |
 
+5、@ExcludeSuperField，排除父级字段
+|属性名   |描述   |默认值   |取值范围   |
+|---|---|---|---|
+|value   |排除父类相关字段   |   |   |
+
+6、@IgnoreTable，忽略表的注解
+
+7、@UpdateColumnName，修改列名
+|属性名   |描述   |默认值   |取值范围   |
+|---|---|---|---|
+|value   |需要修改的列名，采用`->`进行分隔，左边是以前的字段，右边是改过后的字段   |   |   |
+
 #### 注意事项
-- 有初始化脚本时，必须保证可重复执行，多个插入语句使用);隔开
-- 有初始化脚本时，在字符串和注释中不要出现);分割符
+- 有初始化脚本时，必须保证可重复执行，多个插入语句默认使用endFlag隔开
+- 有初始化脚本时，在字符串和注释中不要出现sql分割符字样
 - 有初始化脚本时，并且使用了druid连接池filters不要配置wall
 
 #### 联系方式

@@ -39,6 +39,7 @@ public enum ColumnTypeEnums {
     LONGBLOB("longblob", null),
     JSON("json", null),
     LONGTEXT("longtext", null),
+    YEAR("year", null),
     /**
      * sqlserver才有的
      */

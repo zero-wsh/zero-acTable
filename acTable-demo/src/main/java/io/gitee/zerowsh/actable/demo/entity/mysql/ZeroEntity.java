@@ -31,8 +31,8 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(name = "test1",oldName = "test")
     private String test1;
 
-    @AcColumn
-    private String test2;
+    @AcColumn(type=ColumnTypeEnums.YEAR)
+    private Short test2;
 
 
 }

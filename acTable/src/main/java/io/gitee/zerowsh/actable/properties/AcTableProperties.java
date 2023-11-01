@@ -41,7 +41,7 @@ public class AcTableProperties {
      */
     private String endFlag = StringConstants.SQL_SPLIT_STR;
     /**
-     * 是否将结束标识符当作sql的一部分，默认true
+     * 是否将结束标识符当作sql的一部分，默认false
      */
     private Boolean sqlPart = false;
 

@@ -47,7 +47,7 @@ public class HandlerEntityUtils {
         //实体类表信息
         List<TableInfo> tableInfoList = new ArrayList<>();
         //用来判断是否有重复表名
-        List<String> tableList = new ArrayList<>();
+        Set<String> tableJudge = new HashSet<>();
         for (String s : entityPackage.split(COMMA)) {
             Set<Class<?>> acTableClass = ClassUtil.scanPackageByAnnotation(s, AcTable.class);
             //mybatis plus兼容
@@ -68,40 +68,49 @@ public class HandlerEntityUtils {
                 List<TableInfo.UniqueInfo> uniqueInfoList = new ArrayList<>();
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
-                AcTable acTable = cls.getAnnotation(AcTable.class);
-                UpdateColumnName updateColumnName = cls.getAnnotation(UpdateColumnName.class);
-                //mybatis plus兼容
-                TableName tableNameAnn = cls.getAnnotation(TableName.class);
-                //hibernate 兼容
-                Table tableAnn = cls.getAnnotation(Table.class);
+                //定义表名
                 String tableName = null;
+                //定义表注释
                 String comment = DEFAULT_VALUE;
-                //swagger 兼容
-                ApiModel apiModel = cls.getAnnotation(ApiModel.class);
+                AcTable acTable = cls.getAnnotation(AcTable.class);
                 if (Objects.nonNull(acTable)) {
                     tableName = acTable.name();
                     comment = acTable.comment();
                 }
-                if (Objects.nonNull(apiModel)) {
-                    comment = apiModel.value();
+                if (Objects.equals(comment, DEFAULT_VALUE)) {
+                    //swagger 兼容获取表注释
+                    ApiModel apiModel = cls.getAnnotation(ApiModel.class);
+                    if (Objects.nonNull(apiModel)) {
+                        comment = apiModel.value();
+                    }
                 }
-                if (Objects.nonNull(tableNameAnn) && StrUtil.isBlank(tableName)) {
-                    tableName = tableNameAnn.value();
+                if (Objects.isNull(tableName)) {
+                    //mybatis plus兼容
+                    TableName mpTable = cls.getAnnotation(TableName.class);
+                    if (Objects.nonNull(mpTable)) {
+                        tableName = mpTable.value();
+                    }
                 }
-                if (Objects.nonNull(tableAnn) && StrUtil.isBlank(tableName)) {
-                    tableName = tableAnn.name();
+                if (Objects.isNull(tableName)) {
+                    //hibernate 兼容
+                    Table jpaTable = cls.getAnnotation(Table.class);
+                    if (Objects.nonNull(jpaTable)) {
+                        tableName = jpaTable.name();
+                    }
                 }
                 if (StrUtil.isBlank(tableName)) {
                     throw new RuntimeException(StrUtil.format("io.gitee.zerowsh.actable.annotation.AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table 注解都没设置表名！"));
                 }
-                if (tableList.contains(tableName)) {
+                if (tableJudge.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
                 }
                 tableName = databaseService.handleKeyword(tableName);
-                tableList.add(tableName);
+                tableJudge.add(tableName);
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
                 HashMap<String, String> updateColumnNameMap = new HashMap();
+
+                UpdateColumnName updateColumnName = cls.getAnnotation(UpdateColumnName.class);
                 //需要修改的字段
                 if (Objects.nonNull(updateColumnName)) {
                     String[] value = updateColumnName.value();

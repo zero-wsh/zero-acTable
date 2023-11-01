@@ -10,7 +10,6 @@ import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.util.AcTableUtils;
 import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
-import io.gitee.zerowsh.actable.util.IoUtil;
 import io.gitee.zerowsh.actable.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -41,9 +40,6 @@ import static io.gitee.zerowsh.actable.constant.StringConstants.CRLF;
 @Slf4j
 public class AcTableService {
 
-    private AcTableService() {
-    }
-
     public AcTableService(DataSource dataSource, AcTableProperties acTableProperties) {
         this.acTable(dataSource, acTableProperties);
     }
@@ -59,9 +55,7 @@ public class AcTableService {
             log.warn("没有需要操作的类，请设置实体类包路径！");
             return;
         }
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
+        try (Connection connection = dataSource.getConnection()) {
             String databaseType = connection.getMetaData().getDatabaseProductName();
             if (StrUtil.isBlank(databaseType)) {
                 throw new RuntimeException("获取数据库类型失败！");
@@ -87,8 +81,6 @@ public class AcTableService {
             this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType, "之后");
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
-        } finally {
-            IoUtil.close(connection);
         }
     }
 

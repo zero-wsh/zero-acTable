@@ -3,8 +3,7 @@ package io.gitee.zerowsh.actable.util;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,8 +15,8 @@ import java.util.List;
 /**
  * @author zero
  */
+@Slf4j
 public class JdbcUtil {
-    private static final Logger log = LoggerFactory.getLogger(JdbcUtil.class);
 
     public static void executeSql(Connection conn, String sql, Object... obj) throws SQLException {
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj)) {
@@ -34,17 +33,12 @@ public class JdbcUtil {
      * @return
      */
     public static boolean isExist(Connection conn, String sql, Object... obj) throws SQLException {
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = handlePrepareStatement(conn, sql, obj);
-            rs = ps.executeQuery();
+        try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
+             ResultSet rs = ps.executeQuery()) {
             //开始遍历结果集
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
-        } finally {
-            IoUtil.close(ps, rs);
         }
         return false;
     }
@@ -66,11 +60,8 @@ public class JdbcUtil {
      */
     public static List<TableColumnInfo> getTableColumnInfoList(Connection conn, String sql, Object... obj) throws SQLException {
         List<TableColumnInfo> list = new ArrayList<>();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = handlePrepareStatement(conn, sql, obj);
-            rs = ps.executeQuery();
+        try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
+             ResultSet rs = ps.executeQuery();) {
             while (rs.next()) {
                 TableColumnInfo tableColumnInfo = new TableColumnInfo();
                 tableColumnInfo.setTableName(rs.getString("tableName"));
@@ -87,8 +78,6 @@ public class JdbcUtil {
                 list.add(tableColumnInfo);
             }
             return list;
-        } finally {
-            IoUtil.close(ps, rs);
         }
     }
 
@@ -103,11 +92,8 @@ public class JdbcUtil {
     public static List<ConstraintInfo> getConstraintInfoList(Connection conn, String sql, Object... obj) throws SQLException {
         //创建一个list集合对象来存储查询数据
         List<ConstraintInfo> list = new ArrayList<>();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = handlePrepareStatement(conn, sql, obj);
-            rs = ps.executeQuery();
+        try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 ConstraintInfo constraintInfo = new ConstraintInfo();
                 constraintInfo.setConstraintName(rs.getString("constraintName"));
@@ -116,8 +102,6 @@ public class JdbcUtil {
                 list.add(constraintInfo);
             }
             return list;
-        } finally {
-            IoUtil.close(ps, rs);
         }
     }
 
@@ -132,17 +116,12 @@ public class JdbcUtil {
     public static List<String> getTableNameList(Connection conn, String sql, Object... obj) throws SQLException {
         //创建一个list集合对象来存储查询数据
         List<String> list = new ArrayList<>();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = handlePrepareStatement(conn, sql, obj);
-            rs = ps.executeQuery();
+        try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(rs.getString("name"));
             }
             return list;
-        } finally {
-            IoUtil.close(ps, rs);
         }
     }
 }

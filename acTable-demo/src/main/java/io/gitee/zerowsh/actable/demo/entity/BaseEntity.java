@@ -8,6 +8,9 @@ import lombok.Setter;
 
 import java.sql.Timestamp;
 
+/**
+ * @author zero
+ */
 @Getter
 @Setter
 public class BaseEntity {

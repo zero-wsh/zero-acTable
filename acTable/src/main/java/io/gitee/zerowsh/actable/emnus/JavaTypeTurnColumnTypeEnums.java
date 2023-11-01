@@ -18,9 +18,9 @@ public enum JavaTypeTurnColumnTypeEnums {
     FLOAT("java.lang.Float,float", ColumnTypeEnums.FLOAT),
     CHAR("char", ColumnTypeEnums.CHAR, ColumnTypeEnums.NCHAR);
 
-    private String javaType;
-    private ColumnTypeEnums mysql;
-    private ColumnTypeEnums sqlServer;
+    private final String javaType;
+    private final ColumnTypeEnums mysql;
+    private final ColumnTypeEnums sqlServer;
 
     JavaTypeTurnColumnTypeEnums(String javaType, ColumnTypeEnums mysql, ColumnTypeEnums sqlServer) {
         this.javaType = javaType;

@@ -150,6 +150,8 @@
                     <!-- 解决 java8 下发布到 maven 中心库时，生成 doc 的异常 -->
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <charset>${project.build.sourceEncoding}</charset>
+                    <docencoding>${project.build.sourceEncoding}</docencoding>
                     <excludePackageNames>io.gitee.zerowsh</excludePackageNames>
                 </configuration>
                 <executions>

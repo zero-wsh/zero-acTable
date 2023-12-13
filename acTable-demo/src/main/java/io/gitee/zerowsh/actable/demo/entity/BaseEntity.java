@@ -3,6 +3,7 @@ package io.gitee.zerowsh.actable.demo.entity;
 import io.gitee.zerowsh.actable.annotation.AcColumn;
 import io.gitee.zerowsh.actable.annotation.Index;
 import io.gitee.zerowsh.actable.annotation.Unique;
+import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,4 +26,7 @@ public class BaseEntity {
     @AcColumn(name = "update_time", comment = "修改时间", order = 101)
     @Index
     private Timestamp updateTime;
+
+    @AcColumn(comment = "测试", type = ColumnTypeEnums.DOUBLE, length = 10, decimalLength = 2)
+    private Double ddd;
 }

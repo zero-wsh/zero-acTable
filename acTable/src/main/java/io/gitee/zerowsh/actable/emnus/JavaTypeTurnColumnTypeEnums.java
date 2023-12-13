@@ -14,7 +14,8 @@ public enum JavaTypeTurnColumnTypeEnums {
     INTEGER("java.lang.Integer,int", ColumnTypeEnums.INT),
     BOOLEAN("java.lang.Boolean,boolean", ColumnTypeEnums.BIT),
     DATE("java.util.Date,java.sql.Timestamp,java.time.LocalDate,java.time.LocalDateTime", ColumnTypeEnums.DATETIME, ColumnTypeEnums.DATETIME2),
-    BIG_DECIMAL("java.math.BigDecimal,java.lang.Double,double", ColumnTypeEnums.NUMERIC),
+    BIG_DECIMAL("java.math.BigDecimal", ColumnTypeEnums.DECIMAL, ColumnTypeEnums.NUMERIC),
+    DOUBLE("java.lang.Double,double", ColumnTypeEnums.DOUBLE),
     FLOAT("java.lang.Float,float", ColumnTypeEnums.FLOAT),
     CHAR("char", ColumnTypeEnums.CHAR, ColumnTypeEnums.NCHAR);
 

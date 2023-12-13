@@ -61,7 +61,7 @@ public class JdbcUtil {
     public static List<TableColumnInfo> getTableColumnInfoList(Connection conn, String sql, Object... obj) throws SQLException {
         List<TableColumnInfo> list = new ArrayList<>();
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
-             ResultSet rs = ps.executeQuery();) {
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 TableColumnInfo tableColumnInfo = new TableColumnInfo();
                 tableColumnInfo.setTableName(rs.getString("tableName"));

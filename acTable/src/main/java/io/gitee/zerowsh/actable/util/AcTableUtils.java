@@ -6,6 +6,12 @@ import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.gitee.zerowsh.actable.service.impl.MysqlImpl;
 import io.gitee.zerowsh.actable.service.impl.SqlServerImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+
+import java.lang.annotation.Annotation;
+import java.util.Set;
 
 
 /**
@@ -44,5 +50,13 @@ public class AcTableUtils {
             default:
                 throw new RuntimeException(StrUtil.format("数据库类型不支持 databaseType={}", databaseType));
         }
+    }
+
+    public static Set<BeanDefinition> scanPackageByAnnotation(String basePackage, Class<? extends Annotation> annotationClass) {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        // 添加包含过滤条件，只扫描带有特定注解的类
+        scanner.addIncludeFilter(new AnnotationTypeFilter(annotationClass));
+        // 执行扫描并获取结果
+        return scanner.findCandidateComponents(basePackage);
     }
 }

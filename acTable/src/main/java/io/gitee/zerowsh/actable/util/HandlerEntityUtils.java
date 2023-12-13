@@ -2,7 +2,6 @@ package io.gitee.zerowsh.actable.util;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -16,6 +15,7 @@ import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.config.BeanDefinition;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
@@ -49,16 +49,23 @@ public class HandlerEntityUtils {
         //用来判断是否有重复表名
         Set<String> tableJudge = new HashSet<>();
         for (String s : entityPackage.split(COMMA)) {
-            Set<Class<?>> acTableClass = ClassUtil.scanPackageByAnnotation(s, AcTable.class);
+            Set<BeanDefinition> acTableBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, AcTable.class);
             //mybatis plus兼容
-            Set<Class<?>> tableNameClass = ClassUtil.scanPackageByAnnotation(s, TableName.class);
+            Set<BeanDefinition> tableNameBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, TableName.class);
             //hibernate 兼容
-            Set<Class<?>> tableClass = ClassUtil.scanPackageByAnnotation(s, Table.class);
-            Set<Class<?>> tableSet = new HashSet<>();
-            tableSet.addAll(acTableClass);
-            tableSet.addAll(tableNameClass);
-            tableSet.addAll(tableClass);
-            for (Class<?> cls : tableSet) {
+            Set<BeanDefinition> tableBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, Table.class);
+            Set<BeanDefinition> tableSet = new HashSet<>();
+            tableSet.addAll(acTableBeanDefinitions);
+            tableSet.addAll(tableNameBeanDefinitions);
+            tableSet.addAll(tableBeanDefinitions);
+            for (BeanDefinition beanDefinition : tableSet) {
+                Class<?> cls;
+                try {
+                    // 使用反射加载类并输出类名
+                    cls = Class.forName(beanDefinition.getBeanClassName());
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("未找到实例对象！");
+                }
                 if (Objects.nonNull(cls.getAnnotation(IgnoreTable.class))) {
                     continue;
                 }

@@ -29,6 +29,7 @@ public enum ColumnTypeEnums {
     DATE("date"),
     CHAR("char"),
     FLOAT("float"),
+    DOUBLE("double"),
     DECIMAL("decimal"),
     TINYINT("tinyint"),
     NUMERIC("numeric"),

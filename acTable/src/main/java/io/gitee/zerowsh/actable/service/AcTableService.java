@@ -72,7 +72,7 @@ public class AcTableService {
             List<String> executeSqlList = new ArrayList<>();
             this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseType);
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
-                log.info(StrUtil.format("开始 [{}] 自动建表。。。", databaseType));
+                log.info(StrUtil.format("开始 [{}] 自动建表~~~", databaseType));
                 for (String sql : executeSqlList) {
                     JdbcUtil.executeSql(connection, sql);
                 }

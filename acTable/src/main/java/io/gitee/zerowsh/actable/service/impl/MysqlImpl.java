@@ -252,6 +252,7 @@ public class MysqlImpl implements DatabaseService {
                     case DECIMAL:
                     case NUMERIC:
                     case DOUBLE:
+                    case FLOAT:
                         if (decimalLength > length) {
                             decimalLength = length;
                         }
@@ -412,6 +413,7 @@ public class MysqlImpl implements DatabaseService {
             case DECIMAL:
             case NUMERIC:
             case DOUBLE:
+            case FLOAT:
                 propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
 
                 if (decimalLength > length) {

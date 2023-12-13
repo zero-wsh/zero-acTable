@@ -38,4 +38,7 @@ public class ZeroEntity extends BaseEntity {
     private Short test222;
 
 
+    @AcColumn(comment = "测试", type = ColumnTypeEnums.DOUBLE, length = 10, decimalLength = 2)
+    private Double ddd;
+
 }

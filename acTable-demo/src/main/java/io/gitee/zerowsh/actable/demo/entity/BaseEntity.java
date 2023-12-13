@@ -26,7 +26,4 @@ public class BaseEntity {
     @AcColumn(name = "update_time", comment = "修改时间", order = 101)
     @Index
     private Timestamp updateTime;
-
-    @AcColumn(comment = "测试", type = ColumnTypeEnums.DOUBLE, length = 10, decimalLength = 2)
-    private Double ddd;
 }

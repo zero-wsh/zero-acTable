@@ -29,6 +29,14 @@ public class AcTableProperties {
      */
     private TurnEnums turn = TurnEnums.DEFAULT;
     /**
+     * 表名是否转大写；默认否
+     */
+    private Boolean tableToUpperCase = false;
+    /**
+     * 列名是否转大写；默认否
+     */
+    private Boolean columnToUpperCase = false;
+    /**
      * 建表之前脚本，用来处理修改表字段
      */
     private String beforeScript;

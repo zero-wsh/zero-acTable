@@ -59,4 +59,5 @@ public class AcTableUtils {
         // 执行扫描并获取结果
         return scanner.findCandidateComponents(basePackage);
     }
+
 }

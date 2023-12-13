@@ -43,7 +43,8 @@ public class HandlerEntityUtils {
     public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties, String databaseType) {
         DatabaseService databaseService = AcTableUtils.getDatabaseService(databaseType);
         String entityPackage = acTableProperties.getEntityPackage();
-        TurnEnums turn = acTableProperties.getTurn();
+        Boolean tableToUpperCase = acTableProperties.getTableToUpperCase();
+        Boolean columnToUpperCase = acTableProperties.getColumnToUpperCase();
         //实体类表信息
         List<TableInfo> tableInfoList = new ArrayList<>();
         //用来判断是否有重复表名
@@ -111,8 +112,9 @@ public class HandlerEntityUtils {
                 if (tableJudge.contains(tableName)) {
                     throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
                 }
-                tableName = databaseService.handleKeyword(tableName);
+                tableName = tableToUpperCase ? databaseService.handleKeyword(tableName).toUpperCase() : databaseService.handleKeyword(tableName);
                 tableJudge.add(tableName);
+                //设置表名
                 builder.name(tableName);
                 builder.comment(judgeIsNull(comment));
                 HashMap<String, String> updateColumnNameMap = new HashMap();
@@ -130,17 +132,12 @@ public class HandlerEntityUtils {
                 }
                 getFieldInfo(cls, propertyInfoList, indexInfoList,
                         uniqueInfoList, propertyList, acTable, updateColumnNameMap,
-                        null, turn, acTableProperties, databaseService);
+                        null, acTableProperties, databaseService);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
                 }
-                //通过order字段排序
-                Collections.sort(propertyInfoList, new Comparator<TableInfo.PropertyInfo>() {  //排序
-                    @Override
-                    public int compare(TableInfo.PropertyInfo o1, TableInfo.PropertyInfo o2) {
-                        return o1.getOrder() - o2.getOrder();
-                    }
-                });
+                //通过order字段正序排序
+                propertyInfoList.sort(Comparator.comparing(TableInfo.PropertyInfo::getOrder));
                 for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
                     if (propertyInfo.isKey()) {
                         keyList.add(propertyInfo.getColumnName());
@@ -189,10 +186,9 @@ public class HandlerEntityUtils {
                                      AcTable acTable,
                                      HashMap<String, String> updateColumnNameMap,
                                      ExcludeSuperField excludeSuperField,
-                                     TurnEnums turn,
                                      AcTableProperties acTableProperties,
                                      DatabaseService databaseService) {
-
+        TurnEnums turn = acTableProperties.getTurn();
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
             String fieldName = field.getName();
@@ -225,6 +221,7 @@ public class HandlerEntityUtils {
             GeneratedValue generatedValue = field.getAnnotation(GeneratedValue.class);
             Transient transientAnn = field.getAnnotation(Transient.class);
             if (Objects.isNull(acColumn)) {
+                //从其他注解获取
                 if ((Objects.nonNull(tableField) && !tableField.exist())
                         || Objects.nonNull(transientAnn)) {
                     continue;
@@ -244,8 +241,7 @@ public class HandlerEntityUtils {
                 boolean isAutoIncrement = (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
-                propertyInfoBuilder.columnName(columnName)
-                        .columnComment(columnComment)
+                propertyInfoBuilder.columnComment(columnComment)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(COLUMN_IS_NULL_DEF)
                         .isKey(isKey)
@@ -253,6 +249,7 @@ public class HandlerEntityUtils {
                         .length(COLUMN_LENGTH_DEF)
                         .type(databaseService.javaTypeTurnColumnType(field.getType().getName()));
             } else {
+                //从自定义注解获取
                 if ((Objects.nonNull(tableField) && !tableField.exist())
                         || Objects.nonNull(transientAnn)
                         || acColumn.exclude()) {
@@ -276,8 +273,7 @@ public class HandlerEntityUtils {
                         || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
-                propertyInfoBuilder.columnName(columnName)
-                        .oldColumnName(StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : updateColumnNameMap.get(columnName))
+                propertyInfoBuilder.oldColumnName(StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : updateColumnNameMap.get(columnName))
                         .columnComment(columnComment)
                         .decimalLength(acColumn.decimalLength())
                         .defaultValue(judgeIsNull(acColumn.defaultValue()))
@@ -288,7 +284,10 @@ public class HandlerEntityUtils {
                         .length(acColumn.length())
                         .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()));
             }
-            propertyInfoList.add(propertyInfoBuilder.build());
+            if (acTableProperties.getColumnToUpperCase()) {
+                columnName = columnName.toUpperCase();
+            }
+            propertyInfoList.add(propertyInfoBuilder.columnName(columnName).build());
 
             /*
              *处理索引
@@ -322,7 +321,7 @@ public class HandlerEntityUtils {
         }
         getFieldInfo(superclass, propertyInfoList, indexInfoList,
                 uniqueInfoList, propertyList, acTable, updateColumnNameMap,
-                cls.getAnnotation(ExcludeSuperField.class), turn, acTableProperties, databaseService);
+                cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService);
     }
 
     /**

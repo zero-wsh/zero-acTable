@@ -28,7 +28,7 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(type = ColumnTypeEnums.LONGTEXT)
     private String zero;
 
-    @AcColumn(name = "test1", oldName = "test")
+    @AcColumn(value = "test1", oldName = "test")
     private String test1;
 
     @AcColumn(type = ColumnTypeEnums.YEAR)

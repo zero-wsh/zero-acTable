@@ -30,8 +30,15 @@ public @interface AcColumn {
 
     /**
      * 字段名
+     * 使用value代替
      */
+    @Deprecated
     String name() default "";
+
+    /**
+     * 字段名
+     */
+    String value() default "";
 
 
     /**

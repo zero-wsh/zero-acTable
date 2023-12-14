@@ -255,7 +255,10 @@ public class HandlerEntityUtils {
                         || acColumn.exclude()) {
                     continue;
                 }
-                columnName = acColumn.name();
+                columnName = acColumn.value();
+                if (StrUtil.isBlank(columnName)) {
+                    columnName = acColumn.name();
+                }
                 if (Objects.nonNull(tableField) && StrUtil.isBlank(columnName)) {
                     columnName = tableField.value();
                 }

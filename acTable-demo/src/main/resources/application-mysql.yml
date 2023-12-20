@@ -1,10 +1,12 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost/test?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+    url: jdbc:mysql://zero-ubuntu:3306/test?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
     username: root
-    password: zero
+    password: root
 zero:
   ac-table:
     entity-package: io.gitee.zerowsh.*.demo.entity.mysql
     model: ADD_OR_UPDATE_OR_DEL
     after-script: db/mysql.sql
+#    table-to-upper-case: true
+#    column-to-upper-case: true

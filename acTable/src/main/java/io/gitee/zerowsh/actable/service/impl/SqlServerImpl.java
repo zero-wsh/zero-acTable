@@ -1,56 +1,32 @@
 package io.gitee.zerowsh.actable.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
+import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
-import io.gitee.zerowsh.actable.emnus.SqlTypeEnums;
 import io.gitee.zerowsh.actable.service.DatabaseService;
-import io.gitee.zerowsh.actable.util.AcTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
-import static io.gitee.zerowsh.actable.constant.StringConstants.*;
+import static io.gitee.zerowsh.actable.constant.StringConstants.LEFT_BRACKET;
+import static io.gitee.zerowsh.actable.constant.StringConstants.RIGHT_BRACKET;
 
+/**
+ * sqlserver数据库实现
+ *
+ * @author zero
+ */
 @Slf4j
 public class SqlServerImpl implements DatabaseService {
-    public static final HashMap<SqlTypeEnums, String> SQL_SERVER_EXECUTE_SQL = new HashMap<SqlTypeEnums, String>() {{
-        put(SqlTypeEnums.GET_ALL_TABLE, "select name from sys.tables");
-        put(SqlTypeEnums.DROP_TABLE, "drop table if exists [{}]");
-        put(SqlTypeEnums.EXIST_TABLE, "SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID('{}') AND type IN ('U')");
-        put(SqlTypeEnums.TABLE_STRUCTURE, "SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
-                " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +
-                " case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (" +
-                " SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then 1 else 0 end isKey," +
-                " b.name typeStr, COLUMNPROPERTY(a.id,a.name,'PRECISION') length," +
-                " isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) decimalLength," +
-                " case when a.isnullable=1 then 1 else 0 end isNull,convert(nvarchar(255), e.text) defaultValue,convert(nvarchar(255), g.value) columnComment" +
-                " FROM syscolumns a" +
-                " left join systypes b on a.xusertype=b.xusertype" +
-                " inner join sysobjects d on a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties'" +
-                " left join syscomments e on a.cdefault=e.id" +
-                " left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id" +
-                " left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0 where d.name='{}'");
-        put(SqlTypeEnums.CONSTRAINT_INFO, "WITH MO_Cook AS (SELECT  IDX.NAME AS constraintName, IDX.TYPE_DESC AS constraintType,COL.NAME AS constraintColumnName,case when IDX.IS_PRIMARY_KEY = 1 then 1 else case when        IDX.IS_UNIQUE_CONSTRAINT = 1 then 2 else 3 end end constraintFlag FROM  SYS.INDEXES IDX JOIN " +
-                " SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) JOIN " +
-                " SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN " +
-                " SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) " +
-                " where  TAB.NAME='{}') " +
-                " select constraintName,constraintType,constraintFlag,stuff((select ','+constraintColumnName from  MO_Cook   " +
-                " where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName " +
-                " for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c" +
-                " group by c.constraintName,c.constraintType,c.constraintFlag");
-        put(SqlTypeEnums.DEFAULT_INFO, "select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
-                "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
-                "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault");
-    }};
+
 
     /**
      * 获取创建表sql
@@ -127,7 +103,7 @@ public class SqlServerImpl implements DatabaseService {
         if (flag && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
-                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(COMMA);
+                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(StrUtil.COMMA);
             }
             resultList.add(StrUtil.format(CREATE_PRIMARY_KEY, tableName, PK_ + tableName, keySb.deleteCharAt(keySb.length() - 1)));
         }
@@ -144,15 +120,15 @@ public class SqlServerImpl implements DatabaseService {
     private static void createUk(boolean flag, List<TableInfo.UniqueInfo> uniqueInfoList, String tableName, List<String> resultList, List<String> existUkNameList) {
         if (flag && CollectionUtil.isNotEmpty(uniqueInfoList)) {
             for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-                String[] columns = uniqueInfo.getColumns();
-                StringBuilder uniqueSb = new StringBuilder();
-                for (String column : columns) {
-                    uniqueSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(COMMA);
-                }
-
-                if (CollectionUtil.isEmpty(existUkNameList) || !existUkNameList.contains(uniqueInfo.getValue())) {
-                    resultList.add(StrUtil.format(CREATE_UNIQUE, tableName, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
-                }
+//                String[] columns = uniqueInfo.getColumns();
+//                StringBuilder uniqueSb = new StringBuilder();
+//                for (String column : columns) {
+//                    uniqueSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StrUtil.COMMA);
+//                }
+//
+//                if (CollectionUtil.isEmpty(existUkNameList) || !existUkNameList.contains(uniqueInfo.getValue())) {
+//                    resultList.add(StrUtil.format(CREATE_UNIQUE, tableName, uniqueInfo.getValue(), uniqueSb.deleteCharAt(uniqueSb.length() - 1)));
+//                }
             }
         }
     }
@@ -167,14 +143,14 @@ public class SqlServerImpl implements DatabaseService {
     private static void createIdx(boolean flag, List<TableInfo.IndexInfo> indexInfoList, String tableName, List<String> resultList, List<String> existIdxNameList) {
         if (flag && CollectionUtil.isNotEmpty(indexInfoList)) {
             for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-                String[] columns = indexInfo.getColumns();
-                StringBuilder indexSb = new StringBuilder();
-                for (String column : columns) {
-                    indexSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(COMMA);
-                }
-                if (CollectionUtil.isEmpty(existIdxNameList) || !existIdxNameList.contains(indexInfo.getValue())) {
-                    resultList.add(StrUtil.format(CREATE_INDEX, indexInfo.getValue(), tableName, indexSb.deleteCharAt(indexSb.length() - 1)));
-                }
+//                String[] columns = indexInfo.getColumns();
+//                StringBuilder indexSb = new StringBuilder();
+//                for (String column : columns) {
+//                    indexSb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, column)).append(StrUtil.COMMA);
+//                }
+//                if (CollectionUtil.isEmpty(existIdxNameList) || !existIdxNameList.contains(indexInfo.getValue())) {
+//                    resultList.add(StrUtil.format(CREATE_INDEX, indexInfo.getValue(), tableName, indexSb.deleteCharAt(indexSb.length() - 1)));
+//                }
             }
         }
     }
@@ -364,10 +340,10 @@ public class SqlServerImpl implements DatabaseService {
                         case VARCHAR:
                         case NCHAR:
                         case CHAR:
-                            existUpdate = existUpdate || tableColumnInfo.getLength() != AcTableUtils.handleStrLength(length);
+                            existUpdate = existUpdate || tableColumnInfo.getLength() != this.handleStrLength(length);
                             break;
                         case DATETIME2:
-                            existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != AcTableUtils.handleDateLength(length);
+                            existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != this.handleDateLength(length);
                             break;
                         case DECIMAL:
                         case NUMERIC:
@@ -474,24 +450,24 @@ public class SqlServerImpl implements DatabaseService {
             }
         }
         for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
-            String[] columns = uniqueInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                if (!uniqueInfoSet1.contains(StrUtil.join(COMMA, columns))) {
-                    ukFlag = true;
-                    break;
-                }
-            }
+//            String[] columns = uniqueInfo.getColumns();
+//            if (ArrayUtil.isNotEmpty(columns)) {
+//                Arrays.sort(columns);
+//                if (!uniqueInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+//                    ukFlag = true;
+//                    break;
+//                }
+//            }
         }
         for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
-            String[] columns = indexInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                if (!indexInfoSet1.contains(StrUtil.join(COMMA, columns))) {
-                    idxFlag = true;
-                    break;
-                }
-            }
+//            String[] columns = indexInfo.getColumns();
+//            if (ArrayUtil.isNotEmpty(columns)) {
+//                Arrays.sort(columns);
+//                if (!indexInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+//                    idxFlag = true;
+//                    break;
+//                }
+//            }
         }
         //是否排除主键约束的删除
         excludePkConstraint(constraintInfoNewList, pkFlag);
@@ -551,22 +527,123 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
-    public String handleKeyword(String var) {
-        if (var.startsWith(LEFT_SQ_BRACKET) && var.endsWith(RIGHT_SQ_BRACKET)) {
-            var = var.replace(LEFT_SQ_BRACKET, "")
-                    .replace(RIGHT_SQ_BRACKET, "");
+    public String delKeywordHandle(String var) {
+        String leftKeyword = this.leftKeyword();
+        String rightKeyword = this.rightKeyword();
+        if (var.startsWith(leftKeyword) && var.endsWith(rightKeyword)) {
+            var = var.replace(leftKeyword, "")
+                    .replace(rightKeyword, "");
         }
         return var;
     }
 
     @Override
-    public String javaTypeTurnColumnType(String fieldType, ColumnTypeEnums type) {
-        return Objects.equals(type, ColumnTypeEnums.DEFAULT) ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : type.getSqlServer();
+    public String addKeywordHandle(String var) {
+        return this.leftKeyword() + var + this.rightKeyword();
+    }
+
+
+    @Override
+    public String javaTypeTurnColumnType(String fieldType, String columnType) {
+        return Objects.equals(columnType, ColumnTypeConstants.DEFAULT_VALUE)
+                ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : columnType;
     }
 
     @Override
-    public String getExecuteSql(SqlTypeEnums sqlTypeEnums) {
-        return SQL_SERVER_EXECUTE_SQL.get(sqlTypeEnums);
+    public String leftKeyword() {
+        return "[";
+    }
+
+    @Override
+    public String rightKeyword() {
+        return "]";
+    }
+
+    @Override
+    public String getAllTableSql() {
+        return "select name from sys.tables";
+    }
+
+    @Override
+    public String existTableSql(String tableName) {
+        return StrUtil.format("SELECT count(1) FROM sys.all_objects WHERE object_id = OBJECT_ID('{}') AND type IN ('U')", tableName);
+    }
+
+    @Override
+    public String getTableStructureSql(String tableName) {
+        return StrUtil.format("SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
+                " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +
+                " case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (" +
+                " SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then 1 else 0 end isKey," +
+                " b.name typeStr, COLUMNPROPERTY(a.id,a.name,'PRECISION') length," +
+                " isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) decimalLength," +
+                " case when a.isnullable=1 then 1 else 0 end isNull,convert(nvarchar(255), e.text) defaultValue,convert(nvarchar(255), g.value) columnComment" +
+                " FROM syscolumns a" +
+                " left join systypes b on a.xusertype=b.xusertype" +
+                " inner join sysobjects d on a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties'" +
+                " left join syscomments e on a.cdefault=e.id" +
+                " left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id" +
+                " left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0 where d.name='{}'", tableName);
+    }
+
+    @Override
+    public String getConstraintInfoSql(String tableName) {
+        return StrUtil.format("WITH MO_Cook AS (SELECT  IDX.NAME AS constraintName, IDX.TYPE_DESC AS constraintType,COL.NAME AS constraintColumnName,case when IDX.IS_PRIMARY_KEY = 1 then 1 else case when        IDX.IS_UNIQUE_CONSTRAINT = 1 then 2 else 3 end end constraintFlag FROM  SYS.INDEXES IDX JOIN " +
+                " SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) JOIN " +
+                " SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN " +
+                " SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) " +
+                " where  TAB.NAME='{}') " +
+                " select constraintName,constraintType,constraintFlag,stuff((select ','+constraintColumnName from  MO_Cook   " +
+                " where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName " +
+                " for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c" +
+                " group by c.constraintName,c.constraintType,c.constraintFlag", tableName);
+    }
+
+    @Override
+    public String getDefaultInfoSql(String tableName) {
+        return StrUtil.format("select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
+                "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
+                "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault", tableName);
+    }
+
+    @Override
+    public String addTableCommentSql(String tableName, String comment) {
+        return null;
+    }
+
+    @Override
+    public String addColumnCommentSql(String tableName, String columnName, String comment) {
+        return null;
+    }
+
+    @Override
+    public String addPrimaryKeySql(String tableName, String constraintName, List<String> columnList) {
+        return null;
+    }
+
+    @Override
+    public String addIndexSql(String tableName, String indexName, List<TableInfo.Index> columns) {
+        return null;
+    }
+
+    @Override
+    public String addUniqueIndexSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
+        return null;
+    }
+
+    @Override
+    public String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateTableCommentSql(String tableName, String tableComment) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment) {
+        return null;
     }
 
     /**
@@ -604,11 +681,11 @@ public class SqlServerImpl implements DatabaseService {
     public static Set<String> getPropertyUniqueSet(List<TableInfo.UniqueInfo> uniqueInfoList) {
         Set<String> set = new HashSet<>();
         for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-            String[] columns = uniqueInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                set.add(StrUtil.join(COMMA, columns));
-            }
+//            String[] columns = uniqueInfo.getColumns();
+//            if (ArrayUtil.isNotEmpty(columns)) {
+//                Arrays.sort(columns);
+//                set.add(StrUtil.join(StrUtil.COMMA, columns));
+//            }
         }
         return set;
     }
@@ -638,11 +715,11 @@ public class SqlServerImpl implements DatabaseService {
     public static Set<String> getPropertyIndexSet(List<TableInfo.IndexInfo> indexInfoList) {
         Set<String> set = new HashSet<>();
         for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-            String[] columns = indexInfo.getColumns();
-            if (ArrayUtil.isNotEmpty(columns)) {
-                Arrays.sort(columns);
-                set.add(StrUtil.join(COMMA, columns));
-            }
+//            String[] columns = indexInfo.getColumns();
+//            if (ArrayUtil.isNotEmpty(columns)) {
+//                Arrays.sort(columns);
+//                set.add(StrUtil.join(StrUtil.COMMA, columns));
+//            }
         }
         return set;
     }
@@ -666,12 +743,12 @@ public class SqlServerImpl implements DatabaseService {
     private static boolean handleUkConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
         List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
         for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-            String[] columns = uniqueInfo.getColumns();
-            for (String column : columns) {
-                if (Objects.equals(column, propertyInfo.getColumnName())) {
-                    return true;
-                }
-            }
+//            String[] columns = uniqueInfo.getColumns();
+//            for (String column : columns) {
+//                if (Objects.equals(column, propertyInfo.getColumnName())) {
+//                    return true;
+//                }
+//            }
         }
         return false;
     }
@@ -680,12 +757,12 @@ public class SqlServerImpl implements DatabaseService {
     private static boolean handleIdxConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
         List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
         for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-            String[] columns = indexInfo.getColumns();
-            for (String column : columns) {
-                if (Objects.equals(column, propertyInfo.getColumnName())) {
-                    return true;
-                }
-            }
+//            String[] columns = indexInfo.getColumns();
+//            for (String column : columns) {
+//                if (Objects.equals(column, propertyInfo.getColumnName())) {
+//                    return true;
+//                }
+//            }
         }
         return false;
     }
@@ -754,7 +831,7 @@ public class SqlServerImpl implements DatabaseService {
         } else {
             propertySb.append(NOT_NULL);
         }
-        propertySb.append(COMMA);
+        propertySb.append(StrUtil.COMMA);
     }
 
     /**
@@ -770,13 +847,14 @@ public class SqlServerImpl implements DatabaseService {
         int decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
         ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
+        propertySb.append(StrPool.CRLF);
         switch (typeEnum) {
             case VARCHAR:
             case NVARCHAR:
             case DATETIME2:
             case NCHAR:
             case CHAR:
-                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
+                propertySb.append(type).append(LEFT_BRACKET);
                 if (Objects.equals(type, ColumnTypeEnums.DATETIME2.getSqlServer())) {
                     //对类型特殊处理
                     if (length > 7 || length < 0) {
@@ -798,7 +876,7 @@ public class SqlServerImpl implements DatabaseService {
 
             case DECIMAL:
             case NUMERIC:
-                propertySb.append(SPACE).append(type).append(LEFT_BRACKET);
+                propertySb.append(type).append(LEFT_BRACKET);
 
                 if (decimalLength > length) {
                     log.warn("表 [{}] 字段 [{}] {}精度长度 [{}] 大于类型长度 [{}] 存在问题，使用类型长度 [{}]", tableName, columnName, type, decimalLength, length, length);
@@ -812,14 +890,14 @@ public class SqlServerImpl implements DatabaseService {
                 }
                 if (decimalLength > 38 || decimalLength < 0) {
                     log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, 2);
-                    propertySb.append(COMMA).append(2);
+                    propertySb.append(StrUtil.COMMA).append(2);
                 } else {
-                    propertySb.append(COMMA).append(decimalLength);
+                    propertySb.append(StrUtil.COMMA).append(decimalLength);
                 }
                 propertySb.append(RIGHT_BRACKET);
                 break;
             default:
-                propertySb.append(SPACE).append(type);
+                propertySb.append(type);
         }
     }
 }

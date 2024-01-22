@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:dm://192.168.123.100:5236/CDSJ
+    username: CDSJ
+    password: cdsj@2023
+zero:
+  ac-table:
+    entity-package: io.gitee.zerowsh.*.demo.entity.dm
+    model: del_and_add
+#    after-script: db/dm.sql
+#    table-to-upper-case: true
+#    column-to-upper-case: true
+#    turn: source

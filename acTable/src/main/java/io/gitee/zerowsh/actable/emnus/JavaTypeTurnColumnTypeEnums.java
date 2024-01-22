@@ -1,5 +1,8 @@
 package io.gitee.zerowsh.actable.emnus;
 
+import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
+import lombok.Getter;
+
 /**
  * java类型转数据库类型
  *
@@ -9,59 +12,69 @@ public enum JavaTypeTurnColumnTypeEnums {
     /**
      *
      */
-    STRING("java.lang.String", ColumnTypeEnums.VARCHAR, ColumnTypeEnums.NVARCHAR),
-    LONG("java.lang.Long,long", ColumnTypeEnums.BIGINT),
-    INTEGER("java.lang.Integer,int", ColumnTypeEnums.INT),
-    BOOLEAN("java.lang.Boolean,boolean", ColumnTypeEnums.BIT),
-    DATE("java.util.Date,java.sql.Timestamp,java.time.LocalDate,java.time.LocalDateTime", ColumnTypeEnums.DATETIME, ColumnTypeEnums.DATETIME2),
-    BIG_DECIMAL("java.math.BigDecimal", ColumnTypeEnums.DECIMAL, ColumnTypeEnums.NUMERIC),
-    DOUBLE("java.lang.Double,double", ColumnTypeEnums.DOUBLE),
-    FLOAT("java.lang.Float,float", ColumnTypeEnums.FLOAT),
-    CHAR("char", ColumnTypeEnums.CHAR, ColumnTypeEnums.NCHAR);
+    INTEGER("java.lang.Integer,int", ColumnTypeConstants.INT),
+    LONG("java.lang.Long,long", ColumnTypeConstants.BIGINT),
+    SHORT("java.lang.Short,short", ColumnTypeConstants.SMALLINT),
+    BYTE("java.lang.Byte,byte", ColumnTypeConstants.TINYINT),
+    CHAR("java.lang.Char,char", ColumnTypeConstants.CHAR, ColumnTypeConstants.NCHAR, ColumnTypeConstants.CHAR),
+    BOOLEAN("java.lang.Boolean,boolean", ColumnTypeConstants.BIT),
+    STRING("java.lang.String", ColumnTypeConstants.VARCHAR, ColumnTypeConstants.NVARCHAR, ColumnTypeConstants.VARCHAR),
+    DATETIME("java.util.Date,java.sql.Timestamp,java.time.LocalDateTime", ColumnTypeConstants.DATETIME, ColumnTypeConstants.DATETIME2, ColumnTypeConstants.DATETIME),
+    DATE("java.time.LocalDate", ColumnTypeConstants.DATE),
+    BIG_DECIMAL("java.math.BigDecimal", ColumnTypeConstants.DECIMAL, ColumnTypeConstants.NUMERIC, ColumnTypeConstants.DECIMAL),
+    DOUBLE("java.lang.Double,double", ColumnTypeConstants.DOUBLE),
+    FLOAT("java.lang.Float,float", ColumnTypeConstants.FLOAT);
 
+    @Getter
     private final String javaType;
-    private final ColumnTypeEnums mysql;
-    private final ColumnTypeEnums sqlServer;
+    @Getter
+    private final String mysql;
+    @Getter
+    private final String sqlServer;
+    @Getter
+    private final String dm;
 
-    JavaTypeTurnColumnTypeEnums(String javaType, ColumnTypeEnums mysql, ColumnTypeEnums sqlServer) {
+    JavaTypeTurnColumnTypeEnums(String javaType,
+                                String mysql,
+                                String sqlServer,
+                                String dm) {
         this.javaType = javaType;
         this.mysql = mysql;
         this.sqlServer = sqlServer;
+        this.dm = dm;
     }
 
-    JavaTypeTurnColumnTypeEnums(String javaType, ColumnTypeEnums identical) {
+    JavaTypeTurnColumnTypeEnums(String javaType, String identical) {
         this.javaType = javaType;
         this.mysql = identical;
         this.sqlServer = identical;
-    }
-
-    public String getJavaType() {
-        return javaType;
-    }
-
-    public ColumnTypeEnums getMysql() {
-        return mysql;
-    }
-
-    public ColumnTypeEnums getSqlServer() {
-        return sqlServer;
+        this.dm = identical;
     }
 
     public static String getMysqlByValue(String filedType) {
         for (JavaTypeTurnColumnTypeEnums types : JavaTypeTurnColumnTypeEnums.values()) {
             if (types.getJavaType().contains(filedType)) {
-                return types.getMysql().getMysql();
+                return types.mysql;
             }
         }
-        return ColumnTypeEnums.VARCHAR.getMysql();
+        return ColumnTypeConstants.VARCHAR;
     }
 
     public static String getSqlServerByValue(String filedType) {
         for (JavaTypeTurnColumnTypeEnums types : JavaTypeTurnColumnTypeEnums.values()) {
             if (types.getJavaType().contains(filedType)) {
-                return types.getSqlServer().getSqlServer();
+                return types.sqlServer;
             }
         }
-        return ColumnTypeEnums.NVARCHAR.getSqlServer();
+        return ColumnTypeConstants.NVARCHAR;
+    }
+
+    public static String getDmByValue(String filedType) {
+        for (JavaTypeTurnColumnTypeEnums types : JavaTypeTurnColumnTypeEnums.values()) {
+            if (types.getJavaType().contains(filedType)) {
+                return types.dm;
+            }
+        }
+        return ColumnTypeConstants.VARCHAR;
     }
 }

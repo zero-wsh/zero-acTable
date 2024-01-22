@@ -11,17 +11,20 @@ public interface AcTableConstants {
      */
     String MYSQL = "MySQL";
     String SQL_SERVER = "Microsoft SQL Server";
+    String DM = "DM DBMS";
     /**
      * 当等于该值时，默认值为null
      */
-    String DEFAULT_VALUE = "default_value";
+    String DEFAULT_VALUE = "ZERO_AC_TABLE_DEFAULT_VALUE";
 
     /**
-     * 定义字段默认值，当实体属性没标记@Column注解时有用
+     * 当实体属性没标记@Column注解时有用，字段可以为空，默认长度255、默认浮点数0
      */
     boolean COLUMN_IS_NULL_DEF = true;
     int COLUMN_LENGTH_DEF = 255;
     int COLUMN_DECIMAL_LENGTH_DEF = 0;
+    String DESC = " DESC";
+    String ASC = " ASC";
     int PK = 1;
     int UK = 2;
     int INDEX = 3;
@@ -61,8 +64,9 @@ public interface AcTableConstants {
     /**
      * 验证字符串
      */
-    String COLUMN_LENGTH_VALID_STR = "表 [{}] 字段 [{}] {}类型长度 [{}] 存在问题，使用默认值 [{}]";
-    String COLUMN_DUPLICATE_VALID_STR = "类 [{}]，[{}] 字段名或@Column name重复";
+    String COLUMN_LENGTH_VALID_STR = "表【{}】字段【{}】，【{}】类型长度【{}】存在问题，使用默认值【{}】！";
+    String COLUMN_DECIMAL_LENGTH_VALID_STR = "表【{}】字段【{}】，【{}】精度长度【{}】大于类型长度【{}】存在问题，使用类型长度【{}】！";
+    String COLUMN_DUPLICATE_VALID_STR = "表【{}】，【{}】字段名或@AcColumn注解属性值【name或value】重复！";
 
     /**
      * 数据库操作部分sql
@@ -107,4 +111,5 @@ public interface AcTableConstants {
     String MYSQL_DEL_INDEX = " DROP INDEX `{}`";
     String MYSQL_ADD_INDEX = " ADD INDEX `{}` ({})";
     String MYSQL_ADD_UNIQUE = " ADD UNIQUE INDEX  `{}` ({})";
+
 }

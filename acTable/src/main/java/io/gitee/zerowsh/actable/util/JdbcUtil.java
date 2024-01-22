@@ -45,9 +45,8 @@ public class JdbcUtil {
 
     private static PreparedStatement handlePrepareStatement(Connection conn, String sql, Object... obj) throws SQLException {
         String formatSql = StrUtil.format(sql, obj);
-        PreparedStatement ps = conn.prepareStatement(formatSql);
         log.info(formatSql);
-        return ps;
+        return conn.prepareStatement(formatSql);
     }
 
     /**

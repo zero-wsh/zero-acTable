@@ -1,7 +1,7 @@
 package io.gitee.zerowsh.actable.annotation;
 
 import io.gitee.zerowsh.actable.constant.AcTableConstants;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
+import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 
 import java.lang.annotation.*;
 
@@ -24,16 +24,9 @@ public @interface AcColumn {
     boolean exclude() default false;
 
     /**
-     * 建表时字段顺序
+     * 建表时字段顺序，只有第一次建表时才会生效
      */
     int order() default 0;
-
-    /**
-     * 字段名
-     * 使用value代替
-     */
-    @Deprecated
-    String name() default "";
 
     /**
      * 字段名
@@ -51,7 +44,19 @@ public @interface AcColumn {
     /**
      * 字段类型：不填默认使用属性的数据类型进行转换
      */
-    ColumnTypeEnums type() default ColumnTypeEnums.DEFAULT;
+    String type() default ColumnTypeConstants.DEFAULT_VALUE;
+
+
+    /**
+     * 是否限制字段类型为支持的类型，如果不限制可自定义类型值;
+     * 自定义类型值length和decimalLength将不会生效，将直接使用type的值作为数据库字段类型
+     * 开启后将不会检验type属性的有效性
+     * 例如：
+     * datetime(5)
+     * decimal(10,2)
+     */
+    boolean typeLimit() default true;
+
 
     /**
      * 字段长度
@@ -74,7 +79,8 @@ public @interface AcColumn {
     boolean isKey() default false;
 
     /**
-     * 是否自动递增（mysql只有主键才能设置自增）
+     * 是否自动递增
+     * mysql只有主键才能设置自增，两个是绑定关系
      */
     boolean isAutoIncrement() default false;
 

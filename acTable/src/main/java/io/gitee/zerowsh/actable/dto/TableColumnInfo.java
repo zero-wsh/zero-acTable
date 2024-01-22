@@ -13,8 +13,10 @@ import lombok.Setter;
 public class TableColumnInfo {
     private String tableName;
     private String tableComment;
+    private String tableCharacterSetName;
     private String columnName;
     private String columnComment;
+    private String columnCharacterSetName;
     private boolean isKey;
     private String typeStr;
     private long length;

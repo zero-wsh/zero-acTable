@@ -24,8 +24,4 @@ public @interface Unique {
      */
     String[] columns() default {};
 
-    /**
-     * 触发唯一键约束后的错误提示信息
-     */
-    String message() default "";
 }

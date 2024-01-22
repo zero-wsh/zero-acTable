@@ -10,16 +10,18 @@ import lombok.Data;
 @Data
 public class ConstraintInfo {
     private String constraintName;
-    private String constraintType;
     /**
-     * 约束名称多个使用逗号连接
+     * 约束字段拼接，多个按顺序拼接
      */
     private String constraintColumnName;
     /**
      * 1 主键
      * 2 唯一键
      * 3 索引
-     * 4 默认值 （基本没用）
      */
     private Integer constraintFlag;
+    /**
+     * 索引排序，和字段constraintColumnName对应
+     */
+    private Integer indexSortStr;
 }

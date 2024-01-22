@@ -1,28 +1,64 @@
 package io.gitee.zerowsh.actable.annotation;
 
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
+import lombok.Getter;
+
 import java.lang.annotation.*;
 
+
 /**
- * 设置字段索引
+ * 索引定义
  *
  * @author zero
  */
-@Target(ElementType.FIELD)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Index {
+    /**
+     * 索引、唯一索引、唯一约束
+     * 同一个字段只需要（UK_IDX、UK）二选一
+     */
+    enum IndexEnums {
+        IDX("idx_"), UK_IDX("uk_idx_"), UK("uk_");
+        @Getter
+        private final String prefix;
+
+        IndexEnums(String prefix) {
+            this.prefix = prefix;
+        }
+    }
 
     /**
-     * 索引的名字，不设置默认为{idx_当前标记字段名@Column的fieldName}<p>
-     * 如果设置了名字例如union_name,系统会默认在名字前加idx_前缀，也就是idx_union_name
+     * 索引的名称
+     * 索引idx_
+     * 唯一索引uk_idx
+     * 唯一约束uk_
      */
     String value() default "";
 
     /**
-     * 要建立索引的字段名，不设置默认为当前标记字段名@Column的fieldName
-     * <p>可设置多个建立联合索引{"login_mobile","login_name"}
+     * 类型
+     *
+     * @return
      */
-    String[] columns() default {};
+    IndexEnums type() default IndexEnums.IDX;
+
+    /**
+     * 索引备注
+     */
+    String comment() default AcTableConstants.DEFAULT_VALUE;
+
+    /**
+     * 索引方法
+     */
+    String method() default AcTableConstants.DEFAULT_VALUE;
+
+    /**
+     * 索引信息，索引字段和排序
+     * 一个索引可以有多个字段，并且多个字段的排序值可以不同（DESC|ASC）
+     */
+    IndexColumn[] columnArr();
 
 }
 

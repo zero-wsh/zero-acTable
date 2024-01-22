@@ -16,45 +16,58 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 
 import javax.persistence.*;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+import static io.gitee.zerowsh.actable.annotation.Index.IndexEnums.IDX;
+import static io.gitee.zerowsh.actable.annotation.Index.IndexEnums.UK_IDX;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
-import static io.gitee.zerowsh.actable.constant.StringConstants.COMMA;
 import static io.gitee.zerowsh.actable.constant.StringConstants.CONVERT_STR;
 
 /**
- * 处理实体工具类
+ * 处理实体工具类，通过实体类获取表、字段信息
  *
  * @author zero
  */
 @SuppressWarnings("all")
 @Slf4j
 public class HandlerEntityUtils {
+
+
+    public static Set<BeanDefinition> scanPackageByAnnotation(String basePackage, Class<? extends Annotation> annotationClass) {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        // 添加包含过滤条件，只扫描带有特定注解的类
+        scanner.addIncludeFilter(new AnnotationTypeFilter(annotationClass));
+        // 执行扫描并获取结果
+        return scanner.findCandidateComponents(basePackage);
+    }
+
     /**
      * 通过实体类包名获取所有表信息 (字段 索引 唯一值等)
      *
      * @param acTableProperties
+     * @param databaseService
      * @return
      */
-    public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties, String databaseType) {
-        DatabaseService databaseService = AcTableUtils.getDatabaseService(databaseType);
+    public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties,
+                                                              DatabaseService databaseService) {
         String entityPackage = acTableProperties.getEntityPackage();
-        Boolean tableToUpperCase = acTableProperties.getTableToUpperCase();
-        Boolean columnToUpperCase = acTableProperties.getColumnToUpperCase();
         //实体类表信息
         List<TableInfo> tableInfoList = new ArrayList<>();
         //用来判断是否有重复表名
         Set<String> tableJudge = new HashSet<>();
-        for (String s : entityPackage.split(COMMA)) {
-            Set<BeanDefinition> acTableBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, AcTable.class);
+        for (String s : entityPackage.split(StrUtil.COMMA)) {
+            Set<BeanDefinition> acTableBeanDefinitions = scanPackageByAnnotation(s, AcTable.class);
             //mybatis plus兼容
-            Set<BeanDefinition> tableNameBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, TableName.class);
+            Set<BeanDefinition> tableNameBeanDefinitions = scanPackageByAnnotation(s, TableName.class);
             //hibernate 兼容
-            Set<BeanDefinition> tableBeanDefinitions = AcTableUtils.scanPackageByAnnotation(s, Table.class);
+            Set<BeanDefinition> tableBeanDefinitions = scanPackageByAnnotation(s, Table.class);
             Set<BeanDefinition> tableSet = new HashSet<>();
             tableSet.addAll(acTableBeanDefinitions);
             tableSet.addAll(tableNameBeanDefinitions);
@@ -70,9 +83,15 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(cls.getAnnotation(IgnoreTable.class))) {
                     continue;
                 }
+                AcTable acTable = cls.getAnnotation(AcTable.class);
+                if (Objects.nonNull(acTable) && acTable.exclude()) {
+                    continue;
+                }
+
                 TableInfo.TableInfoBuilder builder = TableInfo.builder();
                 List<TableInfo.PropertyInfo> propertyInfoList = new ArrayList<>();
                 List<TableInfo.IndexInfo> indexInfoList = new ArrayList<>();
+                List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList = new ArrayList<>();
                 List<TableInfo.UniqueInfo> uniqueInfoList = new ArrayList<>();
                 List<String> keyList = new ArrayList<>();
                 List<String> propertyList = new ArrayList<>();
@@ -80,7 +99,6 @@ public class HandlerEntityUtils {
                 String tableName = null;
                 //定义表注释
                 String comment = DEFAULT_VALUE;
-                AcTable acTable = cls.getAnnotation(AcTable.class);
                 if (Objects.nonNull(acTable)) {
                     tableName = acTable.name();
                     comment = acTable.comment();
@@ -110,9 +128,9 @@ public class HandlerEntityUtils {
                     throw new RuntimeException(StrUtil.format("io.gitee.zerowsh.actable.annotation.AcTable、com.baomidou.mybatisplus.annotation.TableName、javax.persistence.Table 注解都没设置表名！"));
                 }
                 if (tableJudge.contains(tableName)) {
-                    throw new RuntimeException(StrUtil.format("[{}] 表名重复", tableName));
+                    throw new RuntimeException(StrUtil.format("【{}】 表名重复！", tableName));
                 }
-                tableName = tableToUpperCase ? databaseService.handleKeyword(tableName).toUpperCase() : databaseService.handleKeyword(tableName);
+                tableName = acTableProperties.getTableToUpperCase() ? databaseService.delKeywordHandle(tableName).toUpperCase() : databaseService.delKeywordHandle(tableName);
                 tableJudge.add(tableName);
                 //设置表名
                 builder.name(tableName);
@@ -130,11 +148,35 @@ public class HandlerEntityUtils {
                         }
                     }
                 }
-                getFieldInfo(cls, propertyInfoList, indexInfoList,
+                //处理索引、唯一索引、唯一约束
+                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),
+                        indexInfoList,
+                        uniqueIndexInfoList,
+                        uniqueInfoList,
+                        cls.getAnnotation(Index.class),
+                        acTable,
+                        acTableProperties.getTurn());
+
+                IndexArr indexArr = cls.getAnnotation(IndexArr.class);
+                if (Objects.nonNull(indexArr)) {
+                    Index[] valueArr = indexArr.value();
+                    if (ArrayUtil.isNotEmpty(valueArr)) {
+                        for (Index index : valueArr) {
+                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),
+                                    indexInfoList,
+                                    uniqueIndexInfoList,
+                                    uniqueInfoList,
+                                    index, acTable,
+                                    acTableProperties.getTurn());
+                        }
+                    }
+                }
+
+                getFieldInfo(cls, propertyInfoList, indexInfoList, uniqueIndexInfoList,
                         uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                         null, acTableProperties, databaseService);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
-                    throw new RuntimeException(StrUtil.format("类 [{}] 不存在字段信息", cls.getName()));
+                    throw new RuntimeException(StrUtil.format("类【{}】不存在字段信息！", cls.getName()));
                 }
                 //通过order字段正序排序
                 propertyInfoList.sort(Comparator.comparing(TableInfo.PropertyInfo::getOrder));
@@ -146,6 +188,7 @@ public class HandlerEntityUtils {
                 TableInfo tableInfo = builder.keyList(keyList)
                         .propertyInfoList(propertyInfoList)
                         .indexInfoList(indexInfoList)
+                        .uniqueIndexInfoList(uniqueIndexInfoList)
                         .uniqueInfoList(uniqueInfoList)
                         .build();
                 tableInfoList.add(tableInfo);
@@ -181,6 +224,7 @@ public class HandlerEntityUtils {
      */
     private static void getFieldInfo(Class<?> cls, List<TableInfo.PropertyInfo> propertyInfoList,
                                      List<TableInfo.IndexInfo> indexInfoList,
+                                     List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
                                      List<TableInfo.UniqueInfo> uniqueInfoList,
                                      List<String> propertyList,
                                      AcTable acTable,
@@ -247,7 +291,8 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
-                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName()));
+                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName()))
+                        .typeLimit(true);
             } else {
                 //从自定义注解获取
                 if ((Objects.nonNull(tableField) && !tableField.exist())
@@ -256,16 +301,13 @@ public class HandlerEntityUtils {
                     continue;
                 }
                 columnName = acColumn.value();
-                if (StrUtil.isBlank(columnName)) {
-                    columnName = acColumn.name();
-                }
                 if (Objects.nonNull(tableField) && StrUtil.isBlank(columnName)) {
                     columnName = tableField.value();
                 }
                 if (Objects.nonNull(column) && StrUtil.isBlank(columnName)) {
                     columnName = column.name();
                 }
-                columnName = databaseService.handleKeyword(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
+                columnName = databaseService.delKeywordHandle(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, cls.getName(), fieldName));
                 }
@@ -285,46 +327,78 @@ public class HandlerEntityUtils {
                         .order(acColumn.order())
                         .isNull(acColumn.isNull())
                         .length(acColumn.length())
-                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()));
+                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
+                        .typeLimit(acColumn.typeLimit());
             }
             if (acTableProperties.getColumnToUpperCase()) {
                 columnName = columnName.toUpperCase();
             }
-            propertyInfoList.add(propertyInfoBuilder.columnName(columnName).build());
-
-            /*
-             *处理索引
-             */
-            Index index = field.getAnnotation(Index.class);
-            if (Objects.nonNull(index)) {
-                String[] columns = index.columns();
-                String value = index.value();
-                TableInfo.IndexInfo indexInfo = TableInfo.IndexInfo.builder()
-                        .value(StrUtil.isBlank(value) ? IDX_ + fieldName : IDX_ + value)
-                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, acTable)} : columns).build();
-                indexInfoList.add(indexInfo);
-            }
-            /*
-             *处理唯一键
-             */
-            Unique unique = field.getAnnotation(Unique.class);
-            if (Objects.nonNull(unique)) {
-                String[] columns = unique.columns();
-                String value = unique.value();
-                TableInfo.UniqueInfo uniqueInfo = TableInfo.UniqueInfo.builder()
-                        .value(StrUtil.isBlank(value) ? UK_ + fieldName : UK_ + value)
-                        .columns(ArrayUtil.isEmpty(columns) ? new String[]{fieldNameTurnDatabaseColumn(fieldName, turn, acTable)} : columns).build();
-                uniqueInfoList.add(uniqueInfo);
-            }
-
+            propertyInfoList.add(0, propertyInfoBuilder.columnName(columnName).build());
         }
         Class<?> superclass = cls.getSuperclass();
         if (Objects.isNull(superclass)) {
             return;
         }
-        getFieldInfo(superclass, propertyInfoList, indexInfoList,
+        getFieldInfo(superclass, propertyInfoList, indexInfoList, uniqueIndexInfoList,
                 uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                 cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService);
+    }
+
+    public static void handleUkAndIdxColumn(Boolean columnToUpperCase,
+                                            List<TableInfo.IndexInfo> indexInfoList,
+                                            List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
+                                            List<TableInfo.UniqueInfo> uniqueInfoList,
+                                            Index index,
+                                            AcTable acTable,
+                                            TurnEnums turn) {
+        List<TableInfo.Index> tableInfoList = new ArrayList<>();
+        if (Objects.nonNull(index)) {
+            IndexColumn[] columnArr = index.columnArr();
+            if (ArrayUtil.isNotEmpty(columnArr)) {
+                for (IndexColumn indexColumn : columnArr) {
+                    String column = indexColumn.value();
+                    if (StrUtil.isBlank(column)) {
+                        return;
+                    }
+                    column = fieldNameTurnDatabaseColumn(column, turn, acTable);
+                    if (columnToUpperCase) {
+                        column = column.toUpperCase();
+                    }
+                    tableInfoList.add(TableInfo.Index.builder()
+                            .column(column)
+                            .asc(indexColumn.asc()).build());
+                }
+                String value = index.value();
+                switch (index.type()) {
+                    case IDX:
+                        TableInfo.IndexInfo indexInfo = TableInfo.IndexInfo.builder()
+                                .value(IDX.getPrefix() + value)
+                                .columns(tableInfoList).build();
+                        indexInfoList.add(indexInfo);
+                        break;
+                    case UK_IDX:
+                        TableInfo.UniqueIndexInfo uniqueIndexInfo = TableInfo.UniqueIndexInfo.builder()
+                                .value(UK_IDX.getPrefix() + value)
+                                .columns(tableInfoList).build();
+                        uniqueIndexInfoList.add(uniqueIndexInfo);
+                        break;
+                    case UK:
+                        TableInfo.UniqueInfo uniqueInfo = TableInfo.UniqueInfo.builder()
+                                .value(Index.IndexEnums.UK.getPrefix() + value)
+                                .columns(tableInfoList).build();
+                        uniqueInfoList.add(uniqueInfo);
+                        break;
+                    default:
+                }
+            }
+        }
+    }
+
+    public static String[] toUpperCase(String[] columns) {
+        for (int i = 0; i < columns.length; i++) {
+            columns[i] = columns[i].toUpperCase();
+        }
+        return columns;
     }
 
     /**
@@ -337,6 +411,7 @@ public class HandlerEntityUtils {
     private static String fieldNameTurnDatabaseColumn(String fieldName, TurnEnums turn, AcTable acTable) {
         TurnEnums columnTurn = Objects.nonNull(acTable) ? acTable.turn() : TurnEnums.DEFAULT;
         if (Objects.equals(columnTurn, TurnEnums.DEFAULT)) {
+            //取全局的
             if (turn == TurnEnums.SOURCE) {
                 return fieldName;
             }

@@ -35,4 +35,10 @@ public @interface AcTable {
      * 当字段没有标记@Column注解时，java转数据库的方式
      */
     TurnEnums turn() default TurnEnums.DEFAULT;
+
+    /**
+     * 建表时是否排除
+     */
+    boolean exclude() default false;
+
 }

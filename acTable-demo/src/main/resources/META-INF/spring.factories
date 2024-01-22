@@ -1,2 +1,2 @@
-org.springframework.boot.env.EnvironmentPostProcessor=\
-  io.gitee.zerowsh.actable.demo.config.CreateDatabaseProcessor
+#org.springframework.boot.env.EnvironmentPostProcessor=\
+#  io.gitee.zerowsh.actable.demo.config.CreateDatabaseProcessor

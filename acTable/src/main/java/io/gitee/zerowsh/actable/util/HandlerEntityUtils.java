@@ -90,6 +90,8 @@ public class HandlerEntityUtils {
 
                 TableInfo.TableInfoBuilder builder = TableInfo.builder();
                 List<TableInfo.PropertyInfo> propertyInfoList = new ArrayList<>();
+                //key=实体属性名称 value=数据库字段名
+                Map<String, String> propertyMap = new HashMap<>();
                 List<TableInfo.IndexInfo> indexInfoList = new ArrayList<>();
                 List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList = new ArrayList<>();
                 List<TableInfo.UniqueInfo> uniqueInfoList = new ArrayList<>();
@@ -148,31 +150,7 @@ public class HandlerEntityUtils {
                         }
                     }
                 }
-                //处理索引、唯一索引、唯一约束
-                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),
-                        indexInfoList,
-                        uniqueIndexInfoList,
-                        uniqueInfoList,
-                        cls.getAnnotation(Index.class),
-                        acTable,
-                        acTableProperties.getTurn());
-
-                IndexArr indexArr = cls.getAnnotation(IndexArr.class);
-                if (Objects.nonNull(indexArr)) {
-                    Index[] valueArr = indexArr.value();
-                    if (ArrayUtil.isNotEmpty(valueArr)) {
-                        for (Index index : valueArr) {
-                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),
-                                    indexInfoList,
-                                    uniqueIndexInfoList,
-                                    uniqueInfoList,
-                                    index, acTable,
-                                    acTableProperties.getTurn());
-                        }
-                    }
-                }
-
-                getFieldInfo(cls, propertyInfoList, indexInfoList, uniqueIndexInfoList,
+                getFieldInfo(cls, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                         uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                         null, acTableProperties, databaseService);
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
@@ -185,6 +163,31 @@ public class HandlerEntityUtils {
                         keyList.add(propertyInfo.getColumnName());
                     }
                 }
+
+                //处理索引、唯一索引、唯一约束
+                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),propertyMap,
+                        indexInfoList,
+                        uniqueIndexInfoList,
+                        uniqueInfoList,
+                        cls.getAnnotation(Index.class),
+                        acTable,
+                        acTableProperties.getTurn());
+
+                IndexArr indexArr = cls.getAnnotation(IndexArr.class);
+                if (Objects.nonNull(indexArr)) {
+                    Index[] valueArr = indexArr.value();
+                    if (ArrayUtil.isNotEmpty(valueArr)) {
+                        for (Index index : valueArr) {
+                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),propertyMap,
+                                    indexInfoList,
+                                    uniqueIndexInfoList,
+                                    uniqueInfoList,
+                                    index, acTable,
+                                    acTableProperties.getTurn());
+                        }
+                    }
+                }
+
                 TableInfo tableInfo = builder.keyList(keyList)
                         .propertyInfoList(propertyInfoList)
                         .indexInfoList(indexInfoList)
@@ -213,6 +216,7 @@ public class HandlerEntityUtils {
      *
      * @param cls
      * @param propertyInfoList
+     * @param propertyMap
      * @param indexInfoList
      * @param uniqueInfoList
      * @param propertyList      判断类中是否有重复字段
@@ -223,6 +227,7 @@ public class HandlerEntityUtils {
      * @return
      */
     private static void getFieldInfo(Class<?> cls, List<TableInfo.PropertyInfo> propertyInfoList,
+                                     Map<String, String> propertyMap,
                                      List<TableInfo.IndexInfo> indexInfoList,
                                      List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
                                      List<TableInfo.UniqueInfo> uniqueInfoList,
@@ -334,17 +339,18 @@ public class HandlerEntityUtils {
                 columnName = columnName.toUpperCase();
             }
             propertyInfoList.add(0, propertyInfoBuilder.columnName(columnName).build());
+            propertyMap.put(fieldName, columnName);
         }
         Class<?> superclass = cls.getSuperclass();
         if (Objects.isNull(superclass)) {
             return;
         }
-        getFieldInfo(superclass, propertyInfoList, indexInfoList, uniqueIndexInfoList,
+        getFieldInfo(superclass, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                 uniqueInfoList, propertyList, acTable, updateColumnNameMap,
                 cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService);
     }
 
-    public static void handleUkAndIdxColumn(Boolean columnToUpperCase,
+    public static void handleUkAndIdxColumn(Boolean columnToUpperCase,Map<String,String> propertyMap,
                                             List<TableInfo.IndexInfo> indexInfoList,
                                             List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
                                             List<TableInfo.UniqueInfo> uniqueInfoList,
@@ -360,7 +366,7 @@ public class HandlerEntityUtils {
                     if (StrUtil.isBlank(column)) {
                         return;
                     }
-                    column = fieldNameTurnDatabaseColumn(column, turn, acTable);
+                    column = propertyMap.get(column);
                     if (columnToUpperCase) {
                         column = column.toUpperCase();
                     }

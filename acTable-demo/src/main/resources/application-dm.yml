@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:dm://192.168.123.100:5236/CDSJ
+    url: jdbc:dm://192.168.123.123:30236/CDSJ
     username: CDSJ
     password: cdsj@2023
 zero:

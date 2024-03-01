@@ -10,7 +10,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author zero
@@ -57,16 +59,18 @@ public class JdbcUtil {
      * @param obj
      * @return
      */
-    public static List<TableColumnInfo> getTableColumnInfoList(Connection conn, String sql, Object... obj) throws SQLException {
-        List<TableColumnInfo> list = new ArrayList<>();
+    public static Map<String, TableColumnInfo> getTableColumnInfoMap(Connection conn, String sql, Object... obj) throws SQLException {
+        Map<String, TableColumnInfo> resultMap = new HashMap<>();
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 TableColumnInfo tableColumnInfo = new TableColumnInfo();
                 tableColumnInfo.setTableName(rs.getString("tableName"));
-                tableColumnInfo.setTableComment(rs.getString("tableComment"));
+                String tableComment = rs.getString("tableComment");
+                tableColumnInfo.setTableComment(StrUtil.isBlank(tableComment) ? "" : tableComment);
                 tableColumnInfo.setColumnName(rs.getString("columnName"));
-                tableColumnInfo.setColumnComment(rs.getString("columnComment"));
+                String columnComment = rs.getString("columnComment");
+                tableColumnInfo.setColumnComment(StrUtil.isBlank(columnComment) ? "" : columnComment);
                 tableColumnInfo.setKey(rs.getBoolean("isKey"));
                 tableColumnInfo.setTypeStr(rs.getString("typeStr"));
                 tableColumnInfo.setLength(rs.getLong("length"));
@@ -74,9 +78,9 @@ public class JdbcUtil {
                 tableColumnInfo.setNull(rs.getBoolean("isNull"));
                 tableColumnInfo.setAutoIncrement(rs.getBoolean("isAutoIncrement"));
                 tableColumnInfo.setDefaultValue(rs.getString("defaultValue"));
-                list.add(tableColumnInfo);
+                resultMap.put(tableColumnInfo.getColumnName(), tableColumnInfo);
             }
-            return list;
+            return resultMap;
         }
     }
 
@@ -89,6 +93,9 @@ public class JdbcUtil {
      * @return
      */
     public static List<ConstraintInfo> getConstraintInfoList(Connection conn, String sql, Object... obj) throws SQLException {
+        if (StrUtil.isBlank(sql)) {
+            return null;
+        }
         //创建一个list集合对象来存储查询数据
         List<ConstraintInfo> list = new ArrayList<>();
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
@@ -98,6 +105,7 @@ public class JdbcUtil {
                 constraintInfo.setConstraintName(rs.getString("constraintName"));
                 constraintInfo.setConstraintColumnName(rs.getString("constraintColumnName"));
                 constraintInfo.setConstraintFlag(rs.getInt("constraintFlag"));
+                constraintInfo.setIndexSortStr(rs.getString("indexSortStr"));
                 list.add(constraintInfo);
             }
             return list;

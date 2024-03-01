@@ -28,6 +28,7 @@ public interface AcTableConstants {
     int PK = 1;
     int UK = 2;
     int INDEX = 3;
+    int UK_IDX = 4;
 
     /**
      * 删除相关约束sql（主键 唯一键 索引 默认值）

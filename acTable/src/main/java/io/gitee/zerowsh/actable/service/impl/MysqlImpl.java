@@ -3,7 +3,6 @@ package io.gitee.zerowsh.actable.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
@@ -93,6 +92,7 @@ public class MysqlImpl implements DatabaseService {
         return resultList;
     }
 
+
     /**
      * 创建主键
      *
@@ -178,136 +178,136 @@ public class MysqlImpl implements DatabaseService {
 
     @Override
     public List<String> getUpdateTableSql(TableInfo tableInfo,
-                                          List<TableColumnInfo> tableColumnInfoList,
+                                          Map<String, TableColumnInfo> tableColumnInfoMap,
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
-        boolean tableExistPk = false;
-        if (CollectionUtil.isNotEmpty(constraintInfoList)) {
-            tableExistPk = constraintInfoList.stream().anyMatch(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK));
-        }
+//        boolean tableExistPk = false;
+//        if (CollectionUtil.isNotEmpty(constraintInfoList)) {
+//            tableExistPk = constraintInfoList.stream().anyMatch(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK));
+//        }
         List<String> resultList = new ArrayList<>();
-        TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
-        String tableName = firstTableColumnInfo.getTableName();
-        String comment = Objects.isNull(tableInfo.getComment()) ? "" : tableInfo.getComment();
-        //处理表备注
-        if (!Objects.equals(comment, firstTableColumnInfo.getTableComment())) {
-            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, comment));
-        }
-
-        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
-        //删除约束（主键，唯一键，索引）
-        Set<String> delConstraintSet = new LinkedHashSet<>();
-        StringBuilder updateColumnSql = new StringBuilder();
-        for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
-            boolean flag = false;
-            boolean updateNameFlag = false;
-            Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
-            while (it.hasNext()) {
-                TableInfo.PropertyInfo propertyInfo = it.next();
-                if (!Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
-                    //修改列名的逻辑
-                    String oldColumnName = propertyInfo.getOldColumnName();
-                    if (Objects.equals(tableColumnInfo.getColumnName(), oldColumnName)) {
-                        //满足条件，字段从propertyInfo.getOldColumnName()修改成propertyInfo.getColumnName()
-                        updateNameFlag = true;
-                    } else {
-                        //根据io.gitee.zerowsh.actable.emnus.ModelEnums策略判断是否保留改字段
-                        continue;
-                    }
-                }
-                String type = propertyInfo.getType();
-                String columnComment = Objects.isNull(propertyInfo.getColumnComment()) ? "" : propertyInfo.getColumnComment();
-                //判断类型、是否为空、是否自增、默认值，这些是否存在修改
-                boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
-                        || !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue()))
-                        || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
-                        || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
-                        || !Objects.equals(columnComment, tableColumnInfo.getColumnComment());
-
-                int length = propertyInfo.getLength();
-                int decimalLength = propertyInfo.getDecimalLength();
-                //判断长度、精度，是否修改
-                ColumnTypeEnums typeEnum = ColumnTypeEnums.getMysqlByValue(type);
-                switch (typeEnum) {
-                    case VARCHAR:
-                    case CHAR:
-                        existUpdate = existUpdate || tableColumnInfo.getLength() != this.handleStrLength(length);
-                        break;
-                    case DATETIME:
-                        existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != this.handleDateLength(length);
-                        break;
-                    case DECIMAL:
-                    case NUMERIC:
-                    case DOUBLE:
-                    case FLOAT:
-                        if (decimalLength > length) {
-                            decimalLength = length;
-                        }
-                        length = length > 65 || length < 0 ? 10 : length;
-                        decimalLength = decimalLength > 65 || decimalLength < 0 ? 2 : decimalLength;
-                        existUpdate = existUpdate || tableColumnInfo.getLength() != length
-                                || tableColumnInfo.getDecimalLength() != decimalLength;
-                        break;
-                    default:
-                }
-                if ((propertyInfo.isKey() != tableColumnInfo.isKey()) && tableExistPk) {
-                    delConstraintSet.add(MYSQL_DEL_PK);
-                }
-                if (updateNameFlag) {
-                    //从字段上判断是否修改了字段名
-                    StringBuilder propertySb = new StringBuilder();
-                    splicingColumnInfo(propertySb, propertyInfo, tableName);
-                    updateColumnSql.append(StrUtil.format(MYSQL_CHANGE_COLUMN, propertyInfo.getOldColumnName(), propertyInfo.getColumnName(), propertySb));
-                } else {
-                    if (existUpdate) {
-                        StringBuilder propertySb = new StringBuilder();
-                        splicingColumnInfo(propertySb, propertyInfo, tableName);
-                        updateColumnSql.append(StrUtil.format(MYSQL_MODIFY_COLUMN, propertyInfo.getColumnName(), propertySb));
-                    }
-                }
-
-                flag = true;
-                it.remove();
-                break;
-            }
-            if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
-                //如果数据库有但是实体类没有，进行删除
-                if (!flag) {
-                    if (tableColumnInfo.isKey() && tableExistPk) {
-                        delConstraintSet.add(MYSQL_DEL_PK);
-                    }
-                    updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(StrUtil.COMMA);
-                }
-            }
-        }
-
-        //如果实体类有但是数据库没有，进行新增
-        if (CollectionUtil.isNotEmpty(propertyInfoList)) {
-            for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
-                if (propertyInfo.isKey() && tableExistPk) {
-                    delConstraintSet.add(MYSQL_DEL_PK);
-                }
-                StringBuilder propertySb = new StringBuilder();
-                splicingColumnInfo(propertySb, propertyInfo, tableName);
-                updateColumnSql.append(StrUtil.format(MYSQL_ADD_COLUMN, propertyInfo.getColumnName(), propertySb));
-            }
-        }
-        //添加主键
-        createPk(delConstraintSet, tableInfo, tableExistPk);
-        //添加唯一键
-        createUk(delConstraintSet, tableInfo, constraintInfoList);
-        //添加索引
-        createIdx(delConstraintSet, tableInfo, constraintInfoList);
-        if (CollectionUtil.isNotEmpty(delConstraintSet)) {
-            for (String s : delConstraintSet) {
-                updateColumnSql.append(s).append(StrUtil.COMMA);
-            }
-        }
-        if (updateColumnSql.length() > 0) {
-            String resultSql = StrUtil.format(MYSQL_ALTER_TABLE, tableName) + updateColumnSql.deleteCharAt(updateColumnSql.length() - 1);
-            resultList.add(resultSql);
-        }
+//        TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
+//        String tableName = firstTableColumnInfo.getTableName();
+//        String comment = Objects.isNull(tableInfo.getComment()) ? "" : tableInfo.getComment();
+//        //处理表备注
+//        if (!Objects.equals(comment, firstTableColumnInfo.getTableComment())) {
+//            resultList.add(StrUtil.format(MYSQL_ALTER_TABLE + MYSQL_COMMENT, tableName, comment));
+//        }
+//
+//        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
+//        //删除约束（主键，唯一键，索引）
+//        Set<String> delConstraintSet = new LinkedHashSet<>();
+//        StringBuilder updateColumnSql = new StringBuilder();
+//        for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
+//            boolean flag = false;
+//            boolean updateNameFlag = false;
+//            Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
+//            while (it.hasNext()) {
+//                TableInfo.PropertyInfo propertyInfo = it.next();
+//                if (!Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
+//                    //修改列名的逻辑
+//                    String oldColumnName = propertyInfo.getOldColumnName();
+//                    if (Objects.equals(tableColumnInfo.getColumnName(), oldColumnName)) {
+//                        //满足条件，字段从propertyInfo.getOldColumnName()修改成propertyInfo.getColumnName()
+//                        updateNameFlag = true;
+//                    } else {
+//                        //根据io.gitee.zerowsh.actable.emnus.ModelEnums策略判断是否保留改字段
+//                        continue;
+//                    }
+//                }
+//                String type = propertyInfo.getType();
+//                String columnComment = Objects.isNull(propertyInfo.getColumnComment()) ? "" : propertyInfo.getColumnComment();
+//                //判断类型、是否为空、是否自增、默认值，这些是否存在修改
+//                boolean existUpdate = !(Objects.equals(tableColumnInfo.getTypeStr(), type))
+//                        || !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue()))
+//                        || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
+//                        || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
+//                        || !Objects.equals(columnComment, tableColumnInfo.getColumnComment());
+//
+//                int length = propertyInfo.getLength();
+//                int decimalLength = propertyInfo.getDecimalLength();
+//                //判断长度、精度，是否修改
+//                ColumnTypeEnums typeEnum = ColumnTypeEnums.getMysqlByValue(type);
+//                switch (typeEnum) {
+//                    case VARCHAR:
+//                    case CHAR:
+//                        existUpdate = existUpdate || tableColumnInfo.getLength() != this.handleStrLength(length);
+//                        break;
+//                    case DATETIME:
+//                        existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != this.handleDateLength(length);
+//                        break;
+//                    case DECIMAL:
+//                    case NUMERIC:
+//                    case DOUBLE:
+//                    case FLOAT:
+//                        if (decimalLength > length) {
+//                            decimalLength = length;
+//                        }
+//                        length = length > 65 || length < 0 ? 10 : length;
+//                        decimalLength = decimalLength > 65 || decimalLength < 0 ? 2 : decimalLength;
+//                        existUpdate = existUpdate || tableColumnInfo.getLength() != length
+//                                || tableColumnInfo.getDecimalLength() != decimalLength;
+//                        break;
+//                    default:
+//                }
+//                if ((propertyInfo.isKey() != tableColumnInfo.isKey()) && tableExistPk) {
+//                    delConstraintSet.add(MYSQL_DEL_PK);
+//                }
+//                if (updateNameFlag) {
+//                    //从字段上判断是否修改了字段名
+//                    StringBuilder propertySb = new StringBuilder();
+//                    splicingColumnInfo(propertySb, propertyInfo, tableName);
+//                    updateColumnSql.append(StrUtil.format(MYSQL_CHANGE_COLUMN, propertyInfo.getOldColumnName(), propertyInfo.getColumnName(), propertySb));
+//                } else {
+//                    if (existUpdate) {
+//                        StringBuilder propertySb = new StringBuilder();
+//                        splicingColumnInfo(propertySb, propertyInfo, tableName);
+//                        updateColumnSql.append(StrUtil.format(MYSQL_MODIFY_COLUMN, propertyInfo.getColumnName(), propertySb));
+//                    }
+//                }
+//
+//                flag = true;
+//                it.remove();
+//                break;
+//            }
+//            if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
+//                //如果数据库有但是实体类没有，进行删除
+//                if (!flag) {
+//                    if (tableColumnInfo.isKey() && tableExistPk) {
+//                        delConstraintSet.add(MYSQL_DEL_PK);
+//                    }
+//                    updateColumnSql.append(StrUtil.format(MYSQL_DEL_COLUMN, tableColumnInfo.getColumnName())).append(StrUtil.COMMA);
+//                }
+//            }
+//        }
+//
+//        //如果实体类有但是数据库没有，进行新增
+//        if (CollectionUtil.isNotEmpty(propertyInfoList)) {
+//            for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
+//                if (propertyInfo.isKey() && tableExistPk) {
+//                    delConstraintSet.add(MYSQL_DEL_PK);
+//                }
+//                StringBuilder propertySb = new StringBuilder();
+//                splicingColumnInfo(propertySb, propertyInfo, tableName);
+//                updateColumnSql.append(StrUtil.format(MYSQL_ADD_COLUMN, propertyInfo.getColumnName(), propertySb));
+//            }
+//        }
+//        //添加主键
+//        createPk(delConstraintSet, tableInfo, tableExistPk);
+//        //添加唯一键
+//        createUk(delConstraintSet, tableInfo, constraintInfoList);
+//        //添加索引
+//        createIdx(delConstraintSet, tableInfo, constraintInfoList);
+//        if (CollectionUtil.isNotEmpty(delConstraintSet)) {
+//            for (String s : delConstraintSet) {
+//                updateColumnSql.append(s).append(StrUtil.COMMA);
+//            }
+//        }
+//        if (updateColumnSql.length() > 0) {
+//            String resultSql = StrUtil.format(MYSQL_ALTER_TABLE, tableName) + updateColumnSql.deleteCharAt(updateColumnSql.length() - 1);
+//            resultList.add(resultSql);
+//        }
         return resultList;
     }
 
@@ -366,12 +366,18 @@ public class MysqlImpl implements DatabaseService {
                 " and c.table_schema = (select database()) AND t.table_schema = (SELECT DATABASE ())", tableName);
     }
 
+
     @Override
     public String getConstraintInfoSql(String tableName) {
         return StrUtil.format("select index_name constraintName ,GROUP_CONCAT(column_name order by column_name) constraintColumnName," +
                 " case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag" +
                 " from information_schema.statistics where table_name = '{}' and table_schema = (select database())" +
                 " GROUP BY constraintName,constraintFlag", tableName);
+    }
+
+    @Override
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
+        return null;
     }
 
     @Override
@@ -410,12 +416,47 @@ public class MysqlImpl implements DatabaseService {
     }
 
     @Override
+    public String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
+        return null;
+    }
+
+    @Override
     public String getUpdateTableCommentSql(String tableName, String tableComment) {
         return null;
     }
 
     @Override
     public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment) {
+        return null;
+    }
+
+    @Override
+    public String getAddColumnSql(String tableName, StringBuilder columnNameDetails) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails) {
+        return null;
+    }
+
+    @Override
+    public String getDelColumnSql(String tableName, String columnName) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName) {
+        return null;
+    }
+
+    @Override
+    public String getDropIndexSql(String indexName) {
+        return null;
+    }
+
+    @Override
+    public String getDropConstraintSql(String tableName, String constraintName) {
         return null;
     }
 
@@ -460,8 +501,8 @@ public class MysqlImpl implements DatabaseService {
      */
     private static void splicingColumnType(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
         String type = propertyInfo.getType();
-        int length = propertyInfo.getLength();
-        int decimalLength = propertyInfo.getDecimalLength();
+        long length = propertyInfo.getLength();
+        long decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
         ColumnTypeEnums typeEnum = ColumnTypeEnums.getMysqlByValue(type);
         propertySb.append(StrPool.CRLF);

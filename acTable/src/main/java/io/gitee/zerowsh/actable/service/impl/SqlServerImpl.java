@@ -259,7 +259,7 @@ public class SqlServerImpl implements DatabaseService {
      * 获取修改表sql
      *
      * @param tableInfo
-     * @param tableColumnInfoList
+     * @param tableColumnInfoMap
      * @param constraintInfoList
      * @param defaultInfoList
      * @param modelEnums
@@ -267,263 +267,263 @@ public class SqlServerImpl implements DatabaseService {
      */
     @Override
     public List<String> getUpdateTableSql(TableInfo tableInfo,
-                                          List<TableColumnInfo> tableColumnInfoList,
+                                          Map<String, TableColumnInfo> tableColumnInfoMap,
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
-        List<String> resultList = new ArrayList<>();
-        TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
-        String tableName = firstTableColumnInfo.getTableName();
-        List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
-        List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
-        //处理表备注
-        handleTableComment(resultList, tableInfo.getComment(), firstTableColumnInfo.getTableComment(), tableName);
-        /*
-         * 执行顺序
-         * 1.删除所有约束（唯一键、主键、索引,默认值）
-         * 2.修改列信息
-         * 3.新增列信息
-         * 4.创建约束（唯一键、主键、索引）
-         */
-        //删除列
-        List<String> delColumnSqlList = new ArrayList<>();
-        //添加列
-        List<String> addColumnSqlList = new ArrayList<>();
-        //添加列备注
-        List<String> addColumnCommentSqlList = new ArrayList<>();
-        //修改列
-        List<String> updateColumnSqlList = new ArrayList<>();
-        //添加列默认值
-        List<String> addColumnDefSqlList = new ArrayList<>();
-        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
-
-        /*
-         * 标记是否需要删除相关约束
-         */
-        boolean defFlag = false;
-        boolean pkFlag = false;
-        boolean idxFlag = false;
-        boolean ukFlag = false;
-
-        for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
-            boolean flag = false;
-            Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
-            while (it.hasNext()) {
-                TableInfo.PropertyInfo propertyInfo = it.next();
-                String type = propertyInfo.getType();
-                if (Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
-                    //默认值
-                    boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
-                            || Objects.equals(LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
-                            || Objects.equals(LEFT_BRACKET + LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET + RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
-                    boolean judgeDef = defExistUpdate || (!(Objects.equals(tableColumnInfo.getTypeStr(), type)) && Objects.nonNull(tableColumnInfo.getDefaultValue()));
-                    if (judgeDef) {
-                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, propertyInfo.getColumnName());
-                        defFlag = true;
-                    }
-                    boolean typeNotExistUpdate = (Objects.equals(tableColumnInfo.getTypeStr(), type)
-                            || (type.contains("max") && tableColumnInfo.getLength() == -1
-                            && (Objects.equals(tableColumnInfo.getTypeStr(), "varbinary")
-                            || Objects.equals(tableColumnInfo.getTypeStr(), "varchar") || Objects.equals(tableColumnInfo.getTypeStr(), "nvarchar"))));
-                    //类型、是否为空、是否自增
-                    boolean existUpdate = !typeNotExistUpdate
-                            || defExistUpdate
-                            || propertyInfo.isKey() != tableColumnInfo.isKey()
-                            || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
-                            || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
-                    int length = propertyInfo.getLength();
-                    int decimalLength = propertyInfo.getDecimalLength();
-                    ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
-                    //长度、精度
-                    switch (typeEnum) {
-                        case NVARCHAR:
-                        case VARCHAR:
-                        case NCHAR:
-                        case CHAR:
-                            existUpdate = existUpdate || tableColumnInfo.getLength() != this.handleStrLength(length);
-                            break;
-                        case DATETIME2:
-                            existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != this.handleDateLength(length);
-                            break;
-                        case DECIMAL:
-                        case NUMERIC:
-                            if (decimalLength > length) {
-                                decimalLength = length;
-                            }
-                            length = length > 38 || length < 0 ? 18 : length;
-                            decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
-                            existUpdate = existUpdate || tableColumnInfo.getLength() != length
-                                    || tableColumnInfo.getDecimalLength() != decimalLength;
-                            break;
-                        default:
-                    }
-                    if (existUpdate) {
-                        if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
-                            throw new RuntimeException(StrUtil.format("修改时，不能将自增字段改成非自增，请手动删除该字段或者调整实体类！！！table={} column={}", tableName, propertyInfo.getColumnName()));
-                        }
-                        if (propertyInfo.isKey() || tableColumnInfo.isKey()) {
-                            pkFlag = true;
-                        }
-                        StringBuilder propertySb = new StringBuilder();
-                        splicingColumnInfo(propertySb, propertyInfo, tableName, true, addColumnDefSqlList);
-                        updateColumnSqlList.add(StrUtil.format(UPDATE_COLUMN,
-                                tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
-                    }
-                    //处理列备注
-                    handleColumnComment(tableColumnInfo, propertyInfo, resultList, tableName);
-                    flag = true;
-                    it.remove();
-                    break;
-                }
-            }
-            if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
-                //如果数据库有但是实体类没有，进行删除
-                if (!flag) {
-                    if (tableColumnInfo.isKey()) {
-                        pkFlag = true;
-                    }
-
-                    if (handleUkConstraintDatabase(tableColumnInfo.getColumnName(), constraintInfoList)) {
-                        ukFlag = true;
-                    }
-                    if (handleIdxConstraintDatabase(tableColumnInfo.getColumnName(), constraintInfoList)) {
-                        idxFlag = true;
-                    }
-                    if (StrUtil.isNotBlank(tableColumnInfo.getDefaultValue())) {
-                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, tableColumnInfo.getColumnName());
-                        defFlag = true;
-                    }
-                    delColumnSqlList.add(StrUtil.format(DROP_COLUMN, tableName, tableColumnInfo.getColumnName()));
-                }
-            }
-        }
-
-        //如果实体类有但是数据库没有，进行新增
-        if (CollectionUtil.isNotEmpty(propertyInfoList)) {
-            for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
-                if (propertyInfo.isKey()) {
-                    pkFlag = true;
-                }
-                if (handleUkConstraint(tableInfo, propertyInfo)) {
-                    ukFlag = true;
-                }
-                if (handleIdxConstraint(tableInfo, propertyInfo)) {
-                    idxFlag = true;
-                }
-                StringBuilder propertySb = new StringBuilder();
-                splicingColumnInfo(propertySb, propertyInfo, tableName);
-                if (StrUtil.isNotBlank(propertyInfo.getColumnComment())) {
-                    //字段备注
-                    addColumnCommentSqlList.add(StrUtil.format(ADD_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
-                }
-                addColumnSqlList.add(StrUtil.format(ADD_COLUMN, tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
-            }
-        }
-
-
-        //判断字段数据库和实体类约束是否改变
-        /*
-         * 1.判断数据库
-         * 2.判断实体类
-         */
-        Set<String> uniqueInfoSet = getPropertyUniqueSet(tableInfo.getUniqueInfoList());
-        Set<String> indexInfoSet = getPropertyIndexSet(tableInfo.getIndexInfoList());
-
-        Set<String> uniqueInfoSet1 = getDatabaseUniqueSet(constraintInfoList);
-        Set<String> indexInfoSet1 = getDatabaseIndexSet(constraintInfoList);
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            switch (constraintInfo.getConstraintFlag()) {
-                case UK:
-                    if (!uniqueInfoSet.contains(constraintInfo.getConstraintColumnName())) {
-                        constraintInfoNewList.add(constraintInfo);
-                        ukFlag = true;
-                    }
-                    break;
-                case INDEX:
-                    if (!indexInfoSet.contains(constraintInfo.getConstraintColumnName())) {
-                        constraintInfoNewList.add(constraintInfo);
-                        idxFlag = true;
-                    }
-                    break;
-                default:
-                    constraintInfoNewList.add(constraintInfo);
-            }
-        }
-        for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
-//            String[] columns = uniqueInfo.getColumns();
-//            if (ArrayUtil.isNotEmpty(columns)) {
-//                Arrays.sort(columns);
-//                if (!uniqueInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+//        List<String> resultList = new ArrayList<>();
+//        TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
+//        String tableName = firstTableColumnInfo.getTableName();
+//        List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
+//        List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
+//        //处理表备注
+//        handleTableComment(resultList, tableInfo.getComment(), firstTableColumnInfo.getTableComment(), tableName);
+//        /*
+//         * 执行顺序
+//         * 1.删除所有约束（唯一键、主键、索引,默认值）
+//         * 2.修改列信息
+//         * 3.新增列信息
+//         * 4.创建约束（唯一键、主键、索引）
+//         */
+//        //删除列
+//        List<String> delColumnSqlList = new ArrayList<>();
+//        //添加列
+//        List<String> addColumnSqlList = new ArrayList<>();
+//        //添加列备注
+//        List<String> addColumnCommentSqlList = new ArrayList<>();
+//        //修改列
+//        List<String> updateColumnSqlList = new ArrayList<>();
+//        //添加列默认值
+//        List<String> addColumnDefSqlList = new ArrayList<>();
+//        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
+//
+//        /*
+//         * 标记是否需要删除相关约束
+//         */
+//        boolean defFlag = false;
+//        boolean pkFlag = false;
+//        boolean idxFlag = false;
+//        boolean ukFlag = false;
+//
+//        for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
+//            boolean flag = false;
+//            Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
+//            while (it.hasNext()) {
+//                TableInfo.PropertyInfo propertyInfo = it.next();
+//                String type = propertyInfo.getType();
+//                if (Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
+//                    //默认值
+//                    boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
+//                            || Objects.equals(LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET, tableColumnInfo.getDefaultValue())
+//                            || Objects.equals(LEFT_BRACKET + LEFT_BRACKET + propertyInfo.getDefaultValue() + RIGHT_BRACKET + RIGHT_BRACKET, tableColumnInfo.getDefaultValue()));
+//                    boolean judgeDef = defExistUpdate || (!(Objects.equals(tableColumnInfo.getTypeStr(), type)) && Objects.nonNull(tableColumnInfo.getDefaultValue()));
+//                    if (judgeDef) {
+//                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, propertyInfo.getColumnName());
+//                        defFlag = true;
+//                    }
+//                    boolean typeNotExistUpdate = (Objects.equals(tableColumnInfo.getTypeStr(), type)
+//                            || (type.contains("max") && tableColumnInfo.getLength() == -1
+//                            && (Objects.equals(tableColumnInfo.getTypeStr(), "varbinary")
+//                            || Objects.equals(tableColumnInfo.getTypeStr(), "varchar") || Objects.equals(tableColumnInfo.getTypeStr(), "nvarchar"))));
+//                    //类型、是否为空、是否自增
+//                    boolean existUpdate = !typeNotExistUpdate
+//                            || defExistUpdate
+//                            || propertyInfo.isKey() != tableColumnInfo.isKey()
+//                            || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement() && propertyInfo.isNull()))
+//                            || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement();
+//                    int length = propertyInfo.getLength();
+//                    int decimalLength = propertyInfo.getDecimalLength();
+//                    ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
+//                    //长度、精度
+//                    switch (typeEnum) {
+//                        case NVARCHAR:
+//                        case VARCHAR:
+//                        case NCHAR:
+//                        case CHAR:
+//                            existUpdate = existUpdate || tableColumnInfo.getLength() != this.handleStrLength(length);
+//                            break;
+//                        case DATETIME2:
+//                            existUpdate = existUpdate || tableColumnInfo.getDecimalLength() != this.handleDateLength(length);
+//                            break;
+//                        case DECIMAL:
+//                        case NUMERIC:
+//                            if (decimalLength > length) {
+//                                decimalLength = length;
+//                            }
+//                            length = length > 38 || length < 0 ? 18 : length;
+//                            decimalLength = decimalLength > 38 || decimalLength < 0 ? 2 : decimalLength;
+//                            existUpdate = existUpdate || tableColumnInfo.getLength() != length
+//                                    || tableColumnInfo.getDecimalLength() != decimalLength;
+//                            break;
+//                        default:
+//                    }
+//                    if (existUpdate) {
+//                        if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
+//                            throw new RuntimeException(StrUtil.format("修改时，不能将自增字段改成非自增，请手动删除该字段或者调整实体类！！！table={} column={}", tableName, propertyInfo.getColumnName()));
+//                        }
+//                        if (propertyInfo.isKey() || tableColumnInfo.isKey()) {
+//                            pkFlag = true;
+//                        }
+//                        StringBuilder propertySb = new StringBuilder();
+//                        splicingColumnInfo(propertySb, propertyInfo, tableName, true, addColumnDefSqlList);
+//                        updateColumnSqlList.add(StrUtil.format(UPDATE_COLUMN,
+//                                tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
+//                    }
+//                    //处理列备注
+//                    handleColumnComment(tableColumnInfo, propertyInfo, resultList, tableName);
+//                    flag = true;
+//                    it.remove();
+//                    break;
+//                }
+//            }
+//            if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
+//                //如果数据库有但是实体类没有，进行删除
+//                if (!flag) {
+//                    if (tableColumnInfo.isKey()) {
+//                        pkFlag = true;
+//                    }
+//
+//                    if (handleUkConstraintDatabase(tableColumnInfo.getColumnName(), constraintInfoList)) {
+//                        ukFlag = true;
+//                    }
+//                    if (handleIdxConstraintDatabase(tableColumnInfo.getColumnName(), constraintInfoList)) {
+//                        idxFlag = true;
+//                    }
+//                    if (StrUtil.isNotBlank(tableColumnInfo.getDefaultValue())) {
+//                        addDelDefConstraintInfo(defaultInfoList, defaultInfoNewList, tableColumnInfo.getColumnName());
+//                        defFlag = true;
+//                    }
+//                    delColumnSqlList.add(StrUtil.format(DROP_COLUMN, tableName, tableColumnInfo.getColumnName()));
+//                }
+//            }
+//        }
+//
+//        //如果实体类有但是数据库没有，进行新增
+//        if (CollectionUtil.isNotEmpty(propertyInfoList)) {
+//            for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
+//                if (propertyInfo.isKey()) {
+//                    pkFlag = true;
+//                }
+//                if (handleUkConstraint(tableInfo, propertyInfo)) {
 //                    ukFlag = true;
-//                    break;
 //                }
-//            }
-        }
-        for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
-//            String[] columns = indexInfo.getColumns();
-//            if (ArrayUtil.isNotEmpty(columns)) {
-//                Arrays.sort(columns);
-//                if (!indexInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+//                if (handleIdxConstraint(tableInfo, propertyInfo)) {
 //                    idxFlag = true;
-//                    break;
 //                }
+//                StringBuilder propertySb = new StringBuilder();
+//                splicingColumnInfo(propertySb, propertyInfo, tableName);
+//                if (StrUtil.isNotBlank(propertyInfo.getColumnComment())) {
+//                    //字段备注
+//                    addColumnCommentSqlList.add(StrUtil.format(ADD_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
+//                }
+//                addColumnSqlList.add(StrUtil.format(ADD_COLUMN, tableName, propertyInfo.getColumnName(), propertySb.deleteCharAt(propertySb.length() - 1)));
 //            }
-        }
-        //是否排除主键约束的删除
-        excludePkConstraint(constraintInfoNewList, pkFlag);
-        List<String> delUkList = new ArrayList<>();
-        List<String> delIdxList = new ArrayList<>();
-        List<String> exitUkList = new ArrayList<>();
-        List<String> exitIdxList = new ArrayList<>();
-        //获取需要删除的约束（主键 唯一键 索引 默认值）
-        Map<String, Collection<String>> delConstraintSqlMap = handleConstraint(tableName, constraintInfoNewList, defaultInfoNewList, delUkList, delIdxList);
-
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            switch (constraintInfo.getConstraintFlag()) {
-                case UK:
-                    if (!delUkList.contains(constraintInfo.getConstraintName())) {
-                        exitUkList.add(constraintInfo.getConstraintName());
-                    }
-                    break;
-                case INDEX:
-                    if (!delIdxList.contains(constraintInfo.getConstraintName())) {
-                        exitIdxList.add(constraintInfo.getConstraintName());
-                    }
-                    break;
-                default:
-            }
-        }
-        //删除列
-        if (pkFlag) {
-            resultList.addAll(delConstraintSqlMap.get(DEL_PK_C_SQL));
-        }
-        if (ukFlag) {
-            resultList.addAll(delConstraintSqlMap.get(DEL_UK_C_SQL));
-        }
-        if (idxFlag) {
-            resultList.addAll(delConstraintSqlMap.get(DEL_INDEX_C_SQL));
-        }
-        if (defFlag) {
-            resultList.addAll(delConstraintSqlMap.get(DEL_DF_C_SQL));
-        }
-        resultList.addAll(delColumnSqlList);
-        //添加列
-        resultList.addAll(addColumnSqlList);
-        //添加列备注
-        resultList.addAll(addColumnCommentSqlList);
-        //修改列
-        resultList.addAll(updateColumnSqlList);
-        //创建主键
-        createPk(pkFlag, tableInfo.getKeyList(), tableName, resultList);
-        //创建唯一键
-        createUk(ukFlag, tableInfo.getUniqueInfoList(), tableName, resultList, exitUkList);
-        //创建索引
-        createIdx(idxFlag, tableInfo.getIndexInfoList(), tableName, resultList, exitIdxList);
-        if (defFlag) {
-            //添加列默认值
-            resultList.addAll(addColumnDefSqlList);
-        }
-        return resultList;
+//        }
+//
+//
+//        //判断字段数据库和实体类约束是否改变
+//        /*
+//         * 1.判断数据库
+//         * 2.判断实体类
+//         */
+//        Set<String> uniqueInfoSet = getPropertyUniqueSet(tableInfo.getUniqueInfoList());
+//        Set<String> indexInfoSet = getPropertyIndexSet(tableInfo.getIndexInfoList());
+//
+//        Set<String> uniqueInfoSet1 = getDatabaseUniqueSet(constraintInfoList);
+//        Set<String> indexInfoSet1 = getDatabaseIndexSet(constraintInfoList);
+//        for (ConstraintInfo constraintInfo : constraintInfoList) {
+//            switch (constraintInfo.getConstraintFlag()) {
+//                case UK:
+//                    if (!uniqueInfoSet.contains(constraintInfo.getConstraintColumnName())) {
+//                        constraintInfoNewList.add(constraintInfo);
+//                        ukFlag = true;
+//                    }
+//                    break;
+//                case INDEX:
+//                    if (!indexInfoSet.contains(constraintInfo.getConstraintColumnName())) {
+//                        constraintInfoNewList.add(constraintInfo);
+//                        idxFlag = true;
+//                    }
+//                    break;
+//                default:
+//                    constraintInfoNewList.add(constraintInfo);
+//            }
+//        }
+//        for (TableInfo.UniqueInfo uniqueInfo : tableInfo.getUniqueInfoList()) {
+////            String[] columns = uniqueInfo.getColumns();
+////            if (ArrayUtil.isNotEmpty(columns)) {
+////                Arrays.sort(columns);
+////                if (!uniqueInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+////                    ukFlag = true;
+////                    break;
+////                }
+////            }
+//        }
+//        for (TableInfo.IndexInfo indexInfo : tableInfo.getIndexInfoList()) {
+////            String[] columns = indexInfo.getColumns();
+////            if (ArrayUtil.isNotEmpty(columns)) {
+////                Arrays.sort(columns);
+////                if (!indexInfoSet1.contains(StrUtil.join(StrUtil.COMMA, columns))) {
+////                    idxFlag = true;
+////                    break;
+////                }
+////            }
+//        }
+//        //是否排除主键约束的删除
+//        excludePkConstraint(constraintInfoNewList, pkFlag);
+//        List<String> delUkList = new ArrayList<>();
+//        List<String> delIdxList = new ArrayList<>();
+//        List<String> exitUkList = new ArrayList<>();
+//        List<String> exitIdxList = new ArrayList<>();
+//        //获取需要删除的约束（主键 唯一键 索引 默认值）
+//        Map<String, Collection<String>> delConstraintSqlMap = handleConstraint(tableName, constraintInfoNewList, defaultInfoNewList, delUkList, delIdxList);
+//
+//        for (ConstraintInfo constraintInfo : constraintInfoList) {
+//            switch (constraintInfo.getConstraintFlag()) {
+//                case UK:
+//                    if (!delUkList.contains(constraintInfo.getConstraintName())) {
+//                        exitUkList.add(constraintInfo.getConstraintName());
+//                    }
+//                    break;
+//                case INDEX:
+//                    if (!delIdxList.contains(constraintInfo.getConstraintName())) {
+//                        exitIdxList.add(constraintInfo.getConstraintName());
+//                    }
+//                    break;
+//                default:
+//            }
+//        }
+//        //删除列
+//        if (pkFlag) {
+//            resultList.addAll(delConstraintSqlMap.get(DEL_PK_C_SQL));
+//        }
+//        if (ukFlag) {
+//            resultList.addAll(delConstraintSqlMap.get(DEL_UK_C_SQL));
+//        }
+//        if (idxFlag) {
+//            resultList.addAll(delConstraintSqlMap.get(DEL_INDEX_C_SQL));
+//        }
+//        if (defFlag) {
+//            resultList.addAll(delConstraintSqlMap.get(DEL_DF_C_SQL));
+//        }
+//        resultList.addAll(delColumnSqlList);
+//        //添加列
+//        resultList.addAll(addColumnSqlList);
+//        //添加列备注
+//        resultList.addAll(addColumnCommentSqlList);
+//        //修改列
+//        resultList.addAll(updateColumnSqlList);
+//        //创建主键
+//        createPk(pkFlag, tableInfo.getKeyList(), tableName, resultList);
+//        //创建唯一键
+//        createUk(ukFlag, tableInfo.getUniqueInfoList(), tableName, resultList, exitUkList);
+//        //创建索引
+//        createIdx(idxFlag, tableInfo.getIndexInfoList(), tableName, resultList, exitIdxList);
+//        if (defFlag) {
+//            //添加列默认值
+//            resultList.addAll(addColumnDefSqlList);
+//        }
+        return null;
     }
 
     @Override
@@ -600,6 +600,11 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
+        return null;
+    }
+
+    @Override
     public String getDefaultInfoSql(String tableName) {
         return StrUtil.format("select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
                 "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
@@ -637,12 +642,47 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
+    public String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
+        return null;
+    }
+
+    @Override
     public String getUpdateTableCommentSql(String tableName, String tableComment) {
         return null;
     }
 
     @Override
     public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment) {
+        return null;
+    }
+
+    @Override
+    public String getAddColumnSql(String tableName, StringBuilder columnNameDetails) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails) {
+        return null;
+    }
+
+    @Override
+    public String getDelColumnSql(String tableName, String columnName) {
+        return null;
+    }
+
+    @Override
+    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName) {
+        return null;
+    }
+
+    @Override
+    public String getDropIndexSql(String indexName) {
+        return null;
+    }
+
+    @Override
+    public String getDropConstraintSql(String tableName, String constraintName) {
         return null;
     }
 
@@ -843,8 +883,8 @@ public class SqlServerImpl implements DatabaseService {
      */
     private static void splicingColumnType(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
         String type = propertyInfo.getType();
-        int length = propertyInfo.getLength();
-        int decimalLength = propertyInfo.getDecimalLength();
+        long length = propertyInfo.getLength();
+        long decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();
         ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
         propertySb.append(StrPool.CRLF);

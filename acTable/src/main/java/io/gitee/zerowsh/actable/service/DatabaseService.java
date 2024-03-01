@@ -8,6 +8,7 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 所有数据库基类
@@ -15,26 +16,6 @@ import java.util.List;
  * @author zero
  */
 public interface DatabaseService {
-
-    /**
-     * 处理字符串长度
-     *
-     * @param length
-     * @return
-     */
-    default long handleStrLength(int length) {
-        return length < 0 ? 255 : length;
-    }
-
-    /**
-     * 处理时间长度
-     *
-     * @param length
-     * @return
-     */
-    default int handleDateLength(int length) {
-        return length > 7 || length < 0 ? 0 : length;
-    }
 
     /**
      * 获取创建表的sql语句
@@ -47,15 +28,15 @@ public interface DatabaseService {
     /**
      * 获取修改表的sql语句
      *
-     * @param tableInfo           实体类获得
-     * @param tableColumnInfoList 表结构获得
+     * @param tableInfo          实体类获得
+     * @param tableColumnInfoMap 表结构获得
      * @param constraintInfoList
-     * @param defaultInfoList     默认值约束
+     * @param defaultInfoList    默认值约束
      * @param modelEnums
      * @return
      */
     List<String> getUpdateTableSql(TableInfo tableInfo,
-                                   List<TableColumnInfo> tableColumnInfoList,
+                                   Map<String, TableColumnInfo> tableColumnInfoMap,
                                    List<ConstraintInfo> constraintInfoList,
                                    List<ConstraintInfo> defaultInfoList,
                                    ModelEnums modelEnums);
@@ -167,6 +148,16 @@ public interface DatabaseService {
     String getConstraintInfoSql(String tableName);
 
     /**
+     * 获取修改主键SQL
+     *
+     * @param tableName
+     * @param constraintName
+     * @param columnList
+     * @return
+     */
+    String getUpdatePkSql(String tableName, String constraintName, List<String> columnList);
+
+    /**
      * 获取表默认值约束SQL
      *
      * @param tableName
@@ -234,6 +225,16 @@ public interface DatabaseService {
     String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns);
 
     /**
+     * 修改唯一约束SQL
+     *
+     * @param tableName
+     * @param constraintName
+     * @param columns
+     * @return
+     */
+    String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns);
+
+    /**
      * 获取修改表注释SQL
      *
      * @param tableName
@@ -251,5 +252,60 @@ public interface DatabaseService {
      * @return
      */
     String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment);
+
+    /**
+     * 新增列
+     *
+     * @param tableName
+     * @param columnNameDetails
+     * @return
+     */
+    String getAddColumnSql(String tableName, StringBuilder columnNameDetails);
+
+    /**
+     * 修改列
+     *
+     * @param tableName
+     * @param columnNameDetails
+     * @return
+     */
+    String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails);
+
+    /**
+     * 删除列
+     *
+     * @param tableName
+     * @param columnName
+     * @return
+     */
+    String getDelColumnSql(String tableName, String columnName);
+
+    /**
+     * 修改列名称
+     *
+     * @param tableName
+     * @param oldColumnName
+     * @param newColumnName
+     * @return
+     */
+    String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName);
+
+    /**
+     * 删除索引（普通索引+唯一索引）
+     *
+     * @param indexName
+     * @return
+     */
+    String getDropIndexSql(String indexName);
+
+    /**
+     * 删除约束（唯一约束）
+     *
+     * @param tableName
+     * @param constraintName
+     * @return
+     */
+    String getDropConstraintSql(String tableName, String constraintName);
+
 
 }

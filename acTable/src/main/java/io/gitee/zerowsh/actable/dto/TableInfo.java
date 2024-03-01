@@ -48,7 +48,7 @@ public class TableInfo {
         private int order;
         private String type;
         private boolean typeLimit;
-        private int length;
+        private long length;
         private int decimalLength;
         private boolean isNull;
         private boolean isAutoIncrement;

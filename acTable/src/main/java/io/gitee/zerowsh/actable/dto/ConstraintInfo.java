@@ -18,10 +18,11 @@ public class ConstraintInfo {
      * 1 主键
      * 2 唯一键
      * 3 索引
+     * 4 唯一索引
      */
     private Integer constraintFlag;
     /**
      * 索引排序，和字段constraintColumnName对应
      */
-    private Integer indexSortStr;
+    private String indexSortStr;
 }

@@ -16,15 +16,16 @@ import java.math.BigDecimal;
 @Setter
 @TableName("t_zero")
 @AcTable(name = "t_zero", comment = "测试")
-@UpdateColumnName(value = {"test4->test2"})
+@UpdateColumnName(value = {"test1->test2"})
 @IndexArr({
-        @Index(type = Index.IndexEnums.IDX, value = "realNameZero",
+        @Index(type = Index.IndexEnums.IDX, value = "realA",
                 columnArr = {@IndexColumn("realName")
                 }),
-        @Index(type = Index.IndexEnums.UK, value = "realNameZero", columnArr = {@IndexColumn("realName")}),
-        @Index(type = Index.IndexEnums.UK_IDX, value = "realNameZero", columnArr = {@IndexColumn("realName")})
+        @Index(type = Index.IndexEnums.UK, value = "realB", columnArr = {@IndexColumn("realName"), @IndexColumn("zero")}),
+        @Index(type = Index.IndexEnums.UK, value = "realD", columnArr = {@IndexColumn("zero")}),
+        @Index(type = Index.IndexEnums.UK_IDX, value = "realC", columnArr = {@IndexColumn("realName")})
 })
-@Index(type = Index.IndexEnums.UK_IDX, value = "realNameZero2", columnArr = {@IndexColumn("id")})
+@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
 public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "名称",
@@ -36,7 +37,7 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(type = ColumnTypeConstants.INT, length = 4)
     private Integer zero;
 
-    @AcColumn(value = "test1", oldName = "test")
+    @AcColumn(value = "test1")
     private String test1;
 
     @AcColumn
@@ -48,5 +49,9 @@ public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "测试", type = ColumnTypeConstants.DECIMAL, length = 10, decimalLength = 2)
     private BigDecimal ddd;
+
+
+    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)", typeLimit = false)
+    private BigDecimal cc;
 
 }

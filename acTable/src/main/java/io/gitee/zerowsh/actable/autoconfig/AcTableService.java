@@ -30,6 +30,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static cn.hutool.core.util.StrUtil.COMMA;
@@ -78,17 +79,17 @@ public class AcTableService {
                 return;
             }
 
+            log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
             this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseService);
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
-                log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
                 for (String sql : executeSqlList) {
                     JdbcUtil.executeSql(connection, sql);
                 }
-                log.info(StrUtil.format("完成【{}】自动建表！", databaseType));
             }
             this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType);
+            log.info(StrUtil.format("完成【{}】自动建表！", databaseType));
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
         }
@@ -135,21 +136,16 @@ public class AcTableService {
         }
         for (TableInfo tableInfo : tableInfoList) {
             String tableName = tableInfo.getName();
-            if (!Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)
-                    && JdbcUtil.isExist(connection, databaseService.existTableSql(tableName))) {
+            if (JdbcUtil.isExist(connection, databaseService.existTableSql(tableName))) {
                 /*
                  * 存在--改表
                  */
-                List<TableColumnInfo> tableColumnInfoList = JdbcUtil.getTableColumnInfoList(connection, databaseService.getTableStructureSql(tableName));
+                Map<String, TableColumnInfo> tableColumnInfoMap = JdbcUtil.getTableColumnInfoMap(connection, databaseService.getTableStructureSql(tableName));
                 List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getConstraintInfoSql(tableName));
-                List<ConstraintInfo> defaultInfoList = null;
                 //sqlserver有默认值约束
-                String defaultInfoSql = databaseService.getDefaultInfoSql(tableName);
-                if (StrUtil.isNotBlank(defaultInfoSql)) {
-                    defaultInfoList = JdbcUtil.getConstraintInfoList(connection, defaultInfoSql);
-                }
+                List<ConstraintInfo> defaultInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getDefaultInfoSql(tableName));
                 executeSqlList.addAll(databaseService.getUpdateTableSql(tableInfo,
-                        tableColumnInfoList,
+                        tableColumnInfoMap,
                         constraintInfoList,
                         defaultInfoList,
                         modelEnums));

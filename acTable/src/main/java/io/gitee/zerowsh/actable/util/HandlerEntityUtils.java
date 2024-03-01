@@ -136,7 +136,9 @@ public class HandlerEntityUtils {
                 tableJudge.add(tableName);
                 //设置表名
                 builder.name(tableName);
-                builder.comment(judgeIsNull(comment));
+                String tableComment = judgeIsNull(comment);
+                builder.comment(StrUtil.isBlank(tableComment) ? "" : tableComment);
+                //定义在类上的修改字段注解
                 HashMap<String, String> updateColumnNameMap = new HashMap();
 
                 UpdateColumnName updateColumnName = cls.getAnnotation(UpdateColumnName.class);
@@ -146,7 +148,7 @@ public class HandlerEntityUtils {
                     if (ArrayUtil.isNotEmpty(value)) {
                         for (String updateColumnNameStr : value) {
                             String[] split = updateColumnNameStr.split(CONVERT_STR);
-                            updateColumnNameMap.put(split[1], split[0]);
+                            updateColumnNameMap.put(split[0], split[1]);
                         }
                     }
                 }
@@ -165,7 +167,7 @@ public class HandlerEntityUtils {
                 }
 
                 //处理索引、唯一索引、唯一约束
-                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),propertyMap,
+                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
                         indexInfoList,
                         uniqueIndexInfoList,
                         uniqueInfoList,
@@ -178,7 +180,7 @@ public class HandlerEntityUtils {
                     Index[] valueArr = indexArr.value();
                     if (ArrayUtil.isNotEmpty(valueArr)) {
                         for (Index index : valueArr) {
-                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(),propertyMap,
+                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
                                     indexInfoList,
                                     uniqueIndexInfoList,
                                     uniqueInfoList,
@@ -290,7 +292,7 @@ public class HandlerEntityUtils {
                 boolean isAutoIncrement = (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
-                propertyInfoBuilder.columnComment(columnComment)
+                propertyInfoBuilder.columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(COLUMN_IS_NULL_DEF)
                         .isKey(isKey)
@@ -323,8 +325,9 @@ public class HandlerEntityUtils {
                         || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
-                propertyInfoBuilder.oldColumnName(StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : updateColumnNameMap.get(columnName))
-                        .columnComment(columnComment)
+                String oldColumnName = StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : columnName;
+                propertyInfoBuilder.oldColumnName(oldColumnName)
+                        .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(acColumn.decimalLength())
                         .defaultValue(judgeIsNull(acColumn.defaultValue()))
                         .isAutoIncrement(isAutoIncrement)
@@ -338,6 +341,9 @@ public class HandlerEntityUtils {
             if (acTableProperties.getColumnToUpperCase()) {
                 columnName = columnName.toUpperCase();
             }
+            if (StrUtil.isNotBlank(updateColumnNameMap.get(columnName))) {
+                columnName = updateColumnNameMap.get(columnName);
+            }
             propertyInfoList.add(0, propertyInfoBuilder.columnName(columnName).build());
             propertyMap.put(fieldName, columnName);
         }
@@ -350,7 +356,7 @@ public class HandlerEntityUtils {
                 cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService);
     }
 
-    public static void handleUkAndIdxColumn(Boolean columnToUpperCase,Map<String,String> propertyMap,
+    public static void handleUkAndIdxColumn(Boolean columnToUpperCase, Map<String, String> propertyMap,
                                             List<TableInfo.IndexInfo> indexInfoList,
                                             List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
                                             List<TableInfo.UniqueInfo> uniqueInfoList,

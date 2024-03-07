@@ -30,10 +30,10 @@ public @interface Index {
     }
 
     /**
-     * 索引的名称
-     * 索引idx_
-     * 唯一索引uk_idx
-     * 唯一约束uk_
+     * 索引的名称，不管是否指定都会拼接雪花算法唯一ID，及value+雪花算法ID
+     * 索引默认前缀idx_
+     * 唯一索引默认前缀uk_idx
+     * 唯一约束默认前缀uk_
      */
     String value() default "";
 

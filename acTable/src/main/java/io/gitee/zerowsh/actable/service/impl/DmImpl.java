@@ -74,7 +74,7 @@ public class DmImpl implements DatabaseService {
         }
 
         //存储建表sql
-        resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString()));
+        resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), null));
         if (StrUtil.isNotBlank(comment)) {
             //存储表备注sql
             resultList.add(this.addTableCommentSql(tableName, comment));
@@ -184,8 +184,12 @@ public class DmImpl implements DatabaseService {
                 }
                 if (Objects.nonNull(oldTableColumnInfo)) {
                     //修改
-                    resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName));
+                    resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, null));
                     tableColumnInfo = oldTableColumnInfo;
+                } else if (Objects.isNull(tableColumnInfo)) {
+                    //写错了会导致新增字段和删除字段
+                    throw new RuntimeException(StrUtil.format("无法将表【{}】，字段【{}】修改成【{}】，两个字段都不存在于表中！",
+                            tableName, oldColumnName, columnName));
                 }
             }
             if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
@@ -303,6 +307,7 @@ public class DmImpl implements DatabaseService {
                     if (new HashSet<>(list).equals(new HashSet<>(uniqueList))) {
                         uniqueInfoIterator.remove();
                         iterator.remove();
+                        break;
                     }
                 }
             } else if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
@@ -447,6 +452,8 @@ public class DmImpl implements DatabaseService {
         //是否为空
         if (propertyInfo.isKey() || propertyInfo.isAutoIncrement() || !propertyInfo.isNull()) {
             propertySb.append(NOT_NULL);
+        } else {
+            propertySb.append(NULL);
         }
         //是否自增
         if (propertyInfo.isAutoIncrement()) {
@@ -464,18 +471,21 @@ public class DmImpl implements DatabaseService {
         long length = propertyInfo.getLength();
         long decimalLength = propertyInfo.getDecimalLength();
         String type = propertyInfo.getType();
+        String columnName = propertyInfo.getColumnName();
+        String tableName = propertyInfo.getTableName();
         ColumnTypeInfo columnTypeInfo = new ColumnTypeInfo();
         switch (type) {
             case ColumnTypeConstants.DATETIME:
                 if (length > 9 || length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 6);
                     length = 6;
                 }
-                //log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 6);
                 columnTypeInfo.setLength(length).setTypeStr(type);
                 break;
             case ColumnTypeConstants.VARCHAR:
             case ColumnTypeConstants.CHAR:
                 if (length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 255);
                     length = 255;
                 }
                 columnTypeInfo.setLength(length).setTypeStr(type);
@@ -483,6 +493,7 @@ public class DmImpl implements DatabaseService {
             case ColumnTypeConstants.FLOAT:
             case ColumnTypeConstants.DOUBLE:
                 if (length > 126 || length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 53);
                     length = 53;
                 }
                 columnTypeInfo.setLength(length).setTypeStr(type);
@@ -490,12 +501,13 @@ public class DmImpl implements DatabaseService {
             case ColumnTypeConstants.DECIMAL:
             case ColumnTypeConstants.NUMERIC:
                 if (length > 38 || length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 22);
                     length = 22;
                 }
                 if (decimalLength > 38 || decimalLength > length || decimalLength < 0) {
+                    log.warn(COLUMN_DECIMAL_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, length, 2);
                     decimalLength = 2;
                 }
-
                 columnTypeInfo.setLength(length).setTypeStr(type).setDecimalLength(decimalLength);
                 break;
             default:
@@ -572,6 +584,11 @@ public class DmImpl implements DatabaseService {
                 this.addKeywordHandle(constraintName), column);
     }
 
+    @Override
+    public String getDropPkSql(String tableName) {
+        return null;
+    }
+
 
     @Override
     public String getDefaultInfoSql(String tableName) {
@@ -625,13 +642,6 @@ public class DmImpl implements DatabaseService {
                 this.addKeywordHandle(tableName), this.addKeywordHandle(constraintName), column);
     }
 
-    @Override
-    public String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        //ALTER TABLE "t_zero" modify CONSTRAINT "uk_realB1759856289930014723" to UNIQUE ("real_name")
-        String column = CollectionUtil.join(columns, StrPool.COMMA, (index) -> this.addKeywordHandle(index.getColumn()));
-        return StrUtil.format("ALTER TABLE {} modify CONSTRAINT {} to UNIQUE ({})",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(constraintName), column);
-    }
 
     @Override
     public String getUpdateTableCommentSql(String tableName, String tableComment) {
@@ -667,10 +677,10 @@ public class DmImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName) {
+    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails) {
         //alter table "t_zero" alter column "ddd" rename to "ddd2";
         return StrUtil.format("ALTER TABLE {} ALTER COLUMN {} RENAME TO {}",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), newColumnName);
+                this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), this.addKeywordHandle(newColumnName));
     }
 
     @Override

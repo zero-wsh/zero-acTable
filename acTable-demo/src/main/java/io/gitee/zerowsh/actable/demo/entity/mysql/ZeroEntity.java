@@ -1,14 +1,13 @@
 package io.gitee.zerowsh.actable.demo.entity.mysql;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import io.gitee.zerowsh.actable.annotation.AcColumn;
-import io.gitee.zerowsh.actable.annotation.AcTable;
-import io.gitee.zerowsh.actable.annotation.UpdateColumnName;
+import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.demo.entity.BaseEntity;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 /**
  * @author zero
@@ -17,29 +16,42 @@ import lombok.Setter;
 @Setter
 @TableName("t_zero")
 @AcTable(name = "t_zero", comment = "测试")
-@UpdateColumnName(value = {"test4->test2"})
+//@UpdateColumnName(value = {"test1->test4"})
+@IndexArr({
+        @Index(type = Index.IndexEnums.IDX, value = "realA",
+                columnArr = {@IndexColumn(value = "realName", asc = false)
+                }),
+        @Index(type = Index.IndexEnums.UK, value = "realB", columnArr = {@IndexColumn("realName"), @IndexColumn("zero")}),
+        @Index(type = Index.IndexEnums.UK, value = "realD", columnArr = {@IndexColumn("zero")}),
+        @Index(type = Index.IndexEnums.UK_IDX, value = "realC", columnArr = {@IndexColumn("realName")})
+})
+@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
 public class ZeroEntity extends BaseEntity {
 
-    @AcColumn(value = "name", comment = "名称",
-            length = 20, isNull = false,
-            isKey = true, order = 1, type = ColumnTypeConstants.NVARCHAR)
-    private String name;
+    @AcColumn(comment = "名称",
+            length = 20, order = 1,
+            type = ColumnTypeConstants.VARCHAR)
+    private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.LONGTEXT)
-    private String zero;
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false)
+    private Integer zero;
 
-    @AcColumn(value = "test1", oldName = "test")
+    @AcColumn(oldName = "test3", value = "test1")
     private String test1;
 
-    @AcColumn(type = ColumnTypeConstants.YEAR)
+    @AcColumn(oldName = "test1", value = "test3")
     private Short test3;
 
     @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "1")
     private Short test222;
 
 
-    @AcColumn(comment = "测试", type = ColumnTypeConstants.DOUBLE, length = 10, decimalLength = 2)
-    private Double ddd;
+    @AcColumn(comment = "测试", type = ColumnTypeConstants.DECIMAL, length = 10, decimalLength = 2)
+    private BigDecimal ddd;
+
+
+    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)", typeLimit = false)
+    private BigDecimal cc;
 
 }

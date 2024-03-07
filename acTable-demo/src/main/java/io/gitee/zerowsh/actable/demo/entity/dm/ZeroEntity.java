@@ -16,16 +16,16 @@ import java.math.BigDecimal;
 @Setter
 @TableName("t_zero")
 @AcTable(name = "t_zero", comment = "测试")
-@UpdateColumnName(value = {"test1->test2"})
+@UpdateColumnName(value = {"test1->test5"})
 @IndexArr({
         @Index(type = Index.IndexEnums.IDX, value = "realA",
-                columnArr = {@IndexColumn("realName")
+                columnArr = {@IndexColumn(value = "realName", asc = false)
                 }),
         @Index(type = Index.IndexEnums.UK, value = "realB", columnArr = {@IndexColumn("realName"), @IndexColumn("zero")}),
         @Index(type = Index.IndexEnums.UK, value = "realD", columnArr = {@IndexColumn("zero")}),
         @Index(type = Index.IndexEnums.UK_IDX, value = "realC", columnArr = {@IndexColumn("realName")})
 })
-@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
+//@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
 public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "名称",
@@ -34,13 +34,13 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4)
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false)
     private Integer zero;
 
-    @AcColumn(value = "test1")
+    @AcColumn(value = "test2")
     private String test1;
 
-    @AcColumn
+//    @AcColumn(oldName = "test1", value = "test3")
     private Short test3;
 
     @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "1")

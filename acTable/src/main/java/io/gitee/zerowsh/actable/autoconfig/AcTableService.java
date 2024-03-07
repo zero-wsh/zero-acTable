@@ -79,17 +79,17 @@ public class AcTableService {
                 return;
             }
 
-            log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
             this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseService);
+            log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
             if (CollectionUtil.isNotEmpty(executeSqlList)) {
                 for (String sql : executeSqlList) {
                     JdbcUtil.executeSql(connection, sql);
                 }
             }
-            this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType);
             log.info(StrUtil.format("完成【{}】自动建表！", databaseType));
+            this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType);
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
         }

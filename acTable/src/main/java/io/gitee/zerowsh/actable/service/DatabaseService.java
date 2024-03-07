@@ -18,6 +18,15 @@ import java.util.Map;
 public interface DatabaseService {
 
     /**
+     * 自增就是主键
+     *
+     * @return
+     */
+    default boolean autoincrementIsPk() {
+        return false;
+    }
+
+    /**
      * 获取创建表的sql语句
      *
      * @param tableInfo
@@ -124,7 +133,7 @@ public interface DatabaseService {
      * @param columnInfo
      * @return
      */
-    default String addTableSql(String tableName, String columnInfo) {
+    default String addTableSql(String tableName, String columnInfo, String tableComment) {
         return StrUtil.format("CREATE TABLE {} ({})", this.addKeywordHandle(tableName), columnInfo);
     }
 
@@ -156,6 +165,14 @@ public interface DatabaseService {
      * @return
      */
     String getUpdatePkSql(String tableName, String constraintName, List<String> columnList);
+
+    /**
+     * 获取删除主键SQL
+     *
+     * @param tableName
+     * @return
+     */
+    String getDropPkSql(String tableName);
 
     /**
      * 获取表默认值约束SQL
@@ -224,15 +241,6 @@ public interface DatabaseService {
      */
     String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns);
 
-    /**
-     * 修改唯一约束SQL
-     *
-     * @param tableName
-     * @param constraintName
-     * @param columns
-     * @return
-     */
-    String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns);
 
     /**
      * 获取修改表注释SQL
@@ -286,9 +294,10 @@ public interface DatabaseService {
      * @param tableName
      * @param oldColumnName
      * @param newColumnName
+     * @param columnNameDetails
      * @return
      */
-    String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName);
+    String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails);
 
     /**
      * 删除索引（普通索引+唯一索引）

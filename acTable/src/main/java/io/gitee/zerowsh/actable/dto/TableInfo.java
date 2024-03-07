@@ -42,6 +42,7 @@ public class TableInfo {
     @Setter
     @Builder
     public static class PropertyInfo {
+        private String tableName;
         private String columnName;
         private String oldColumnName;
         private boolean isKey;

@@ -605,6 +605,11 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
+    public String getDropPkSql(String tableName) {
+        return null;
+    }
+
+    @Override
     public String getDefaultInfoSql(String tableName) {
         return StrUtil.format("select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
                 "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
@@ -641,10 +646,6 @@ public class SqlServerImpl implements DatabaseService {
         return null;
     }
 
-    @Override
-    public String getUpdateUkSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        return null;
-    }
 
     @Override
     public String getUpdateTableCommentSql(String tableName, String tableComment) {
@@ -672,7 +673,7 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName) {
+    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails) {
         return null;
     }
 

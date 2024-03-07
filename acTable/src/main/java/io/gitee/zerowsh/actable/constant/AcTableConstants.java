@@ -59,9 +59,9 @@ public interface AcTableConstants {
     String NOT_NULL = " NOT NULL";
     String DEFAULT = " DEFAULT {}";
     String COMMENT = " COMMENT '{}'";
-    String PRIMARY_KEY = " PRIMARY KEY ({}) ";
-    String UNIQUE_KEY = " UNIQUE KEY `{}` ({}) ";
-    String INDEX_KEY = " KEY `{}` ({}) ";
+    String PRIMARY_KEY = " PRIMARY KEY ({}),";
+    String UNIQUE_KEY = " UNIQUE KEY {} ({}),";
+    String INDEX_KEY = " UNIQUE KEY {} ({}),";
     /**
      * 验证字符串
      */

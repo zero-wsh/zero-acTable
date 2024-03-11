@@ -82,8 +82,6 @@ public interface ColumnTypeConstants {
 
     /**
      * 达梦数据库字段是否包含这个列类型
-     *
-     * @return
      */
     static boolean mysqlContains(String columnType) {
         return new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{

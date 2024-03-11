@@ -49,11 +49,9 @@ public class HandlerEntityUtils {
     }
 
     /**
-     * 通过实体类包名获取所有表信息 (字段 索引 唯一值等)
-     *
      * @param acTableProperties
      * @param databaseService
-     * @return
+     * @return 通过实体类包名获取所有表信息 (字段 索引 唯一值等)
      */
     public static List<TableInfo> getTableInfoByEntityPackage(AcTableProperties acTableProperties,
                                                               DatabaseService databaseService) {
@@ -226,10 +224,8 @@ public class HandlerEntityUtils {
     }
 
     /**
-     * 判断是否为null
-     *
      * @param comment
-     * @return
+     * @return 判断是否为null
      */
     private static String judgeIsNull(String comment) {
         return Objects.equals(comment, DEFAULT_VALUE) ? null : comment;

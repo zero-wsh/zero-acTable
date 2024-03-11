@@ -27,12 +27,10 @@ public class JdbcUtil {
     }
 
     /**
-     * 是否存在数据
-     *
      * @param conn
      * @param sql
      * @param obj
-     * @return
+     * @return 是否存在数据
      */
     public static boolean isExist(Connection conn, String sql, Object... obj) throws SQLException {
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
@@ -52,12 +50,10 @@ public class JdbcUtil {
     }
 
     /**
-     * 查询返回List集合
-     *
      * @param conn
      * @param sql
      * @param obj
-     * @return
+     * @return 查询返回List集合
      */
     public static Map<String, TableColumnInfo> getTableColumnInfoMap(Connection conn, String sql, Object... obj) throws SQLException {
         Map<String, TableColumnInfo> resultMap = new HashMap<>();
@@ -85,12 +81,10 @@ public class JdbcUtil {
     }
 
     /**
-     * 查询返回List集合
-     *
      * @param conn
      * @param sql
      * @param obj
-     * @return
+     * @return 查询返回List集合
      */
     public static List<ConstraintInfo> getConstraintInfoList(Connection conn, String sql, Object... obj) throws SQLException {
         if (StrUtil.isBlank(sql)) {
@@ -113,12 +107,10 @@ public class JdbcUtil {
     }
 
     /**
-     * 获取数据库中所有表
-     *
      * @param conn
      * @param sql
      * @param obj
-     * @return
+     * @return 获取数据库中所有表
      */
     public static List<String> getTableNameList(Connection conn, String sql, Object... obj) throws SQLException {
         //创建一个list集合对象来存储查询数据

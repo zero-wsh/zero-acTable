@@ -186,12 +186,10 @@ public class AcTableService {
     }
 
     /**
-     * input流转字符串
-     *
      * @param inputStream
      * @param script
      * @param acTableProperties
-     * @return
+     * @return input流转字符串
      */
     public List<String> inputStreamToString(InputStream inputStream, String script, AcTableProperties acTableProperties) {
         List<String> resultList = new ArrayList<>();

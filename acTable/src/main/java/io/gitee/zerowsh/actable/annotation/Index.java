@@ -39,8 +39,6 @@ public @interface Index {
 
     /**
      * 类型
-     *
-     * @return
      */
     IndexEnums type() default IndexEnums.IDX;
 

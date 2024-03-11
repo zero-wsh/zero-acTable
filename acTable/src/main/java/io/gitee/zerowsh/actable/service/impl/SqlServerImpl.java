@@ -65,7 +65,7 @@ public class SqlServerImpl implements DatabaseService {
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String columnComment = propertyInfo.getColumnComment();
-            propertySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, columnName));
+            propertySb.append(this.addKeywordHandle(columnName));
             splicingColumnInfo(propertySb, propertyInfo, tableName);
             if (StrUtil.isNotBlank(columnComment)) {
                 addColumnCommentSqlList.add(StrUtil.format(ADD_COLUMN_COMMENT, columnComment, tableName, columnName));
@@ -73,7 +73,7 @@ public class SqlServerImpl implements DatabaseService {
         }
 
         //建表
-        resultList.add(StrUtil.format(CREATE_TABLE, StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, tableName), propertySb.deleteCharAt(propertySb.length() - 1)));
+        resultList.add(StrUtil.format(CREATE_TABLE, this.addKeywordHandle(tableName), propertySb.deleteCharAt(propertySb.length() - 1)));
         if (StrUtil.isNotBlank(comment)) {
             //添加表备注
             resultList.add(StrUtil.format(ADD_TABLE_COMMENT, comment, tableName));
@@ -99,11 +99,11 @@ public class SqlServerImpl implements DatabaseService {
      * @param tableName
      * @param resultList
      */
-    private static void createPk(boolean flag, List<String> keyList, String tableName, List<String> resultList) {
+    private void createPk(boolean flag, List<String> keyList, String tableName, List<String> resultList) {
         if (flag && CollectionUtil.isNotEmpty(keyList)) {
             StringBuilder keySb = new StringBuilder();
             for (String key : keyList) {
-                keySb.append(StrUtil.format(SQL_SERVER_KEYWORD_HANDLE, key)).append(StrUtil.COMMA);
+                keySb.append(this.addKeywordHandle(key)).append(StrUtil.COMMA);
             }
             resultList.add(StrUtil.format(CREATE_PRIMARY_KEY, tableName, PK_ + tableName, keySb.deleteCharAt(keySb.length() - 1)));
         }

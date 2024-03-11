@@ -36,7 +36,7 @@ public @interface AcColumn {
 
     /**
      * 以前字段名
-     * 结合name属性使用，当设置属性name和oldName不同时，代表name是现在要改成的字段名，old是以前的字段名
+     * 结合value属性使用，当设置属性value和oldName不同时，代表value是现在要改成的字段名，oldName是以前的字段名
      */
     String oldName() default "";
 

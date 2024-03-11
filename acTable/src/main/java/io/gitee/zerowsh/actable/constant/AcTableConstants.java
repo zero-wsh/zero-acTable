@@ -55,6 +55,7 @@ public interface AcTableConstants {
      * 自增
      */
     String IDENTITY = " identity(1,1)";
+    String MYSQL_IDENTITY = " AUTO_INCREMENT";
     String NULL = " NULL";
     String NOT_NULL = " NOT NULL";
     String DEFAULT = " DEFAULT {}";
@@ -76,41 +77,12 @@ public interface AcTableConstants {
     String ADD_TABLE_COMMENT = "EXEC sp_addextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String UPDATE_TABLE_COMMENT = "EXEC sp_updateextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String DROP_TABLE_COMMENT = "EXEC sys.sp_dropextendedproperty 'MS_Description',N'SCHEMA', N'dbo', N'TABLE', N'{}'";
-    String ADD_COLUMN = "ALTER TABLE [{}] ADD [{}] {}";
-    String UPDATE_COLUMN = "ALTER TABLE [{}] ALTER COLUMN [{}] {}";
     String ADD_COLUMN_COMMENT = "EXEC sp_addextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}','COLUMN', N'{}'";
     String UPDATE_COLUMN_COMMENT = "EXEC sp_updateextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}','COLUMN', N'{}'";
     String DROP_COLUMN_COMMENT = "EXEC sys.sp_dropextendedproperty N'MS_Description',N'SCHEMA', N'dbo', N'TABLE', N'{}', N'COLUMN', N'{}'";
-    String CREATE_INDEX = "CREATE NONCLUSTERED INDEX [{}] ON [{}] ({})";
-    String CREATE_UNIQUE = "ALTER TABLE [{}] add constraint [{}] unique ({})";
-    String DROP_COLUMN = "ALTER TABLE [{}] DROP COLUMN [{}]";
     String DROP_CONSTRAINT = "ALTER TABLE [{}] DROP CONSTRAINT [{}]";
     String DROP_INDEX = "DROP INDEX [{}] ON [{}]";
     String CREATE_PRIMARY_KEY = "ALTER TABLE [{}] ADD CONSTRAINT [{}] PRIMARY KEY CLUSTERED ({})";
     String ADD_DEFAULT = "ALTER TABLE [{}] ADD DEFAULT {} FOR [{}]";
-    /**
-     * 关键字处理
-     */
-    String SQL_SERVER_KEYWORD_HANDLE = "[{}]";
-    String MYSQL_KEYWORD_HANDLE = "`{}`";
-    String MYSQL_IDENTITY = " AUTO_INCREMENT";
-    /**
-     * ALTER TABLE `dynamic_table`.`dd`
-     * MODIFY COLUMN `11` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '默认值' COMMENT '注释' FIRST,
-     * ADD PRIMARY KEY (`11`),
-     * ADD INDEX `index`(`11`),
-     * ADD UNIQUE INDEX `un`(`11`);
-     */
-    String MYSQL_ALTER_TABLE = "ALTER TABLE " + MYSQL_KEYWORD_HANDLE;
-    String MYSQL_COMMENT = " COMMENT='{}'";
-    String MYSQL_MODIFY_COLUMN = " MODIFY COLUMN `{}` {}";
-    String MYSQL_CHANGE_COLUMN = " CHANGE COLUMN `{}` `{}` {}";
-    String MYSQL_ADD_PK = " ADD PRIMARY KEY ({})";
-    String MYSQL_DEL_PK = " DROP PRIMARY KEY";
-    String MYSQL_DEL_COLUMN = " DROP COLUMN `{}`";
-    String MYSQL_ADD_COLUMN = " ADD COLUMN `{}` {}";
-    String MYSQL_DEL_INDEX = " DROP INDEX `{}`";
-    String MYSQL_ADD_INDEX = " ADD INDEX `{}` ({})";
-    String MYSQL_ADD_UNIQUE = " ADD UNIQUE INDEX  `{}` ({})";
 
 }

@@ -578,7 +578,7 @@ public class DmImpl implements DatabaseService {
 
     @Override
     public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
-        //alter table "CDSJ"."t_zero" modify constraint "pk_t_zero1760210543954223104" to primary key ("ddd");
+        //alter table "t_zero" modify constraint "pk_t_zero1760210543954223104" to primary key ("ddd");
         String column = CollectionUtil.join(columnList, StrPool.COMMA, this::addKeywordHandle);
         return StrUtil.format("ALTER TABLE {} MODIFY CONSTRAINT {} TO PRIMARY KEY ({})", this.addKeywordHandle(tableName),
                 this.addKeywordHandle(constraintName), column);
@@ -671,7 +671,7 @@ public class DmImpl implements DatabaseService {
 
     @Override
     public String getDelColumnSql(String tableName, String columnName) {
-        //alter table "CDSJ"."TABLE_1" drop column "COLUMN_1";
+        //alter table "TABLE_1" drop column "COLUMN_1";
         return StrUtil.format("ALTER TABLE {} DROP COLUMN {}",
                 this.addKeywordHandle(tableName), this.addKeywordHandle(columnName));
     }
@@ -686,7 +686,7 @@ public class DmImpl implements DatabaseService {
     @Override
     public String getDropIndexSql(String indexName) {
         //drop index "idx_realA1759856289930014720";
-        return StrUtil.format("drop index {}", this.addKeywordHandle(indexName));
+        return StrUtil.format("DROP INDEX {}", this.addKeywordHandle(indexName));
     }
 
     @Override

@@ -24,7 +24,7 @@ public @interface AcColumn {
     boolean exclude() default false;
 
     /**
-     * 建表时字段顺序，只有第一次建表时才会生效
+     * 建表时字段顺序，只有建表时才会生效，越小排到越前面
      */
     int order() default 0;
 

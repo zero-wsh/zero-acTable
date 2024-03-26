@@ -110,14 +110,14 @@ public class HandlerEntityUtils {
                         comment = apiModel.value();
                     }
                 }
-                if (Objects.isNull(tableName)) {
+                if (StrUtil.isBlank(tableName)) {
                     //mybatis plus兼容
                     TableName mpTable = cls.getAnnotation(TableName.class);
                     if (Objects.nonNull(mpTable)) {
                         tableName = mpTable.value();
                     }
                 }
-                if (Objects.isNull(tableName)) {
+                if (StrUtil.isBlank(tableName)) {
                     //hibernate 兼容
                     Table jpaTable = cls.getAnnotation(Table.class);
                     if (Objects.nonNull(jpaTable)) {
@@ -173,7 +173,7 @@ public class HandlerEntityUtils {
                         keyList.add(columnName);
                     }
                     //mysql数据库是自增就必须是主键
-                    if (databaseService.autoincrementIsPk()) {
+                    if (databaseService.autoincrementIsPk() && propertyInfo.isAutoIncrement()) {
                         keyList.add(columnName);
                         propertyInfo.setKey(true);
                     }
@@ -187,28 +187,12 @@ public class HandlerEntityUtils {
                 }
 
                 //处理索引、唯一索引、唯一约束
-                handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
+                handleUkAndIdx(acTableProperties, propertyMap,
                         indexInfoList,
                         uniqueIndexInfoList,
                         uniqueInfoList,
-                        cls.getAnnotation(Index.class),
-                        tableName,
-                        acTableProperties.getTurn());
-
-                IndexArr indexArr = cls.getAnnotation(IndexArr.class);
-                if (Objects.nonNull(indexArr)) {
-                    Index[] valueArr = indexArr.value();
-                    if (ArrayUtil.isNotEmpty(valueArr)) {
-                        for (Index index : valueArr) {
-                            handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
-                                    indexInfoList,
-                                    uniqueIndexInfoList,
-                                    uniqueInfoList,
-                                    index, tableName,
-                                    acTableProperties.getTurn());
-                        }
-                    }
-                }
+                        cls,
+                        tableName);
 
                 TableInfo tableInfo = builder.keyList(keyList)
                         .propertyInfoList(propertyInfoList)
@@ -221,6 +205,44 @@ public class HandlerEntityUtils {
         }
         return tableInfoList;
 
+    }
+
+    public static void handleUkAndIdx(AcTableProperties acTableProperties, Map<String, String> propertyMap,
+                                      List<TableInfo.IndexInfo> indexInfoList,
+                                      List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList,
+                                      List<TableInfo.UniqueInfo> uniqueInfoList, Class<?> cls, String tableName) {
+        handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
+                indexInfoList,
+                uniqueIndexInfoList,
+                uniqueInfoList,
+                cls.getAnnotation(Index.class),
+                tableName,
+                acTableProperties.getTurn());
+
+        IndexArr indexArr = cls.getAnnotation(IndexArr.class);
+        if (Objects.nonNull(indexArr)) {
+            Index[] valueArr = indexArr.value();
+            if (ArrayUtil.isNotEmpty(valueArr)) {
+                for (Index index : valueArr) {
+                    handleUkAndIdxColumn(acTableProperties.getColumnToUpperCase(), propertyMap,
+                            indexInfoList,
+                            uniqueIndexInfoList,
+                            uniqueInfoList,
+                            index, tableName,
+                            acTableProperties.getTurn());
+                }
+            }
+        }
+        //处理父类
+        Class<?> superclass = cls.getSuperclass();
+        if (Objects.nonNull(superclass)) {
+            handleUkAndIdx(acTableProperties, propertyMap,
+                    indexInfoList,
+                    uniqueIndexInfoList,
+                    uniqueInfoList,
+                    superclass,
+                    tableName);
+        }
     }
 
     /**
@@ -370,12 +392,11 @@ public class HandlerEntityUtils {
             propertyMap.put(fieldName, columnName);
         }
         Class<?> superclass = cls.getSuperclass();
-        if (Objects.isNull(superclass)) {
-            return;
+        if (Objects.nonNull(superclass)) {
+            getFieldInfo(superclass, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
+                    uniqueInfoList, propertyList, acTable,
+                    cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName);
         }
-        getFieldInfo(superclass, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
-                uniqueInfoList, propertyList, acTable,
-                cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName);
     }
 
     public static void handleUkAndIdxColumn(Boolean columnToUpperCase, Map<String, String> propertyMap,

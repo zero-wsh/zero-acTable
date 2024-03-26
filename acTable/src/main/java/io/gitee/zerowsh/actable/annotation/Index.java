@@ -1,6 +1,5 @@
 package io.gitee.zerowsh.actable.annotation;
 
-import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import lombok.Getter;
 
 import java.lang.annotation.*;
@@ -43,20 +42,27 @@ public @interface Index {
     IndexEnums type() default IndexEnums.IDX;
 
     /**
-     * 索引备注
-     */
-    String comment() default AcTableConstants.DEFAULT_VALUE;
-
-    /**
-     * 索引方法
-     */
-    String method() default AcTableConstants.DEFAULT_VALUE;
-
-    /**
      * 索引信息，索引字段和排序
      * 一个索引可以有多个字段，并且多个字段的排序值可以不同（DESC|ASC）
      */
     IndexColumn[] columnArr();
+
+    /**
+     * 冲突时提示信息，结和业务代码使用
+     *
+     * @return
+     */
+    String message() default "";
+
+//    /**
+//     * 索引备注
+//     */
+//    String comment() default AcTableConstants.DEFAULT_VALUE;
+//
+//    /**
+//     * 索引方法
+//     */
+//    String method() default AcTableConstants.DEFAULT_VALUE;
 
 }
 

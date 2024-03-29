@@ -28,7 +28,7 @@ mysql、达梦
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>3.0.0</version>
+	<version>3.0.1</version>
 </dependency>
 ```
 
@@ -77,9 +77,8 @@ zero.ac-acTable.after-script=db/*.sql
 |---|---|---|---|
 |value   |索引名后缀，前缀固定idx_   |   |   |
 |type|类型|  IndexEnums.IDX | IndexEnums  |
-|comment|索引注释（`目前没用上`）|  | |
-|method|索引方法（`目前没用上`）|  | |
 |columnArr|索引字段和排序   |   |   |
+|message|冲突时提示信息，结和业务代码使用|  | |
 
 4、索引字段@IndexColumn
 |属性名   |描述   |默认值   |取值范围   |
@@ -119,6 +118,7 @@ zero.ac-acTable.after-script=db/*.sql
 - 有初始化脚本时，在字符串和注释中不要出现sql分割符字样
 - 有初始化脚本时，并且使用了druid连接池filters不要配置wall
 - 2.*和3.*版本存在兼容问题，并且有些注解进行了调整：①唯一键、索引统一放置在类上；②@AcColumn注解取消name属性，改为value
+- 如果有默认值，需自己判断是否加上引号
 
 #### 联系方式
 QQ：254353372

@@ -3,7 +3,6 @@ package io.gitee.zerowsh.actable.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
@@ -73,7 +72,11 @@ public class DmImpl implements DatabaseService {
                 addColumnCommentSqlList.add(this.addColumnCommentSql(tableName, columnName, columnComment));
             }
         }
-
+        //可显示插入自增主键
+        if (CollectionUtil.isNotEmpty(tableInfo.getKeyList())) {
+            propertySb.append(StrPool.CRLF)
+                    .append(StrUtil.format(PRIMARY_KEY, CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
+        }
         //存储建表sql
         resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), null));
         if (StrUtil.isNotBlank(comment)) {
@@ -82,8 +85,8 @@ public class DmImpl implements DatabaseService {
         }
         //存储字段备注sql
         resultList.addAll(addColumnCommentSqlList);
-        //创建主键
-        this.createPk(tableInfo.getKeyList(), tableName, resultList);
+//        //创建主键
+//        this.createPk(tableInfo.getKeyList(), tableName, resultList);
         //创建索引
         this.createIdx(tableInfo.getIndexInfoList(), tableName, resultList);
         //创建唯一索引
@@ -452,18 +455,18 @@ public class DmImpl implements DatabaseService {
 
         //是否为空
         if (propertyInfo.isKey() || propertyInfo.isAutoIncrement() || !propertyInfo.isNull()) {
+            if (propertyInfo.isAutoIncrement()) {
+                //todo 在达梦数据中这种方式建立的可以显示指定自增主键
+                propertySb.append(MYSQL_IDENTITY);
+            }
             propertySb.append(NOT_NULL);
         } else {
             propertySb.append(NULL);
         }
-        //是否自增
-        if (propertyInfo.isAutoIncrement()) {
-            propertySb.append(IDENTITY);
-        } else {
-            //自增不能设置默认值
-            String defaultValue = propertyInfo.getDefaultValue();
-            if (Objects.nonNull(defaultValue)) {
-                propertySb.append(StrUtil.format(NumberUtil.isNumber(defaultValue) ? DEFAULT : DEFAULT2, defaultValue));
+        //是否自增，自增不能设置默认值
+        if (!propertyInfo.isAutoIncrement()) {
+            if (Objects.nonNull(propertyInfo.getDefaultValue())) {
+                propertySb.append(StrUtil.format(DEFAULT, propertyInfo.getDefaultValue()));
             }
         }
         propertySb.append(StrUtil.COMMA);

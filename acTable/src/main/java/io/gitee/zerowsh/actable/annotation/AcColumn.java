@@ -86,6 +86,7 @@ public @interface AcColumn {
 
     /**
      * 默认值
+     * 请自行判定默认是是否是字符串
      */
     String defaultValue() default AcTableConstants.DEFAULT_VALUE;
 

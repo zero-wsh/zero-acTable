@@ -59,7 +59,6 @@ public interface AcTableConstants {
     String NULL = " NULL";
     String NOT_NULL = " NOT NULL";
     String DEFAULT = " DEFAULT {}";
-    String DEFAULT2 = " DEFAULT '{}'";
     String COMMENT = " COMMENT '{}'";
     String PRIMARY_KEY = " PRIMARY KEY ({}),";
     String UNIQUE_KEY = " UNIQUE KEY {} ({}),";

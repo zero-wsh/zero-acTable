@@ -171,12 +171,12 @@ public class HandlerEntityUtils {
                     String columnName = propertyInfo.getColumnName();
                     if (propertyInfo.isKey()) {
                         keyList.add(columnName);
-                    }
-                    //mysql数据库是自增就必须是主键
-                    if (databaseService.autoincrementIsPk() && propertyInfo.isAutoIncrement()) {
+                    } else if (databaseService.autoincrementIsPk() && propertyInfo.isAutoIncrement()) {
+                        //mysql数据库是自增就必须是主键
                         keyList.add(columnName);
                         propertyInfo.setKey(true);
                     }
+
                     if (Objects.equals(columnName, propertyInfo.getOldColumnName())) {
                         String newColumnName = updateColumnNameMap.get(columnName);
                         if (StrUtil.isNotBlank(newColumnName)) {

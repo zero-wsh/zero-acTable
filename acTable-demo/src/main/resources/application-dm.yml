@@ -6,7 +6,7 @@ spring:
     password: cdsj@2023
 zero:
   ac-table:
-    entity-package: io.gitee.zerowsh.*.demo.entity.dm
+    entity-package: io.gitee.zerowsh.*.demo.entity
     model: add_or_update_or_del
 #    after-script: db/dm.sql
 #    table-to-upper-case: true

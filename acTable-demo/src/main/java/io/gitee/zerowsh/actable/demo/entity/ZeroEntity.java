@@ -1,9 +1,8 @@
-package io.gitee.zerowsh.actable.demo.entity.mysql;
+package io.gitee.zerowsh.actable.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.*;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
-import io.gitee.zerowsh.actable.demo.entity.BaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -34,13 +33,13 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false)
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false, isAutoIncrement = true)
     private Integer zero;
 
-    @AcColumn(oldName = "test3", value = "test1")
+    @AcColumn(oldName = "test1", value = "test1", defaultValue = "'test'")
     private String test1;
 
-    @AcColumn(oldName = "test1", value = "test3")
+    @AcColumn(oldName = "test3", value = "test3")
     private Short test3;
 
     @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "1")

@@ -3,7 +3,6 @@ package io.gitee.zerowsh.actable.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
@@ -632,15 +631,12 @@ public class MysqlImpl implements DatabaseService {
         } else {
             propertySb.append(NULL);
         }
-        //是否自增
+        //是否自增，自增不能设置默认值
         if (propertyInfo.isAutoIncrement()) {
             propertySb.append(MYSQL_IDENTITY);
         } else {
-            //自增不能设置默认值
-            String defaultValue = propertyInfo.getDefaultValue();
-            if (Objects.nonNull(defaultValue)) {
-                //需要判断是否字符串
-                propertySb.append(StrUtil.format(NumberUtil.isNumber(defaultValue) ? DEFAULT : DEFAULT2, defaultValue));
+            if (Objects.nonNull(propertyInfo.getDefaultValue())) {
+                propertySb.append(StrUtil.format(DEFAULT, propertyInfo.getDefaultValue()));
             }
         }
 

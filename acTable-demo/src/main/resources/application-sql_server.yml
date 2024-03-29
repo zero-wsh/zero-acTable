@@ -5,6 +5,6 @@ spring:
     password: zero
 zero:
   ac-table:
-    entity-package: io.gitee.zerowsh.actable.demo.entity.sqlserver
+    entity-package: io.gitee.zerowsh.actable.demo.entity
     model: ADD_OR_UPDATE_OR_DEL
     after-script: db/sql_server.sql

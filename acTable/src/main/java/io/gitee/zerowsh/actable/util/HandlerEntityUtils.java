@@ -325,7 +325,7 @@ public class HandlerEntityUtils {
                 }
                 columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName;
                 if (propertyList.contains(columnName)) {
-                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, cls.getName(), fieldName));
+                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, tableName, fieldName));
                 }
                 propertyList.add(columnName);
                 boolean isKey = Objects.nonNull(tableId) || Objects.nonNull(id);
@@ -361,7 +361,7 @@ public class HandlerEntityUtils {
                 }
                 columnName = databaseService.delKeywordHandle(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
-                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, cls.getName(), fieldName));
+                    throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, tableName, fieldName));
                 }
                 propertyList.add(columnName);
 

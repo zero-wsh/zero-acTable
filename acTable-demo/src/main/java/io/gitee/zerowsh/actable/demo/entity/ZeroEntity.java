@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * @author zero
@@ -33,11 +34,13 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false, isAutoIncrement = true)
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false)
     private Integer zero;
 
     @AcColumn(oldName = "test1", value = "test1", defaultValue = "'test'")
     private String test1;
+    @AcColumn(value = "test2",length = 1000)
+    private String test2;
 
     @AcColumn(oldName = "test3", value = "test3")
     private Short test3;
@@ -52,5 +55,13 @@ public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "测试2", type = "DECIMAL(10,3)", typeLimit = false)
     private BigDecimal cc;
+
+
+    @AcColumn(comment = "测试2", type = ColumnTypeConstants.DATE)
+    private Date date;
+
+
+    @AcColumn(comment = "测试2", type = ColumnTypeConstants.DATETIME)
+    private Date dateTime;
 
 }

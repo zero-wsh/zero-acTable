@@ -1,14 +1,14 @@
 spring:
   datasource:
 #    url: jdbc:dm://192.168.123.123:30236
-    url: jdbc:dm://192.168.123.100:5236
-    username: CDSJ
-    password: cdsj@2023
+    url: jdbc:dm://192.168.0.222:15236/BASE
+    username: BASE
+    password: 2024qwe,.
 zero:
   ac-table:
     entity-package: io.gitee.zerowsh.*.demo.entity
     model: add_or_update_or_del
 #    after-script: db/dm.sql
-#    table-to-upper-case: true
-#    column-to-upper-case: true
+    table-to-upper-case: true
+    column-to-upper-case: true
 #    turn: source

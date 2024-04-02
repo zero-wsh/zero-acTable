@@ -10,11 +10,38 @@ spring:
     druid:
       # 配置测试查询语句
       validation-query: SELECT 1
+      # 初始化大小，最小，最大
+      initialSize: 10
+      minIdle: 10
+      maxActive: 200
+      maxWait: 10000
+      # 配置一个连接在池中最小生存的时间，单位是毫秒
+      minEvictableIdleTimeMillis: 180000
+      testOnBorrow: false
+      testWhileIdle: true
+      removeAbandoned: false
+      logAbandoned: false
+      #removeAbandonedTimeoutMillis: 300000 设置的超时时间，将会强制回收连接。
+      # 打开PSCache，并且指定每个连接上PSCache的大小
+      poolPreparedStatements: true
+      #   配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+      max-pool-prepared-statement-per-connection-size: 20
+      # 配置过滤器
       filters: stat,slf4j
-#      filter:
-#        wall:
-#          config:
-#            variantCheck: false
-#            noneBaseStatementAllow: true
-#            commentAllow: true
-#            multiStatementAllow: true
+      use-global-data-source-stat: true
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 5000
+      # 通过connectProperties属性来打开mergeSql功能；慢SQL记录
+#      connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+      stat-view-servlet:
+        allow: localhost
+        enabled: true
+        login-username: cdsj
+        login-password: cdsj@2023
+#      web-stat-filter:
+#        # 添加过滤规则
+#        url-pattern: /*
+#        # 忽略过滤格式
+#        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"

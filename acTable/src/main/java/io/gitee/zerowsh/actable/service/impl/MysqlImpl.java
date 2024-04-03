@@ -158,7 +158,7 @@ public class MysqlImpl implements DatabaseService {
             count++;
 
             //修改--判断类型、是否为空、是否自增、默认值、字段备注,这些是否存在修改
-            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), propertyInfo.getType()))
+            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getType())))
                     || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement()
                     && propertyInfo.isNull()))
                     || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
@@ -436,40 +436,40 @@ public class MysqlImpl implements DatabaseService {
 
     @Override
     public String getAllTableSql() {
-        return "select table_name as name from information_schema.tables \n" +
+        return "select table_name as name from information_schema.tables   " +
                 " where table_schema = (select database())";
     }
 
     @Override
     public String existTableSql(String tableName) {
-        return StrUtil.format("select count(1) from information_schema.tables \n" +
+        return StrUtil.format("select count(1) from information_schema.tables   " +
                 " where table_name ='{}' and table_schema = (select database())", tableName);
     }
 
     @Override
     public String getTableStructureSql(String tableName) {
-        return StrUtil.format("SELECT t.table_name tableName,\n" +
-                "t.table_comment tableComment,\n" +
-                "case when c.IS_NULLABLE='YES' then 1 else 0 end isNull,\n" +
-                "c.column_name columnName,\n" +
-                "c.column_comment columnComment,\n" +
-                "c.DATA_TYPE typeStr,\n" +
-                "c.COLUMN_DEFAULT defaultValue,\n" +
-                "case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length,\n" +
-                "case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength,\n" +
-                "case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement \n" +
-                "FROM information_schema.columns c,information_schema.tables t \n" +
+        return StrUtil.format("SELECT t.table_name tableName,  " +
+                "t.table_comment tableComment,  " +
+                "case when c.IS_NULLABLE='YES' then 1 else 0 end isNull,  " +
+                "c.column_name columnName,  " +
+                "c.column_comment columnComment,  " +
+                "c.DATA_TYPE typeStr,  " +
+                "c.COLUMN_DEFAULT defaultValue,  " +
+                "case when c.NUMERIC_PRECISION !='' and  c.NUMERIC_PRECISION is not null then c.NUMERIC_PRECISION else  c.CHARACTER_MAXIMUM_LENGTH end length,  " +
+                "case when c.NUMERIC_SCALE!='' and c.NUMERIC_SCALE is not null then c.NUMERIC_SCALE else c.DATETIME_PRECISION end decimalLength,  " +
+                "case when c.column_key='PRI' then 1 else 0 end isKey,case when c.EXTRA='auto_increment' then 1 else 0 end isAutoIncrement   " +
+                "FROM information_schema.columns c,information_schema.tables t   " +
                 "WHERE c.table_name = t.table_name and c.table_name='{}' and c.table_schema = (select database()) AND t.table_schema = (SELECT DATABASE ())", tableName);
     }
 
 
     @Override
     public String getConstraintInfoSql(String tableName) {
-        return StrUtil.format("select index_name constraintName ,\n" +
-                "GROUP_CONCAT(column_name order by column_name) constraintColumnName, \n" +
-                "GROUP_CONCAT(case WHEN collation='D' then 'DESC' else 'ASC' end order by collation) indexSortStr, \n" +
-                "case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag \n" +
-                "from information_schema.statistics where table_name = '{}' and table_schema = (select database()) \n" +
+        return StrUtil.format("select index_name constraintName ,  " +
+                "GROUP_CONCAT(column_name order by column_name) constraintColumnName,   " +
+                "GROUP_CONCAT(case WHEN collation='D' then 'DESC' else 'ASC' end order by collation) indexSortStr,   " +
+                "case when non_unique=0 then case when index_name='PRIMARY' then 1 else 2 end else 3 end constraintFlag   " +
+                "from information_schema.statistics where table_name = '{}' and table_schema = (select database())   " +
                 "GROUP BY constraintName,constraintFlag", tableName);
     }
 
@@ -610,9 +610,9 @@ public class MysqlImpl implements DatabaseService {
         Long length = columnTypeInfo.getLength();
         Long decimalLength = columnTypeInfo.getDecimalLength();
         if (columnTypeInfo.isFlag()) {
-            if (typeLimit && !ColumnTypeConstants.mysqlContains(type)) {
+            if (typeLimit) {
                 //类型限制并且没有定义这个类型使用默认字符串
-                propertySb.append(ColumnTypeConstants.VARCHAR).append(LEFT_BRACKET).append(255).append(RIGHT_BRACKET);
+                propertySb.append(ColumnTypeConstants.mysqlContains(type)).append(LEFT_BRACKET).append(255).append(RIGHT_BRACKET);
             } else {
                 propertySb.append(type);
             }

@@ -64,4 +64,12 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(comment = "测试2", type = ColumnTypeConstants.DATETIME)
     private Date dateTime;
 
+
+    @AcColumn(comment = "测试2", type = ColumnTypeConstants.TEXT)
+    private Date text;
+
+
+    @AcColumn(comment = "测试2", type = ColumnTypeConstants.LONGTEXT)
+    private Date longtext;
+
 }

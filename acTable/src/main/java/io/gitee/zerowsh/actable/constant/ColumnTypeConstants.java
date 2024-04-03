@@ -83,15 +83,20 @@ public interface ColumnTypeConstants {
     /**
      * 达梦数据库字段是否包含这个列类型
      */
-    static boolean mysqlContains(String columnType) {
-        return new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
+    static String mysqlContains(String columnType) {
+        List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(TIME);
             this.add(LONGBLOB);
             this.add(JSON);
             this.add(LONGTEXT);
             this.add(YEAR);
             this.add(INTEGER);
-        }}.contains(columnType);
+        }};
+
+        if (list.contains(columnType)) {
+            return columnType;
+        }
+        return ColumnTypeConstants.VARCHAR;
     }
 
     /**
@@ -115,14 +120,18 @@ public interface ColumnTypeConstants {
     }
 
     /**
-     * 达梦数据库字段是否包含这个列类型
+     * 达梦数据库字段是否包含这个列类型，如果不包含返回默认的
      *
      * @return
      */
 
-    static boolean dmContains(String columnType) {
-        return new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
+    static String dmContains(String columnType) {
+        List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(DATETIME_WITH_TIME_ZONE);
-        }}.contains(columnType);
+        }};
+        if (list.contains(columnType)) {
+            return columnType;
+        }
+        return ColumnTypeConstants.VARCHAR;
     }
 }

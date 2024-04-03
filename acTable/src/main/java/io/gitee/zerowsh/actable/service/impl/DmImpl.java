@@ -216,7 +216,7 @@ public class DmImpl implements DatabaseService {
             }
             count++;
             //修改--判断类型、是否为空、是否自增、默认值 ,这些是否存在修改
-            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), propertyInfo.getType()))
+            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getType())))
                     || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement()
                     && propertyInfo.isNull()))
                     || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
@@ -438,9 +438,9 @@ public class DmImpl implements DatabaseService {
         Long length = columnTypeInfo.getLength();
         Long decimalLength = columnTypeInfo.getDecimalLength();
         if (columnTypeInfo.isFlag()) {
-            if (typeLimit && !ColumnTypeConstants.dmContains(type)) {
-                //类型限制并且没有定义这个类型使用默认字符串
-                propertySb.append(ColumnTypeConstants.VARCHAR);
+            if (typeLimit) {
+                //类型限制
+                propertySb.append(ColumnTypeConstants.dmContains(type));
             } else {
                 propertySb.append(type);
             }
@@ -534,50 +534,49 @@ public class DmImpl implements DatabaseService {
 
     @Override
     public String getTableStructureSql(String tableName) {
-        return StrUtil.format("SELECT t.TABLE_NAME tableName,\n" +
-                "\t   (select COMMENTS from all_tab_comments A1 \n" +
-                "\t   WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment,\n" +
-                "       t.COLUMN_NAME columnName,\n" +
-                "       (select COMMENTS from all_COL_comments A2 \n" +
-                "       WHERE  t.TABLE_NAME=A2.TABLE_NAME \n" +
-                "       AND t.OWNER=A2.SCHEMA_NAME AND t.COLUMN_NAME=A2.COLUMN_NAME ) columnComment,\n" +
-                "       t.DATA_DEFAULT columnDefault,\n" +
-                "       t.CHARACTER_SET_NAME columnCharacterSetName,\n" +
-                "       CASE WHEN t.NULLABLE = 'Y' THEN 1 ELSE 0 END isNull,\n" +
-                "       CASE WHEN t.DATA_TYPE = 'NUMBER' THEN\n" +
-                "           (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE\n" +
-                "                 WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')'\n" +
-                "                 ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END)\n" +
-                "           ELSE t.DATA_TYPE END typeStr,\n" +
-                "       CASE WHEN (SELECT count(1) FROM USER_CONS_COLUMNS T4, USER_CONSTRAINTS T5\n" +
-                "                  WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P'\n" +
-                "                 AND t.TABLE_NAME = T5.TABLE_NAME(+) AND t.COLUMN_NAME = T4.COLUMN_NAME(+)) > 0 THEN 1\n" +
-                "            ELSE 0 END isKey,\n" +
-                "       t.DATA_DEFAULT defaultValue,\n" +
-                "       case when t.DATA_PRECISION is null then t.DATA_LENGTH else t.DATA_PRECISION end length,\n" +
-                "       t.DATA_SCALE decimalLength,\n" +
-                "       CASE WHEN (SELECT count(1) FROM SYS.SYSCOLUMNS a,user_tables b,sys.sysobjects c\n" +
-                "                 WHERE a.INFO2 & 0x01 = 0x01 AND a.id = c.id AND c.name = b.table_name AND\n" +
-                "       b.table_name = t.TABLE_NAME AND a.name = t.COLUMN_NAME) > 0 THEN 1 ELSE 0 END  isAutoIncrement\n" +
+        return StrUtil.format("SELECT t.TABLE_NAME tableName, " +
+                "\t   (select COMMENTS from all_tab_comments A1  " +
+                "\t   WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment, " +
+                "       t.COLUMN_NAME columnName, " +
+                "       (select COMMENTS from all_COL_comments A2  " +
+                "       WHERE  t.TABLE_NAME=A2.TABLE_NAME  " +
+                "       AND t.OWNER=A2.SCHEMA_NAME AND t.COLUMN_NAME=A2.COLUMN_NAME ) columnComment, " +
+                "       t.DATA_DEFAULT columnDefault, " +
+                "       t.CHARACTER_SET_NAME columnCharacterSetName, " +
+                "       CASE WHEN t.NULLABLE = 'Y' THEN 1 ELSE 0 END isNull, " +
+                "       CASE WHEN t.DATA_TYPE = 'NUMBER' THEN " +
+                "           (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE " +
+                "                 WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')' " +
+                "                 ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END) " +
+                "           ELSE t.DATA_TYPE END typeStr, " +
+                "       CASE WHEN (SELECT count(1) FROM USER_CONS_COLUMNS T4, USER_CONSTRAINTS T5 " +
+                "                  WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P' " +
+                "                 AND t.TABLE_NAME = T5.TABLE_NAME(+) AND t.COLUMN_NAME = T4.COLUMN_NAME(+)) > 0 THEN 1 " +
+                "            ELSE 0 END isKey, " +
+                "       t.DATA_DEFAULT defaultValue, " +
+                "       case when t.DATA_PRECISION is null then t.DATA_LENGTH else t.DATA_PRECISION end length, " +
+                "       t.DATA_SCALE decimalLength, " +
+                "       CASE WHEN (SELECT count(1) FROM SYS.SYSCOLUMNS a,user_tables b,sys.sysobjects c " +
+                "                 WHERE a.INFO2 & 0x01 = 0x01 AND a.id = c.id AND c.name = b.table_name AND " +
+                "       b.table_name = t.TABLE_NAME AND a.name = t.COLUMN_NAME) > 0 THEN 1 ELSE 0 END  isAutoIncrement " +
                 "FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = '{}' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
     }
 
     @Override
     public String getConstraintInfoSql(String tableName) {
-        return StrUtil.format("SELECT \n" +
-                "    IFNULL(C.CONSTRAINT_NAME,IC.INDEX_NAME) constraintName,\n" +
-                "    LISTAGG(IC.COLUMN_NAME, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS constraintColumnName,\n" +
-                "    LISTAGG(IC.descend, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS indexSortStr,\n" +
-                "     case when C.CONSTRAINT_TYPE='P' then 1\n" +
-                "     when C.CONSTRAINT_TYPE='U' then 2 \n" +
-                "     when I.UNIQUENESS='NONUNIQUE' then 3 \n" +
-                "     else 4 end constraintFlag\n" +
-                "FROM \n" +
-                "    USER_INDEXES I\n" +
-                "    LEFT JOIN USER_IND_COLUMNS IC ON I.INDEX_NAME = IC.INDEX_NAME\n" +
-                "    LEFT JOIN USER_CONSTRAINTS C ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME\n" +
-                "WHERE \n" +
-                "    I.TABLE_NAME = '{}' and I.TABLE_OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID) and IC.COLUMN_NAME is not null\n" +
+        return StrUtil.format("SELECT IFNULL(C.CONSTRAINT_NAME,IC.INDEX_NAME) constraintName," +
+                "    LISTAGG(IC.COLUMN_NAME, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS constraintColumnName," +
+                "    LISTAGG(IC.descend, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS indexSortStr," +
+                "     case when C.CONSTRAINT_TYPE='P' then 1" +
+                "     when C.CONSTRAINT_TYPE='U' then 2 " +
+                "     when I.UNIQUENESS='NONUNIQUE' then 3 " +
+                "     else 4 end constraintFlag " +
+                "FROM  " +
+                "    USER_INDEXES I " +
+                "    LEFT JOIN USER_IND_COLUMNS IC ON I.INDEX_NAME = IC.INDEX_NAME " +
+                "    LEFT JOIN USER_CONSTRAINTS C ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME " +
+                "WHERE  " +
+                "    I.TABLE_NAME = '{}' and I.TABLE_OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID) and IC.COLUMN_NAME is not null " +
                 "    group by IC.INDEX_NAME, C.CONSTRAINT_TYPE,C.CONSTRAINT_NAME,I.UNIQUENESS", tableName);
     }
 

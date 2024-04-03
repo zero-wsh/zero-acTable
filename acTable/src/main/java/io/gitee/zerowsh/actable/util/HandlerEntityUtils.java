@@ -337,6 +337,7 @@ public class HandlerEntityUtils {
                 }
                 propertyInfoBuilder.columnName(columnName)
                         .oldColumnName(columnName)
+                        .tableName(tableName)
                         .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
                         .isNull(isKey || isAutoIncrement ? false : COLUMN_IS_NULL_DEF)

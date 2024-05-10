@@ -1,8 +1,10 @@
 package io.gitee.zerowsh.actable.util;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -45,7 +47,10 @@ public class JdbcUtil {
 
     private static PreparedStatement handlePrepareStatement(Connection conn, String sql, Object... obj) throws SQLException {
         String formatSql = StrUtil.format(sql, obj);
-        log.info(formatSql);
+        AcTableProperties acTableProperties = SpringUtil.getBean(AcTableProperties.class);
+        if(acTableProperties.getPrint()){
+            log.info(formatSql);
+        }
         return conn.prepareStatement(formatSql);
     }
 

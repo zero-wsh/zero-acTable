@@ -331,6 +331,7 @@ public class HandlerEntityUtils {
                 boolean isKey = Objects.nonNull(tableId) || Objects.nonNull(id);
                 boolean isAutoIncrement = (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
+                //只能从swagger注解上取值
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
@@ -370,7 +371,13 @@ public class HandlerEntityUtils {
                 boolean isAutoIncrement = acColumn.isAutoIncrement()
                         || (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
-                String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : judgeIsNull(acColumn.comment());
+                //先判断自定义注解是否有注释
+                String columnComment = judgeIsNull(acColumn.comment());
+                if (StrUtil.isBlank(columnComment)) {
+                    if (Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value())) {
+                        columnComment = apiModelProperty.value();
+                    }
+                }
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
                 }

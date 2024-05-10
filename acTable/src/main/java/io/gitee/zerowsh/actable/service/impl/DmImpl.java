@@ -296,7 +296,7 @@ public class DmImpl implements DatabaseService {
                 // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
                 if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
                     //修改
-                    resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList));
+                    resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, true));
                 }
                 //处理过了
                 keyList.clear();
@@ -445,12 +445,16 @@ public class DmImpl implements DatabaseService {
                 propertySb.append(type);
             }
         } else {
-            propertySb.append(type).append(LEFT_BRACKET).append(length);
-            if (Objects.nonNull(decimalLength)) {
-                propertySb.append(StrUtil.COMMA);
-                propertySb.append(decimalLength);
+            if (Objects.isNull(length)) {
+                propertySb.append(type);
+            } else {
+                propertySb.append(type).append(LEFT_BRACKET).append(length);
+                if (Objects.nonNull(decimalLength)) {
+                    propertySb.append(StrUtil.COMMA);
+                    propertySb.append(decimalLength);
+                }
+                propertySb.append(RIGHT_BRACKET);
             }
-            propertySb.append(RIGHT_BRACKET);
         }
 
         //是否为空
@@ -581,7 +585,8 @@ public class DmImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk) {
+        //达梦数据库不用关心是否存在主键
         //alter table "t_zero" modify constraint "pk_t_zero1760210543954223104" to primary key ("ddd");
         String column = CollectionUtil.join(columnList, StrPool.COMMA, this::addKeywordHandle);
         return StrUtil.format("ALTER TABLE {} MODIFY CONSTRAINT {} TO PRIMARY KEY ({})", this.addKeywordHandle(tableName),

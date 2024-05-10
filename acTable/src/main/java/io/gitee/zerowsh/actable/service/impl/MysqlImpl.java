@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -99,10 +100,17 @@ public class MysqlImpl implements DatabaseService {
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
+        //数据库表中是否存在主键
+        boolean tableExistPk = false;
+        if (CollectionUtil.isNotEmpty(constraintInfoList)) {
+            tableExistPk = constraintInfoList.stream().anyMatch(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK));
+        }
         List<String> resultList = new ArrayList<>();
         List<String> columnList = new ArrayList<>();
         String comment = tableInfo.getComment();
         String tableName = tableInfo.getName();
+        //主键
+        List<String> keyList = tableInfo.getKeyList();
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
         int count = 0;
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
@@ -126,25 +134,30 @@ public class MysqlImpl implements DatabaseService {
                     resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName,
                             propertySb.deleteCharAt(propertySb.length() - 1).toString()));
                     continue;
+                } else if (Objects.isNull(tableColumnInfo)) {
+                    //写错了会导致新增字段和删除字段
+                    throw new RuntimeException(StrUtil.format("无法将表【{}】，字段【{}】修改成【{}】，两个字段都不存在于表中！",
+                            tableName, oldColumnName, columnName));
                 }
-                //写错了会导致新增字段和删除字段
-                throw new RuntimeException(StrUtil.format("无法将表【{}】，字段【{}】修改成【{}】，两个字段都不存在于表中！",
-                        tableName, oldColumnName, columnName));
             }
             if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
                 //如果columnName、oldColumnName在数据库中都没有，新增columnName
                 StringBuilder propertySb = new StringBuilder();
                 this.splicingColumnInfo(propertySb, propertyInfo, tableName);
-                //mysql如果是自增字段就必须是主键
+                //mysql如果是自增字段就必须是主键，并且添加主键的时候必须在第一个
                 if (propertyInfo.isAutoIncrement()) {
-                    //先删除，在添加
-                    propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),", this.addKeywordHandle(propertyInfo.getColumnName())));
-                } else {
-                    //非自增主键
-                    if (propertyInfo.isKey()) {
-                        //删除主键
-                        propertySb.append(StrUtil.format(" DROP PRIMARY KEY,"));
+                    keyList.remove(propertyInfo.getColumnName());
+                    keyList.add(0, propertyInfo.getColumnName());
+                    //判断以前表中是否有主键，如果有先删除，在添加。注意这里必须写成一条语句
+                    if (tableExistPk) {
+                        propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),",
+                                CollectionUtil.join(keyList, StrPool.COMMA, this::addKeywordHandle)));
+                    } else {
+                        propertySb.append(StrUtil.format(" ADD PRIMARY KEY ({}),",
+                                CollectionUtil.join(keyList, StrPool.COMMA, this::addKeywordHandle)));
                     }
+                    //代表处理过主键
+                    keyList = null;
                 }
                 resultList.add(this.getAddColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
                 continue;
@@ -158,16 +171,18 @@ public class MysqlImpl implements DatabaseService {
             count++;
 
             //修改--判断类型、是否为空、是否自增、默认值、字段备注,这些是否存在修改
-            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getType())))
+            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.mysqlContains(propertyInfo.getType())))
                     || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement()
                     && propertyInfo.isNull()))
                     || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
                     || !StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment());
             if (!existUpdate) {
+                //去掉defaultValue前后的单引号
+                String defaultValue = StrUtil.removeSuffix(StrUtil.removePrefix(propertyInfo.getDefaultValue(), "'"), "'");
                 if (Objects.equals(tableColumnInfo.getTypeStr(), BIT)) {
-                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), StrUtil.format("b'{}'", propertyInfo.getDefaultValue()));
+                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), StrUtil.format("b'{}'", defaultValue));
                 } else {
-                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue());
+                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), defaultValue);
                 }
             }
             //判断长度、精度，是否修改
@@ -195,10 +210,21 @@ public class MysqlImpl implements DatabaseService {
                     if (Objects.isNull(decimalLength)) {
                         //没有精度，只比较长度
                         if (Objects.equals(columnTypeInfo.getTypeStr(), ColumnTypeConstants.DATETIME)) {
-                            //todo 存在差异单独处理
+                            // 存在差异单独处理
                             existUpdate = !Objects.equals(decimalLength1, length);
                         } else {
-                            existUpdate = !Objects.equals(length1, length);
+                            //排查不需要比较lenth的类型
+                            List<String> list = new ArrayList<String>() {{
+                                add(BIGINT);
+                                add(INT);
+                                add(LONGTEXT);
+                                add(TEXT);
+                                add(DATE);
+                            }};
+
+                            if (!list.contains(columnTypeInfo.getTypeStr())) {
+                                existUpdate = !Objects.equals(length1, length);
+                            }
                         }
 
                     } else {
@@ -211,22 +237,20 @@ public class MysqlImpl implements DatabaseService {
                 StringBuilder propertySb = new StringBuilder();
                 this.splicingColumnInfo(propertySb, propertyInfo, tableName);
                 //mysql如果是自增字段就必须是主键
-                if (propertyInfo.isAutoIncrement()) {
-                    //先删除，在添加
-                    propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),", this.addKeywordHandle(propertyInfo.getColumnName())));
-                } else {
-                    //非自增主键
-                    if (propertyInfo.isKey()) {
-                        //删除主键
-                        propertySb.append(StrUtil.format(" DROP PRIMARY KEY,"));
-                    }
-                }
+//                if (propertyInfo.isAutoIncrement()) {
+//                    //先删除，在添加
+//                    propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),", this.addKeywordHandle(propertyInfo.getColumnName())));
+//                } else {
+//                    //非自增主键
+//                    if (propertyInfo.isKey()) {
+//                        //删除主键
+//                        propertySb.append(StrUtil.format(" DROP PRIMARY KEY,"));
+//                    }
+//                }
                 columnList.add(this.getUpdateColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
             }
         }
 
-        //主键
-        List<String> keyList = tableInfo.getKeyList();
         //唯一键
         List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
         //唯一索引
@@ -246,14 +270,17 @@ public class MysqlImpl implements DatabaseService {
             List<String> list = Arrays.asList(constraintInfo.getConstraintColumnName().split(StrPool.COMMA));
             List<String> sortList = Arrays.asList(constraintInfo.getIndexSortStr().split(StrPool.COMMA));
             if (Objects.equals(constraintInfo.getConstraintFlag(), PK)) {
-                //判断是否完全相等
-                // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
-                if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
-                    //修改
-                    resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList));
+                //判断是否在前面处理过
+                if (Objects.nonNull(keyList)) {
+                    //判断是否完全相等
+                    // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
+                    if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
+                        //修改
+                        resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, tableExistPk));
+                    }
                 }
-                //处理过了
-                keyList.clear();
+                //代表处理过主键
+                keyList = null;
                 iterator.remove();
             } else if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 //唯一键
@@ -295,7 +322,7 @@ public class MysqlImpl implements DatabaseService {
         }
         resultList.addAll(columnList);
 
-        if (CollectionUtil.isNotEmpty(keyList)) {
+        if (Objects.nonNull(keyList)) {
             //新增主键
             this.createPk(keyList, tableName, resultList);
         }
@@ -479,11 +506,16 @@ public class MysqlImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk) {
         //ALTER TABLE `test`.`t_zero`  DROP PRIMARY KEY, ADD PRIMARY KEY (`id`, `cc`)
         String column = CollectionUtil.join(columnList, StrPool.COMMA, this::addKeywordHandle);
-        return StrUtil.format("ALTER TABLE {} DROP PRIMARY KEY, ADD PRIMARY KEY ({})",
-                this.addKeywordHandle(tableName), column);
+        if (tableExistPk) {
+            return StrUtil.format("ALTER TABLE {} DROP PRIMARY KEY, ADD PRIMARY KEY ({})",
+                    this.addKeywordHandle(tableName), column);
+        } else {
+            return StrUtil.format("ALTER TABLE {} ADD PRIMARY KEY ({})",
+                    this.addKeywordHandle(tableName), column);
+        }
     }
 
     @Override
@@ -617,12 +649,16 @@ public class MysqlImpl implements DatabaseService {
                 propertySb.append(type);
             }
         } else {
-            propertySb.append(type).append(LEFT_BRACKET).append(length);
-            if (Objects.nonNull(decimalLength)) {
-                propertySb.append(StrUtil.COMMA);
-                propertySb.append(decimalLength);
+            if (Objects.isNull(length)) {
+                propertySb.append(type);
+            } else {
+                propertySb.append(type).append(LEFT_BRACKET).append(length);
+                if (Objects.nonNull(decimalLength)) {
+                    propertySb.append(StrUtil.COMMA);
+                    propertySb.append(decimalLength);
+                }
+                propertySb.append(RIGHT_BRACKET);
             }
-            propertySb.append(RIGHT_BRACKET);
         }
 
         //是否为空
@@ -683,6 +719,21 @@ public class MysqlImpl implements DatabaseService {
                     decimalLength = 2;
                 }
                 columnTypeInfo.setLength(length).setTypeStr(type).setDecimalLength(decimalLength);
+                break;
+
+            case BIT:
+                if (length > 64 || length < 0) {
+                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 1);
+                    length = 1;
+                }
+                columnTypeInfo.setLength(length).setTypeStr(type);
+                break;
+            case BIGINT:
+            case INT:
+            case LONGTEXT:
+            case TEXT:
+            case DATE:
+                columnTypeInfo.setTypeStr(type);
                 break;
             default:
                 //其他的类型不用验证长度和精度

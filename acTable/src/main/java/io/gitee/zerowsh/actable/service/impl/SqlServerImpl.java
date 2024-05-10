@@ -600,7 +600,7 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList) {
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList,boolean tableExistPk) {
         return null;
     }
 

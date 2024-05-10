@@ -34,7 +34,7 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false)
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false,isKey = true)
     private Integer zero;
 
     @AcColumn(oldName = "test1", value = "test1", defaultValue = "'test'")
@@ -49,7 +49,7 @@ public class ZeroEntity extends BaseEntity {
     private Short test222;
 
 
-    @AcColumn(comment = "测试", type = ColumnTypeConstants.DECIMAL, length = 10, decimalLength = 2)
+    @AcColumn(comment = "测试1", type = ColumnTypeConstants.DECIMAL, length = 10, decimalLength = 2)
     private BigDecimal ddd;
 
 
@@ -57,19 +57,19 @@ public class ZeroEntity extends BaseEntity {
     private BigDecimal cc;
 
 
-    @AcColumn(comment = "测试2", type = ColumnTypeConstants.DATE)
+    @AcColumn(comment = "测试3", type = ColumnTypeConstants.DATE)
     private Date date;
 
 
-    @AcColumn(comment = "测试2", type = ColumnTypeConstants.DATETIME)
+    @AcColumn(comment = "测试4", type = ColumnTypeConstants.DATETIME)
     private Date dateTime;
 
 
-    @AcColumn(comment = "测试2", type = ColumnTypeConstants.TEXT)
+    @AcColumn(comment = "测试5", type = ColumnTypeConstants.TEXT)
     private Date text;
 
 
-    @AcColumn(comment = "测试2", type = ColumnTypeConstants.LONGTEXT)
+    @AcColumn(comment = "测试5", type = ColumnTypeConstants.LONGTEXT)
     private Date longtext;
 
 }

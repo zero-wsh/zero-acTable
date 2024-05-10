@@ -162,9 +162,10 @@ public interface DatabaseService {
      * @param tableName
      * @param constraintName
      * @param columnList
+     * @param tableExistPk
      * @return
      */
-    String getUpdatePkSql(String tableName, String constraintName, List<String> columnList);
+    String getUpdatePkSql(String tableName, String constraintName, List<String> columnList,boolean tableExistPk);
 
     /**
      * 获取删除主键SQL

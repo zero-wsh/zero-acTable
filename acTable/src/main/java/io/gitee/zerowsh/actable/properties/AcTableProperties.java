@@ -52,5 +52,9 @@ public class AcTableProperties {
      * 是否将结束标识符当作sql的一部分，默认false
      */
     private Boolean sqlPart = false;
+    /**
+     * 是否打印执行的sql语句，默认false
+     */
+    private Boolean print = true;
 
 }

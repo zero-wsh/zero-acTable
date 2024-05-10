@@ -457,18 +457,18 @@ public class DmImpl implements DatabaseService {
             }
         }
 
+
         //是否为空
         if (propertyInfo.isKey() || propertyInfo.isAutoIncrement() || !propertyInfo.isNull()) {
-            if (propertyInfo.isAutoIncrement()) {
-                //todo 在达梦数据中这种方式建立的可以显示指定自增主键
-                propertySb.append(MYSQL_IDENTITY);
-            }
             propertySb.append(NOT_NULL);
         } else {
             propertySb.append(NULL);
         }
-        //是否自增，自增不能设置默认值
-        if (!propertyInfo.isAutoIncrement()) {
+        //是否自增
+        if (propertyInfo.isAutoIncrement()) {
+            propertySb.append(IDENTITY);
+        } else {
+            //自增不能设置默认值
             if (Objects.nonNull(propertyInfo.getDefaultValue())) {
                 propertySb.append(StrUtil.format(DEFAULT, propertyInfo.getDefaultValue()));
             }

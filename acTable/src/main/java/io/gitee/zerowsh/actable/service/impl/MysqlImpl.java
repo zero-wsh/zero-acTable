@@ -146,8 +146,12 @@ public class MysqlImpl implements DatabaseService {
                 this.splicingColumnInfo(propertySb, propertyInfo, tableName);
                 //mysql如果是自增字段就必须是主键，并且添加主键的时候必须在第一个
                 if (propertyInfo.isAutoIncrement()) {
-                    keyList.remove(propertyInfo.getColumnName());
-                    keyList.add(0, propertyInfo.getColumnName());
+                    if (CollectionUtil.isEmpty(keyList)) {
+                        keyList= Collections.singletonList(propertyInfo.getColumnName());
+                    }else{
+                        keyList.remove(propertyInfo.getColumnName());
+                        keyList.add(0, propertyInfo.getColumnName());
+                    }
                     //判断以前表中是否有主键，如果有先删除，在添加。注意这里必须写成一条语句
                     if (tableExistPk) {
                         propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),",

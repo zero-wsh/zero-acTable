@@ -1,8 +1,6 @@
 package io.gitee.zerowsh.actable.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -41,6 +39,8 @@ public class TableInfo {
     @Getter
     @Setter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PropertyInfo {
         private String tableName;
         private String columnName;

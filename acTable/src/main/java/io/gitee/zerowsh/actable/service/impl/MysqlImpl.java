@@ -1,10 +1,10 @@
 package io.gitee.zerowsh.actable.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -100,10 +100,12 @@ public class MysqlImpl implements DatabaseService {
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
-        //数据库表中是否存在主键
-        boolean tableExistPk = false;
+        //数据库表中主键
+        List<ConstraintInfo> tablePkList = new ArrayList<>();
         if (CollectionUtil.isNotEmpty(constraintInfoList)) {
-            tableExistPk = constraintInfoList.stream().anyMatch(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), AcTableConstants.PK));
+            tablePkList = constraintInfoList.stream()
+                    .filter(constraintInfo -> Objects.equals(constraintInfo.getConstraintFlag(), PK))
+                    .collect(Collectors.toList());
         }
         List<String> resultList = new ArrayList<>();
         List<String> columnList = new ArrayList<>();
@@ -147,13 +149,17 @@ public class MysqlImpl implements DatabaseService {
                 //mysql如果是自增字段就必须是主键，并且添加主键的时候必须在第一个
                 if (propertyInfo.isAutoIncrement()) {
                     if (CollectionUtil.isEmpty(keyList)) {
-                        keyList= Collections.singletonList(propertyInfo.getColumnName());
-                    }else{
+                        keyList = Collections.singletonList(propertyInfo.getColumnName());
+                    } else {
                         keyList.remove(propertyInfo.getColumnName());
                         keyList.add(0, propertyInfo.getColumnName());
                     }
                     //判断以前表中是否有主键，如果有先删除，在添加。注意这里必须写成一条语句
-                    if (tableExistPk) {
+                    if (CollectionUtil.isNotEmpty(tablePkList)) {
+                        //需要判断删除的主键中是否有自增字段，如果有需要先删除字段的自增
+                        for (ConstraintInfo constraintInfo : tablePkList) {
+                            this.removeAutoIncrement(tableColumnInfoMap, constraintInfo.getConstraintColumnName(), resultList, tableName);
+                        }
                         propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),",
                                 CollectionUtil.join(keyList, StrPool.COMMA, this::addKeywordHandle)));
                     } else {
@@ -217,7 +223,7 @@ public class MysqlImpl implements DatabaseService {
                             // 存在差异单独处理
                             existUpdate = !Objects.equals(decimalLength1, length);
                         } else {
-                            //排查不需要比较lenth的类型
+                            //排查不需要比较length的类型
                             List<String> list = new ArrayList<String>() {{
                                 add(BIGINT);
                                 add(INT);
@@ -240,17 +246,6 @@ public class MysqlImpl implements DatabaseService {
                 //存在修改
                 StringBuilder propertySb = new StringBuilder();
                 this.splicingColumnInfo(propertySb, propertyInfo, tableName);
-                //mysql如果是自增字段就必须是主键
-//                if (propertyInfo.isAutoIncrement()) {
-//                    //先删除，在添加
-//                    propertySb.append(StrUtil.format(" DROP PRIMARY KEY, ADD PRIMARY KEY ({}),", this.addKeywordHandle(propertyInfo.getColumnName())));
-//                } else {
-//                    //非自增主键
-//                    if (propertyInfo.isKey()) {
-//                        //删除主键
-//                        propertySb.append(StrUtil.format(" DROP PRIMARY KEY,"));
-//                    }
-//                }
                 columnList.add(this.getUpdateColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
             }
         }
@@ -279,8 +274,9 @@ public class MysqlImpl implements DatabaseService {
                     //判断是否完全相等
                     // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
                     if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
+                        this.removeAutoIncrement(tableColumnInfoMap, constraintInfo.getConstraintColumnName(), resultList, tableName);
                         //修改
-                        resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, tableExistPk));
+                        resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, CollectionUtil.isNotEmpty(tablePkList)));
                     }
                 }
                 //代表处理过主键
@@ -353,6 +349,24 @@ public class MysqlImpl implements DatabaseService {
             }
         }
         return resultList;
+    }
+
+    public void removeAutoIncrement(Map<String, TableColumnInfo> tableColumnInfoMap,
+                                    String columnName,
+                                    List<String> resultList,
+                                    String tableName) {
+        TableColumnInfo tablePkColumnInfo = tableColumnInfoMap.get(columnName);
+        if (Objects.nonNull(tablePkColumnInfo) && tablePkColumnInfo.isAutoIncrement()) {
+            TableInfo.PropertyInfo propertyPkInfo = new TableInfo.PropertyInfo();
+            BeanUtil.copyProperties(tablePkColumnInfo, propertyPkInfo);
+            //存在修改
+            StringBuilder pkSb = new StringBuilder();
+            propertyPkInfo.setKey(false);
+            propertyPkInfo.setAutoIncrement(false);
+            propertyPkInfo.setType(tablePkColumnInfo.getTypeStr());
+            this.splicingColumnInfo(pkSb, propertyPkInfo, tableName);
+            resultList.add(this.getUpdateColumnSql(tableName, pkSb.deleteCharAt(pkSb.length() - 1)));
+        }
     }
 
     private boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {

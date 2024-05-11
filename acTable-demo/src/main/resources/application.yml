@@ -5,7 +5,7 @@ server:
     time-zone: GMT+8
 spring:
   profiles:
-    active: dm
+    active: mysql
   datasource:
     druid:
       # 配置测试查询语句

@@ -69,7 +69,13 @@ public class ZeroEntity extends BaseEntity {
     private Date text;
 
 
-    @AcColumn(comment = "测试5", type = ColumnTypeConstants.LONGTEXT)
+    @AcColumn(comment = "测试6", type = ColumnTypeConstants.LONGTEXT)
     private Date longtext;
+
+    @AcColumn(comment = "测试5", type = ColumnTypeConstants.JSON)
+    private String test6;
+
+    @AcColumn(comment = "测试7", length = 1)
+    private Boolean isPass;
 
 }

@@ -189,10 +189,12 @@ public class MysqlImpl implements DatabaseService {
             if (!existUpdate) {
                 //去掉defaultValue前后的单引号
                 String defaultValue = StrUtil.removeSuffix(StrUtil.removePrefix(propertyInfo.getDefaultValue(), "'"), "'");
-                if (Objects.equals(tableColumnInfo.getTypeStr(), BIT)) {
-                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), StrUtil.format("b'{}'", defaultValue));
-                } else {
-                    existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), defaultValue);
+                if(Objects.nonNull(tableColumnInfo.getDefaultValue()) || Objects.nonNull(defaultValue)){
+                    if (Objects.equals(tableColumnInfo.getTypeStr(), BIT)) {
+                        existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), StrUtil.format("b'{}'", defaultValue));
+                    } else {
+                        existUpdate = !StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), defaultValue);
+                    }
                 }
             }
             //判断长度、精度，是否修改
@@ -230,6 +232,7 @@ public class MysqlImpl implements DatabaseService {
                                 add(LONGTEXT);
                                 add(TEXT);
                                 add(DATE);
+                                add(JSON);
                             }};
 
                             if (!list.contains(columnTypeInfo.getTypeStr())) {
@@ -751,6 +754,7 @@ public class MysqlImpl implements DatabaseService {
             case LONGTEXT:
             case TEXT:
             case DATE:
+            case JSON:
                 columnTypeInfo.setTypeStr(type);
                 break;
             default:

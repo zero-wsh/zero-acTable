@@ -10,14 +10,14 @@
     </parent>
     <groupId>io.gitee.zero-wsh</groupId>
     <artifactId>acTable-demo</artifactId>
-    <version>3.0.4</version>
+    <version>3.0.5</version>
     <properties>
         <mybatis.plus.version>3.5.3.1</mybatis.plus.version>
-        <revision>3.0.4</revision>
+        <revision>3.0.5</revision>
         <knife4j.version>2.0.5</knife4j.version>
         <hutool.version>5.8.18</hutool.version>
         <druid.version>1.1.10</druid.version>
-        <acTable.version>3.0.4</acTable.version>
+        <acTable.version>3.0.5</acTable.version>
     </properties>
     <dependencies>
         <dependency>

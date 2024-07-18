@@ -28,7 +28,7 @@ mysql、达梦
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>3.0.4</version>
+	<version>3.0.5</version>
 </dependency>
 ```
 

@@ -167,22 +167,24 @@ public class AcTableService {
         if (StrUtil.isBlank(script)) {
             return;
         }
-        log.info("执行【{}】SQL脚本 [{}]！", databaseType, script);
         for (String s : script.split(COMMA)) {
             try {
                 Resource[] resources = new PathMatchingResourcePatternResolver()
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
-                    List<String> strings = this.inputStreamToString(resource.getInputStream(), script, acTableProperties);
-                    for (String sql : strings) {
-                        JdbcUtil.executeSql(connection, sql);
+                    if (resource.exists()) {
+                        log.info("执行【{}】SQL脚本 [{}]！", databaseType, s);
+                        List<String> strings = this.inputStreamToString(resource.getInputStream(), s, acTableProperties);
+                        for (String sql : strings) {
+                            JdbcUtil.executeSql(connection, sql);
+                        }
+                        log.info("执行【{}】SQL脚本【{}】完成！", databaseType, s);
                     }
                 }
             } catch (IOException | SQLException e) {
-                throw new RuntimeException(StrUtil.format("执行【{}】SQL脚本【{}】失败， message={}！", databaseType, script, e.getMessage()));
+                throw new RuntimeException(StrUtil.format("执行【{}】SQL脚本【{}】失败， message={}！", databaseType, s, e.getMessage()));
             }
         }
-        log.info("执行【{}】SQL脚本【{}】完成！", databaseType, script);
     }
 
     /**

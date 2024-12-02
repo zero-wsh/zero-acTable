@@ -37,11 +37,11 @@ public class AcTableProperties {
      */
     private Boolean columnToUpperCase = false;
     /**
-     * 建表之前脚本，用来处理修改表字段
+     * 建表之前脚本，用来处理修改表字段，多个文件用英文逗号隔开
      */
     private String beforeScript;
     /**
-     * 建表之后脚本
+     * 建表之后脚本，多个文件用英文逗号隔开
      */
     private String afterScript;
     /**

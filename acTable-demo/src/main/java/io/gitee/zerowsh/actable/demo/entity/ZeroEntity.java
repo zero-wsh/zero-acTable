@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Date;
 
 /**
@@ -77,5 +78,8 @@ public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "测试7", length = 1)
     private Boolean isPass;
+
+    @AcColumn(comment = "退款时间", defaultValue = "CURRENT_TIMESTAMP")
+    private Timestamp refundTime; // 退款时间
 
 }

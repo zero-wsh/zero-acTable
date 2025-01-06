@@ -11,7 +11,6 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- *
  * @author zero
  */
 @Getter
@@ -36,12 +35,12 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false,isKey = true)
+    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false, isKey = true)
     private Integer zero;
 
     @AcColumn(oldName = "test1", value = "test1", defaultValue = "'test'")
     private String test1;
-    @AcColumn(value = "test2",length = 1000)
+    @AcColumn(value = "test2", length = 1000)
     private String test2;
 
     @AcColumn(oldName = "test3", value = "test3")

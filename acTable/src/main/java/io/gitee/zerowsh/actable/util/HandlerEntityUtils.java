@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.gitee.zerowsh.actable.annotation.*;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
@@ -336,12 +337,21 @@ public class HandlerEntityUtils {
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
                 }
+                boolean isNull = AcTableConstants.COLUMN_IS_NULL_DEF;
+                //是否为空，优先使用自定义注解
+                if (isKey || isAutoIncrement) {
+                    isNull = false;
+                } else {
+                    if (Objects.nonNull(apiModelProperty)) {
+                        isNull = apiModelProperty.required();
+                    }
+                }
                 propertyInfoBuilder.columnName(columnName)
                         .oldColumnName(columnName)
                         .tableName(tableName)
                         .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
-                        .isNull(isKey || isAutoIncrement ? false : COLUMN_IS_NULL_DEF)
+                        .isNull(isNull)
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
                         .length(COLUMN_LENGTH_DEF)
@@ -354,6 +364,7 @@ public class HandlerEntityUtils {
                         || acColumn.exclude()) {
                     continue;
                 }
+                //列名，优先使用自定义注解
                 columnName = acColumn.value();
                 if (Objects.nonNull(tableField) && StrUtil.isBlank(columnName)) {
                     columnName = tableField.value();
@@ -382,6 +393,20 @@ public class HandlerEntityUtils {
                     columnName = columnName.toUpperCase();
                 }
                 String oldColumnName = StrUtil.isNotBlank(acColumn.oldName()) ? acColumn.oldName() : columnName;
+                boolean isNull = AcTableConstants.COLUMN_IS_NULL_DEF;
+                //是否为空，优先使用自定义注解
+                if (isKey || isAutoIncrement) {
+                    isNull = false;
+                } else {
+                    //不能为空
+                    if (!acColumn.isNull()) {
+                        isNull = false;
+                    } else {
+                        if(Objects.nonNull(apiModelProperty)){
+                            isNull = apiModelProperty.required();
+                        }
+                    }
+                }
                 propertyInfoBuilder.columnName(columnName)
                         .oldColumnName(oldColumnName)
                         .tableName(tableName)
@@ -391,7 +416,7 @@ public class HandlerEntityUtils {
                         .isAutoIncrement(isAutoIncrement)
                         .isKey(isKey)
                         .order(acColumn.order())
-                        .isNull(isKey || isAutoIncrement ? false : acColumn.isNull())
+                        .isNull(isNull)
                         .length(acColumn.length())
                         .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
                         .typeLimit(acColumn.typeLimit());

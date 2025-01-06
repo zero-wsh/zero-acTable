@@ -179,6 +179,8 @@ public class AcTableService {
                             JdbcUtil.executeSql(connection, sql);
                         }
                         log.info("执行【{}】SQL脚本【{}】完成！", databaseType, s);
+                    } else {
+                        log.warn("【{}】SQL脚本【{}】不存在！", databaseType, s);
                     }
                 }
             } catch (IOException | SQLException e) {

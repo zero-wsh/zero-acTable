@@ -25,6 +25,7 @@ public class CreateDatabaseProcessor implements EnvironmentPostProcessor {
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         for (PropertySource<?> ps : environment.getPropertySources()) {
+
             if (ps instanceof OriginTrackedMapPropertySource) {
                 OriginTrackedMapPropertySource source = (OriginTrackedMapPropertySource) ps;
                 String url = String.valueOf(source.getProperty("spring.datasource.url"));

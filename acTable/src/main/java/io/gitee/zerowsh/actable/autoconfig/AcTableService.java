@@ -7,6 +7,7 @@ import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.service.DatabaseService;
@@ -64,7 +65,7 @@ public class AcTableService {
                 log.error("获取数据库类型失败！");
                 return;
             }
-            DatabaseService databaseService = this.getDatabaseService(databaseType);
+            DatabaseService databaseService = DatabaseTypeEnums.getDatabaseService(databaseType);
             if (Objects.isNull(databaseService)) {
                 log.error("数据库类型不支持 databaseType={}", databaseType);
                 return;
@@ -92,19 +93,6 @@ public class AcTableService {
             this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType);
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
-        }
-    }
-
-    public DatabaseService getDatabaseService(String databaseType) {
-        switch (databaseType) {
-            case AcTableConstants.MYSQL:
-                return new MysqlImpl();
-            case AcTableConstants.SQL_SERVER:
-                return new SqlServerImpl();
-            case AcTableConstants.DM:
-                return new DmImpl();
-            default:
-                return null;
         }
     }
 

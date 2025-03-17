@@ -7,12 +7,6 @@ package io.gitee.zerowsh.actable.constant;
  */
 public interface AcTableConstants {
     /**
-     * 数据库类型
-     */
-    String MYSQL = "MySQL";
-    String SQL_SERVER = "Microsoft SQL Server";
-    String DM = "DM DBMS";
-    /**
      * 当等于该值时，默认值为null
      */
     String DEFAULT_VALUE = "ZERO_AC_TABLE_DEFAULT_VALUE";
@@ -62,7 +56,7 @@ public interface AcTableConstants {
     String COMMENT = " COMMENT '{}'";
     String PRIMARY_KEY = " PRIMARY KEY ({}),";
     String UNIQUE_KEY = " UNIQUE KEY {} ({}),";
-    String INDEX_KEY = " UNIQUE KEY {} ({}),";
+    String INDEX_KEY = " KEY {} ({}),";
     /**
      * 验证字符串
      */

@@ -166,6 +166,7 @@ public class HandlerEntityUtils {
                 if (CollectionUtil.isEmpty(propertyInfoList)) {
                     throw new RuntimeException(StrUtil.format("类【{}】不存在字段信息！", cls.getName()));
                 }
+
                 //通过order字段正序排序
                 propertyInfoList.sort(Comparator.comparing(TableInfo.PropertyInfo::getOrder));
                 for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
@@ -402,7 +403,7 @@ public class HandlerEntityUtils {
                     if (!acColumn.isNull()) {
                         isNull = false;
                     } else {
-                        if(Objects.nonNull(apiModelProperty)){
+                        if (Objects.nonNull(apiModelProperty)) {
                             isNull = apiModelProperty.required();
                         }
                     }
@@ -421,7 +422,7 @@ public class HandlerEntityUtils {
                         .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
                         .typeLimit(acColumn.typeLimit());
             }
-            propertyInfoList.add(0, propertyInfoBuilder.build());
+            propertyInfoList.add(propertyInfoBuilder.build());
             propertyMap.put(fieldName, columnName);
         }
         Class<?> superclass = cls.getSuperclass();

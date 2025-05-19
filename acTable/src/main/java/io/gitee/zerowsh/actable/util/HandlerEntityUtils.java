@@ -62,15 +62,19 @@ public class HandlerEntityUtils {
         //用来判断是否有重复表名
         Set<String> tableJudge = new HashSet<>();
         for (String s : entityPackage.split(StrUtil.COMMA)) {
-            Set<BeanDefinition> acTableBeanDefinitions = scanPackageByAnnotation(s, AcTable.class);
-            //mybatis plus兼容
-            Set<BeanDefinition> tableNameBeanDefinitions = scanPackageByAnnotation(s, TableName.class);
-            //hibernate 兼容
-            Set<BeanDefinition> tableBeanDefinitions = scanPackageByAnnotation(s, Table.class);
             Set<BeanDefinition> tableSet = new HashSet<>();
+            Set<BeanDefinition> acTableBeanDefinitions = scanPackageByAnnotation(s, AcTable.class);
             tableSet.addAll(acTableBeanDefinitions);
-            tableSet.addAll(tableNameBeanDefinitions);
-            tableSet.addAll(tableBeanDefinitions);
+            if (AnnotationUtils.isAnnotationPresent(() -> TableName.class)) {
+                //mybatis plus兼容
+                Set<BeanDefinition> tableNameBeanDefinitions = scanPackageByAnnotation(s, TableName.class);
+                tableSet.addAll(tableNameBeanDefinitions);
+            }
+            if (AnnotationUtils.isAnnotationPresent(() -> Table.class)) {
+                //hibernate 兼容
+                Set<BeanDefinition> tableBeanDefinitions = scanPackageByAnnotation(s, Table.class);
+                tableSet.addAll(tableBeanDefinitions);
+            }
             for (BeanDefinition beanDefinition : tableSet) {
                 Class<?> cls;
                 try {
@@ -106,21 +110,21 @@ public class HandlerEntityUtils {
                 }
                 if (Objects.equals(comment, DEFAULT_VALUE)) {
                     //swagger 兼容获取表注释
-                    ApiModel apiModel = cls.getAnnotation(ApiModel.class);
+                    ApiModel apiModel = AnnotationUtils.getAnnotationClassSafe(cls, () -> ApiModel.class);
                     if (Objects.nonNull(apiModel)) {
                         comment = apiModel.value();
                     }
                 }
                 if (StrUtil.isBlank(tableName)) {
                     //mybatis plus兼容
-                    TableName mpTable = cls.getAnnotation(TableName.class);
+                    TableName mpTable = AnnotationUtils.getAnnotationClassSafe(cls, () -> TableName.class);
                     if (Objects.nonNull(mpTable)) {
                         tableName = mpTable.value();
                     }
                 }
                 if (StrUtil.isBlank(tableName)) {
                     //hibernate 兼容
-                    Table jpaTable = cls.getAnnotation(Table.class);
+                    Table jpaTable = AnnotationUtils.getAnnotationClassSafe(cls, () -> Table.class);
                     if (Objects.nonNull(jpaTable)) {
                         tableName = jpaTable.name();
                     }
@@ -304,15 +308,16 @@ public class HandlerEntityUtils {
 
             AcColumn acColumn = field.getAnnotation(AcColumn.class);
             //swagger 兼容
-            ApiModelProperty apiModelProperty = field.getAnnotation(ApiModelProperty.class);
+            ApiModelProperty apiModelProperty = AnnotationUtils.getAnnotationSafe(field, () -> ApiModelProperty.class);
+
             //mybatis plus 兼容
-            TableField tableField = field.getAnnotation(TableField.class);
-            TableId tableId = field.getAnnotation(TableId.class);
+            TableField tableField = AnnotationUtils.getAnnotationSafe(field, () -> TableField.class);
+            TableId tableId = AnnotationUtils.getAnnotationSafe(field, () -> TableId.class);
             //hibernate 兼容
-            Column column = field.getAnnotation(Column.class);
-            Id id = field.getAnnotation(Id.class);
-            GeneratedValue generatedValue = field.getAnnotation(GeneratedValue.class);
-            Transient transientAnn = field.getAnnotation(Transient.class);
+            Column column = AnnotationUtils.getAnnotationSafe(field, () -> Column.class);
+            Id id = AnnotationUtils.getAnnotationSafe(field, () -> Id.class);
+            GeneratedValue generatedValue = AnnotationUtils.getAnnotationSafe(field, () -> GeneratedValue.class);
+            Transient transientAnn = AnnotationUtils.getAnnotationSafe(field, () -> Transient.class);
             if (Objects.isNull(acColumn)) {
                 //从其他注解获取
                 if ((Objects.nonNull(tableField) && !tableField.exist())

@@ -1,7 +1,6 @@
 package io.gitee.zerowsh.actable.demo.config;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.env.Environment;
@@ -21,6 +20,8 @@ import java.sql.Statement;
 @Component
 public class DatabaseInitializer implements BeanPostProcessor {
     private static final String MYSQL_CREATE_DATABASE = "create database if not exists `%s` default character set utf8mb4";
+    private static final String QUESTION_MARK = "?";
+    private static final String SLASH = "/";
 
     @Resource
     private Environment environment;
@@ -42,13 +43,13 @@ public class DatabaseInitializer implements BeanPostProcessor {
         if (StrUtil.isNotBlank(url) && StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password)) {
             String url02;
             String databaseName;
-            if (url.contains(StringPool.QUESTION_MARK)) {
-                String url01 = url.substring(0, url.indexOf(StringPool.QUESTION_MARK));
-                url02 = url01.substring(0, url01.lastIndexOf(StringPool.SLASH)) + url.substring(url.indexOf(StringPool.QUESTION_MARK));
-                databaseName = url01.substring(url01.lastIndexOf(StringPool.SLASH) + 1);
+            if (url.contains(QUESTION_MARK)) {
+                String url01 = url.substring(0, url.indexOf(QUESTION_MARK));
+                url02 = url01.substring(0, url01.lastIndexOf(SLASH)) + url.substring(url.indexOf(QUESTION_MARK));
+                databaseName = url01.substring(url01.lastIndexOf(SLASH) + 1);
             } else {
-                url02 = url.substring(0, url.lastIndexOf(StringPool.SLASH));
-                databaseName = url.substring(url.lastIndexOf(StringPool.SLASH) + 1);
+                url02 = url.substring(0, url.lastIndexOf(SLASH));
+                databaseName = url.substring(url.lastIndexOf(SLASH) + 1);
             }
             try (
                     Connection connection = DriverManager.getConnection(url02, username, password);

@@ -78,5 +78,10 @@ public interface AcTableConstants {
     String DROP_INDEX = "DROP INDEX [{}] ON [{}]";
     String CREATE_PRIMARY_KEY = "ALTER TABLE [{}] ADD CONSTRAINT [{}] PRIMARY KEY CLUSTERED ({})";
     String ADD_DEFAULT = "ALTER TABLE [{}] ADD DEFAULT {} FOR [{}]";
-
+    /**
+     * 历史表处理
+     */
+    String GET_HISTORY = "select file_md5 from tb_ac_history where file_name='{}' and exec_script='{}'";
+    String INSERT_HISTORY = "insert into tb_ac_history(file_name,file_md5,exec_script,create_time) values('{}','{}','{}','{}')";
+    String UPDATE_HISTORY = "update tb_ac_history set file_md5='{}',update_time='{}' where file_name='{}' and exec_script='{}'";
 }

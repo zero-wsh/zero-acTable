@@ -1,6 +1,7 @@
 package io.gitee.zerowsh.actable.properties;
 
 import io.gitee.zerowsh.actable.constant.StringConstants;
+import io.gitee.zerowsh.actable.emnus.HistoryEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
 import lombok.Getter;
@@ -53,8 +54,12 @@ public class AcTableProperties {
      */
     private Boolean sqlPart = false;
     /**
-     * 是否打印执行的sql语句，默认false
+     * 是否打印执行的sql语句，默认true
      */
     private Boolean print = true;
+    /**
+     * 历史表处理：默认什么都不做
+     */
+    private HistoryEnums history = HistoryEnums.NONE;
 
 }

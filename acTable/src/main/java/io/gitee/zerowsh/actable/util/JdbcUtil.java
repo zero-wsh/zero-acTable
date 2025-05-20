@@ -48,7 +48,7 @@ public class JdbcUtil {
     private static PreparedStatement handlePrepareStatement(Connection conn, String sql, Object... obj) throws SQLException {
         String formatSql = StrUtil.format(sql, obj);
         AcTableProperties acTableProperties = SpringUtil.getBean(AcTableProperties.class);
-        if(acTableProperties.getPrint()){
+        if (acTableProperties.getPrint()) {
             log.info(formatSql);
         }
         return conn.prepareStatement(formatSql);
@@ -128,4 +128,21 @@ public class JdbcUtil {
             return list;
         }
     }
+
+    /**
+     * @param conn
+     * @param sql
+     * @param obj
+     * @return
+     */
+    public static String getHistoryMd5(Connection conn, String sql, Object... obj) throws SQLException {
+        try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                return rs.getString("file_md5");
+            }
+        }
+        return null;
+    }
+
 }

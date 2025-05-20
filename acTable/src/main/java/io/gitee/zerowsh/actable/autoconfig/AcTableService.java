@@ -1,19 +1,19 @@
 package io.gitee.zerowsh.actable.autoconfig;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
+import io.gitee.zerowsh.actable.emnus.HistoryEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.service.DatabaseService;
-import io.gitee.zerowsh.actable.service.impl.DmImpl;
-import io.gitee.zerowsh.actable.service.impl.MysqlImpl;
-import io.gitee.zerowsh.actable.service.impl.SqlServerImpl;
 import io.gitee.zerowsh.actable.util.HandlerEntityUtils;
 import io.gitee.zerowsh.actable.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +29,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static cn.hutool.core.util.StrUtil.COMMA;
 
@@ -71,7 +68,7 @@ public class AcTableService {
                 return;
             }
             //执行自动建表前先执行sql脚本，用于表存在时先更改相关字段，如mysql自增字段。
-            this.executeScript(connection, acTableProperties, acTableProperties.getBeforeScript(), databaseType);
+            this.executeScript(connection, acTableProperties, acTableProperties.getBeforeScript(), databaseType, "Before");
             List<TableInfo> tableInfoList = HandlerEntityUtils.getTableInfoByEntityPackage(acTableProperties, databaseService);
             if (CollectionUtil.isEmpty(tableInfoList)) {
                 log.error("没有找到io.gitee.zerowsh.actable.annotation.AcTable、" +
@@ -90,7 +87,7 @@ public class AcTableService {
                 }
             }
             log.info(StrUtil.format("完成【{}】自动建表！", databaseType));
-            this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType);
+            this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType, "After");
         } catch (Exception e) {
             throw new RuntimeException("自动建表异常", e);
         }
@@ -150,8 +147,9 @@ public class AcTableService {
      * @param acTableProperties
      * @param script
      * @param databaseType
+     * @param execScript        执行脚本时机
      */
-    public void executeScript(Connection connection, AcTableProperties acTableProperties, String script, String databaseType) {
+    public void executeScript(Connection connection, AcTableProperties acTableProperties, String script, String databaseType, String execScript) {
         if (StrUtil.isBlank(script)) {
             return;
         }
@@ -161,14 +159,48 @@ public class AcTableService {
                         .getResources(ResourceUtils.CLASSPATH_URL_PREFIX + s);
                 for (Resource resource : resources) {
                     if (resource.exists()) {
-                        log.info("执行【{}】SQL脚本 [{}]！", databaseType, s);
-                        List<String> strings = this.inputStreamToString(resource.getInputStream(), s, acTableProperties);
+                        String historyMd5 = null;
+                        String fileName = resource.getDescription();
+                        String md5 = null;
+                        boolean update = false;
+                        if (!Objects.equals(acTableProperties.getHistory(), HistoryEnums.NONE)) {
+                            try (InputStream inputStream = resource.getInputStream()) {
+                                md5 = SecureUtil.md5(inputStream);
+                                //查询是否存在数据 execScript+fileName
+                                historyMd5 = JdbcUtil.getHistoryMd5(connection, AcTableConstants.GET_HISTORY, fileName, execScript);
+                                if (Objects.equals(historyMd5, md5)) {
+                                    continue;
+                                } else {
+                                    if (Objects.equals(acTableProperties.getHistory(), HistoryEnums.NOT_REPEAT)) {
+                                        throw new RuntimeException(StrUtil.format("脚本{}文件【{}】在策略【{}】中禁止修改！", execScript, fileName, HistoryEnums.NOT_REPEAT));
+                                    } else {
+                                        update = true;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                throw new RuntimeException(StrUtil.format("获取MD5读取初始化文件【{}】异常！", script), e);
+                            }
+                        }
+
+                        log.info("执行 {}【{}】SQL脚本 [{}]！", execScript, databaseType, s);
+                        List<String> strings = this.inputStreamToString(resource, s, acTableProperties);
                         for (String sql : strings) {
                             JdbcUtil.executeSql(connection, sql);
                         }
-                        log.info("执行【{}】SQL脚本【{}】完成！", databaseType, s);
+
+                        if (!Objects.equals(acTableProperties.getHistory(), HistoryEnums.NONE)) {
+                            if (StrUtil.isBlank(historyMd5)) {
+                                //新增
+                                JdbcUtil.executeSql(connection, AcTableConstants.INSERT_HISTORY, fileName, md5, execScript, DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+                            }
+                            if (update) {
+                                //修改
+                                JdbcUtil.executeSql(connection, AcTableConstants.UPDATE_HISTORY, md5, DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"), fileName, execScript);
+                            }
+                        }
+                        log.info("执行 {}【{}】SQL脚本【{}】完成！", execScript, databaseType, s);
                     } else {
-                        log.warn("【{}】SQL脚本【{}】不存在！", databaseType, s);
+                        log.warn(" {}【{}】SQL脚本【{}】不存在！", execScript, databaseType, s);
                     }
                 }
             } catch (IOException | SQLException e) {
@@ -178,14 +210,15 @@ public class AcTableService {
     }
 
     /**
-     * @param inputStream
+     * @param resource
      * @param script
      * @param acTableProperties
      * @return input流转字符串
      */
-    public List<String> inputStreamToString(InputStream inputStream, String script, AcTableProperties acTableProperties) {
+    public List<String> inputStreamToString(Resource resource, String script, AcTableProperties acTableProperties) {
         List<String> resultList = new ArrayList<>();
-        try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        try (InputStream inputStream = resource.getInputStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
             String str;
             StringBuilder oneSql = new StringBuilder();

@@ -17,6 +17,7 @@ import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.service.DatabaseService;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -133,6 +134,11 @@ public class HandlerEntityUtils {
             ApiModel apiModel = AnnotationUtils.getAnnotationClassSafe(cls, () -> ApiModel.class);
             if (Objects.nonNull(apiModel)) {
                 comment = apiModel.value();
+            }
+
+            Schema schema = AnnotationUtils.getAnnotationClassSafe(cls, () -> Schema.class);
+            if (Objects.nonNull(schema)) {
+                comment = schema.description();
             }
         }
         if (StrUtil.isBlank(tableName)) {
@@ -325,6 +331,7 @@ public class HandlerEntityUtils {
             AcColumn acColumn = field.getAnnotation(AcColumn.class);
             //swagger 兼容
             ApiModelProperty apiModelProperty = AnnotationUtils.getAnnotationSafe(field, () -> ApiModelProperty.class);
+            Schema schema = AnnotationUtils.getAnnotationSafe(field, () -> Schema.class);
 
             //mybatis plus 兼容
             TableField tableField = AnnotationUtils.getAnnotationSafe(field, () -> TableField.class);
@@ -356,6 +363,7 @@ public class HandlerEntityUtils {
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 //只能从swagger注解上取值
                 String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
+                columnComment = Objects.nonNull(schema) && StrUtil.isNotBlank(schema.description()) ? schema.description() : null;
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
                 }
@@ -366,6 +374,9 @@ public class HandlerEntityUtils {
                 } else {
                     if (Objects.nonNull(apiModelProperty)) {
                         isNull = !apiModelProperty.required();
+                    }
+                    if (Objects.nonNull(schema)) {
+                        isNull = !schema.required();
                     }
                 }
                 propertyInfoBuilder.columnName(columnName)
@@ -410,6 +421,10 @@ public class HandlerEntityUtils {
                     if (Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value())) {
                         columnComment = apiModelProperty.value();
                     }
+                    if (Objects.nonNull(schema) && StrUtil.isNotBlank(schema.description())) {
+                        columnComment = schema.description();
+                    }
+
                 }
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
@@ -426,6 +441,9 @@ public class HandlerEntityUtils {
                     } else {
                         if (Objects.nonNull(apiModelProperty)) {
                             isNull = !apiModelProperty.required();
+                        }
+                        if (Objects.nonNull(schema)) {
+                            isNull = !schema.required();
                         }
                     }
                 }

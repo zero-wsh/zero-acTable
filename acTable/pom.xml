@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.gitee.zero-wsh</groupId>
     <artifactId>acTable</artifactId>
-    <version>3.0.5</version>
+    <version>3.0.6</version>
     <packaging>jar</packaging>
 
 
@@ -163,6 +163,8 @@
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <charset>${project.build.sourceEncoding}</charset>
                     <docencoding>${project.build.sourceEncoding}</docencoding>
+                    <!-- 添加以下配置解决控制台输出乱码 -->
+                    <additionalJOption>-J-Dfile.encoding=UTF-8</additionalJOption>
                     <!-- <excludePackageNames>*</excludePackageNames>-->
                 </configuration>
                 <executions>

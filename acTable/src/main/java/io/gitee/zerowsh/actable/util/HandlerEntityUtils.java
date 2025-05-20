@@ -365,7 +365,7 @@ public class HandlerEntityUtils {
                     isNull = false;
                 } else {
                     if (Objects.nonNull(apiModelProperty)) {
-                        isNull = apiModelProperty.required();
+                        isNull = !apiModelProperty.required();
                     }
                 }
                 propertyInfoBuilder.columnName(columnName)
@@ -425,7 +425,7 @@ public class HandlerEntityUtils {
                         isNull = false;
                     } else {
                         if (Objects.nonNull(apiModelProperty)) {
-                            isNull = apiModelProperty.required();
+                            isNull = !apiModelProperty.required();
                         }
                     }
                 }

@@ -1,6 +1,5 @@
 package io.gitee.zerowsh.actable.util;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
@@ -156,7 +155,7 @@ public class HandlerEntityUtils {
         if (tableJudge.contains(tableName)) {
             throw new RuntimeException(StrUtil.format("【{}】 表名重复！", tableName));
         }
-        tableName = acTableProperties.getTableToUpperCase() ? databaseService.delKeywordHandle(tableName).toUpperCase() : databaseService.delKeywordHandle(tableName);
+        tableName = databaseService.delKeywordHandle(acTableProperties.getTableToUpperCase() ? tableName.toUpperCase() : tableName);
         tableJudge.add(tableName);
         //设置表名
         builder.name(tableName);
@@ -347,7 +346,7 @@ public class HandlerEntityUtils {
                 if (Objects.nonNull(column)) {
                     columnName = column.name();
                 }
-                columnName = StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName;
+                columnName = databaseService.delKeywordHandle(StrUtil.isBlank(columnName) ? fieldNameTurnDatabaseColumn(fieldName, turn, acTable) : columnName);
                 if (propertyList.contains(columnName)) {
                     throw new RuntimeException(StrUtil.format(COLUMN_DUPLICATE_VALID_STR, tableName, fieldName));
                 }

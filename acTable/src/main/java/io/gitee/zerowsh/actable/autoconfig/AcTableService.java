@@ -160,17 +160,21 @@ public class AcTableService {
                 for (Resource resource : resources) {
                     if (resource.exists()) {
                         String historyMd5 = null;
-
-                        //得到目录，用于截取
-                        String catalogue = s.replace("*", "");
-                        //获取到完整路径
-                        String urlPath = resource.getURL().toString();
-                        // 查找最后一个 catalogue 的位置
-                        int lastIndex = urlPath.lastIndexOf(catalogue);
-                        // 截取从最后一个catalogue开始到字符串末尾的部分
-                        String fileName = urlPath.substring(lastIndex);
-                        if (Objects.equals(fileName, catalogue)) {
-                            continue;
+                        String fileName;
+                        if (s.contains("*")) {
+                            //得到目录，用于截取
+                            String catalogue = s.replace("*", "");
+                            //获取到完整路径
+                            String urlPath = resource.getURL().toString();
+                            // 查找最后一个 catalogue 的位置
+                            int lastIndex = urlPath.lastIndexOf(catalogue);
+                            // 截取从最后一个catalogue开始到字符串末尾的部分
+                            fileName = urlPath.substring(lastIndex);
+                            if (Objects.equals(fileName, catalogue)) {
+                                continue;
+                            }
+                        } else {
+                            fileName = s;
                         }
                         String md5 = null;
                         boolean update = false;

@@ -8,7 +8,7 @@ package io.gitee.zerowsh.actable.constant;
 public interface StringConstants {
     String LEFT_BRACKET = "(";
     String RIGHT_BRACKET = ")";
-    String SQL_SPLIT_STR = "endFlag";
+    String SQL_SPLIT_STR = ";";
     String CONVERT_STR = "->";
 
 }

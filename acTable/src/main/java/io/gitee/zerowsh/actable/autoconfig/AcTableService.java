@@ -160,14 +160,29 @@ public class AcTableService {
                 for (Resource resource : resources) {
                     if (resource.exists()) {
                         String historyMd5 = null;
-                        String fileName = resource.getDescription();
+
+                        //得到目录，用于截取
+                        String catalogue = s.replace("*", "");
+                        //获取到完整路径
+                        String urlPath = resource.getURL().toString();
+                        // 查找最后一个 catalogue 的位置
+                        int lastIndex = urlPath.lastIndexOf(catalogue);
+                        // 截取从最后一个catalogue开始到字符串末尾的部分
+                        String fileName = urlPath.substring(lastIndex);
+                        if (Objects.equals(fileName, catalogue)) {
+                            continue;
+                        }
                         String md5 = null;
                         boolean update = false;
                         if (!Objects.equals(acTableProperties.getHistory(), HistoryEnums.NONE)) {
                             try (InputStream inputStream = resource.getInputStream()) {
                                 md5 = SecureUtil.md5(inputStream);
-                                //查询是否存在数据 execScript+fileName
-                                historyMd5 = JdbcUtil.getHistoryMd5(connection, AcTableConstants.GET_HISTORY, fileName, execScript);
+                            } catch (Exception e) {
+                                throw new RuntimeException(StrUtil.format("获取MD5读取初始化文件【{}】异常！", script), e);
+                            }
+                            //查询是否存在数据 execScript+fileName
+                            historyMd5 = JdbcUtil.getHistoryMd5(connection, AcTableConstants.GET_HISTORY, fileName, execScript);
+                            if (StrUtil.isNotBlank(historyMd5)) {
                                 if (Objects.equals(historyMd5, md5)) {
                                     continue;
                                 } else {
@@ -177,12 +192,9 @@ public class AcTableService {
                                         update = true;
                                     }
                                 }
-                            } catch (Exception e) {
-                                throw new RuntimeException(StrUtil.format("获取MD5读取初始化文件【{}】异常！", script), e);
                             }
                         }
-
-                        log.info("执行 {}【{}】SQL脚本 [{}]！", execScript, databaseType, s);
+                        log.info("【{}】扫描【{}】执行【{}】脚本【{}】！", execScript, s, databaseType, resource.getFilename());
                         List<String> strings = this.inputStreamToString(resource, s, acTableProperties);
                         for (String sql : strings) {
                             JdbcUtil.executeSql(connection, sql);
@@ -198,9 +210,10 @@ public class AcTableService {
                                 JdbcUtil.executeSql(connection, AcTableConstants.UPDATE_HISTORY, md5, DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"), fileName, execScript);
                             }
                         }
-                        log.info("执行 {}【{}】SQL脚本【{}】完成！", execScript, databaseType, s);
+
+                        log.info("【{}】扫描【{}】执行【{}】脚本【{}】 完成！", execScript, s, databaseType, resource.getFilename());
                     } else {
-                        log.warn(" {}【{}】SQL脚本【{}】不存在！", execScript, databaseType, s);
+                        log.info("【{}】扫描【{}】执行【{}】脚本【{}】 不存在！", execScript, s, databaseType, resource.getFilename());
                     }
                 }
             } catch (IOException | SQLException e) {

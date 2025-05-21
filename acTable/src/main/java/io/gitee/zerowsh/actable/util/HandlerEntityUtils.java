@@ -133,7 +133,11 @@ public class HandlerEntityUtils {
             //swagger 兼容获取表注释
             ApiModel apiModel = AnnotationUtils.getAnnotationClassSafe(cls, () -> ApiModel.class);
             if (Objects.nonNull(apiModel)) {
-                comment = apiModel.value();
+                if(StrUtil.isNotBlank(apiModel.description())){
+                    comment = apiModel.description();
+                }else{
+                    comment = apiModel.value();
+                }
             }
 
             Schema schema = AnnotationUtils.getAnnotationClassSafe(cls, () -> Schema.class);

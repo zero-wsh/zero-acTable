@@ -3,27 +3,87 @@ package io.gitee.zerowsh.actable.service;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static io.gitee.zerowsh.actable.constant.AcTableConstants.DOUBLE_QUOTES;
+import static io.gitee.zerowsh.actable.constant.AcTableConstants.SINGLE_QUOTE;
 
 /**
  * 所有数据库基类
  *
  * @author zero
  */
-public interface DatabaseService {
+@Slf4j
+public abstract class DatabaseService {
+    public String leftSymbol;// 左包裹符号
+    public String rightSymbol;// 右包裹符号
+
+    // 强制子类通过构造函数传递符号
+    public DatabaseService(String leftSymbol, String rightSymbol) {
+        this.leftSymbol = leftSymbol;
+        this.rightSymbol = rightSymbol;
+    }
 
     /**
      * 自增就是主键
      *
      * @return
      */
-    default boolean autoincrementIsPk() {
+    public boolean autoincrementIsPk() {
         return false;
+    }
+
+    /**
+     * 拼接sql时忽略length和decimalLength
+     *
+     * @return 需要忽略的字段类型集合
+     */
+    abstract public Set<String> ignoreLengthAndDecimalLength();
+
+    /**
+     * 默认值处理
+     *
+     * @return
+     */
+    public String defaultValue(String var) {
+        if (StrUtil.isNotBlank(var)) {
+            if (var.startsWith(SINGLE_QUOTE) && var.endsWith(SINGLE_QUOTE)) {
+                return StrUtil.removeSuffix(StrUtil.removePrefix(var, SINGLE_QUOTE), SINGLE_QUOTE);
+            } else if (var.startsWith(DOUBLE_QUOTES) && var.endsWith(DOUBLE_QUOTES)) {
+                return StrUtil.removeSuffix(StrUtil.removePrefix(var, DOUBLE_QUOTES), DOUBLE_QUOTES);
+            }
+        }
+        return var;
+    }
+
+
+    /**
+     * 删除关键字处理
+     *
+     * @param var
+     * @return
+     */
+    public String delKeywordHandle(String var) {
+        if (var.startsWith(leftSymbol) && var.endsWith(rightSymbol)) {
+            return StrUtil.removeSuffix(StrUtil.removePrefix(var, leftSymbol), rightSymbol);
+        }
+        return var;
+    }
+
+    /**
+     * 增加关键字处理
+     *
+     * @param var
+     * @return
+     */
+    public String addKeywordHandle(String var) {
+        return leftSymbol + var + rightSymbol;
     }
 
     /**
@@ -32,7 +92,7 @@ public interface DatabaseService {
      * @param tableInfo
      * @return
      */
-    List<String> getCreateTableSql(TableInfo tableInfo);
+    abstract public List<String> getCreateTableSql(TableInfo tableInfo);
 
     /**
      * 获取修改表的sql语句
@@ -44,27 +104,12 @@ public interface DatabaseService {
      * @param modelEnums
      * @return
      */
-    List<String> getUpdateTableSql(TableInfo tableInfo,
-                                   Map<String, TableColumnInfo> tableColumnInfoMap,
-                                   List<ConstraintInfo> constraintInfoList,
-                                   List<ConstraintInfo> defaultInfoList,
-                                   ModelEnums modelEnums);
+    abstract public List<String> getUpdateTableSql(TableInfo tableInfo,
+                                                   Map<String, TableInfo.PropertyInfo> tableColumnInfoMap,
+                                                   List<ConstraintInfo> constraintInfoList,
+                                                   List<ConstraintInfo> defaultInfoList,
+                                                   ModelEnums modelEnums);
 
-    /**
-     * 删除关键字处理
-     *
-     * @param var
-     * @return
-     */
-    String delKeywordHandle(String var);
-
-    /**
-     * 增加关键字处理
-     *
-     * @param var
-     * @return
-     */
-    String addKeywordHandle(String var);
 
     /**
      * 字段类型转数据库类型
@@ -72,7 +117,7 @@ public interface DatabaseService {
      * @param fieldType
      * @return
      */
-    default String javaTypeTurnColumnType(String fieldType) {
+    public String javaTypeTurnColumnType(String fieldType) {
         return this.javaTypeTurnColumnType(fieldType, ColumnTypeConstants.DEFAULT_VALUE);
     }
 
@@ -85,28 +130,14 @@ public interface DatabaseService {
      * @param columnType
      * @return
      */
-    String javaTypeTurnColumnType(String fieldType, String columnType);
-
-    /**
-     * 左边关键字
-     *
-     * @return
-     */
-    String leftKeyword();
-
-    /**
-     * 右边关键字
-     *
-     * @return
-     */
-    String rightKeyword();
+    abstract public String javaTypeTurnColumnType(String fieldType, String columnType);
 
     /**
      * 获取所有表SQL
      *
      * @return
      */
-    String getAllTableSql();
+    abstract public String getAllTableSql();
 
     /**
      * 如果存在删除表SQL
@@ -114,7 +145,7 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    default String dropTableSql(String tableName) {
+    public String dropTableSql(String tableName) {
         return "DROP TABLE IF EXISTS " + this.addKeywordHandle(tableName);
     }
 
@@ -124,17 +155,18 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    String existTableSql(String tableName);
+    abstract public String existTableSql(String tableName);
 
     /**
      * 建表SQL
      *
      * @param tableName
      * @param columnInfo
+     * @param suffixInfo 后缀信息比如：COMMENT='表注释'
      * @return
      */
-    default String addTableSql(String tableName, String columnInfo, String tableComment) {
-        return StrUtil.format("CREATE TABLE {} ({})", this.addKeywordHandle(tableName), columnInfo);
+    public String addTableSql(String tableName, String columnInfo, String suffixInfo) {
+        return StrUtil.format("CREATE TABLE {} ({}){}", this.addKeywordHandle(tableName), columnInfo, suffixInfo);
     }
 
     /**
@@ -143,7 +175,7 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    String getTableStructureSql(String tableName);
+    abstract public String getTableStructureSql(String tableName);
 
     /**
      * 获取表约束SQL
@@ -154,7 +186,7 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    String getConstraintInfoSql(String tableName);
+    abstract public String getConstraintInfoSql(String tableName);
 
     /**
      * 获取修改主键SQL
@@ -165,7 +197,7 @@ public interface DatabaseService {
      * @param tableExistPk
      * @return
      */
-    String getUpdatePkSql(String tableName, String constraintName, List<String> columnList,boolean tableExistPk);
+    abstract public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk);
 
     /**
      * 获取删除主键SQL
@@ -173,7 +205,7 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    String getDropPkSql(String tableName);
+    abstract public String getDropPkSql(String tableName);
 
     /**
      * 获取表默认值约束SQL
@@ -181,7 +213,7 @@ public interface DatabaseService {
      * @param tableName
      * @return
      */
-    String getDefaultInfoSql(String tableName);
+    abstract public String getDefaultInfoSql(String tableName);
 
     /**
      * 添加表注释SQL
@@ -190,7 +222,7 @@ public interface DatabaseService {
      * @param comment
      * @return
      */
-    String addTableCommentSql(String tableName, String comment);
+    abstract public String addTableCommentSql(String tableName, String comment);
 
     /**
      * 添加字段注释SQL
@@ -200,7 +232,7 @@ public interface DatabaseService {
      * @param comment
      * @return
      */
-    String addColumnCommentSql(String tableName, String columnName, String comment);
+    abstract public String addColumnCommentSql(String tableName, String columnName, String comment);
 
     /**
      * 添加主键SQL
@@ -210,7 +242,7 @@ public interface DatabaseService {
      * @param columnList
      * @return
      */
-    String addPrimaryKeySql(String tableName, String constraintName, List<String> columnList);
+    abstract public String addPrimaryKeySql(String tableName, String constraintName, List<String> columnList);
 
     /**
      * 添加索引SQL
@@ -220,7 +252,7 @@ public interface DatabaseService {
      * @param columns
      * @return
      */
-    String addIndexSql(String tableName, String indexName, List<TableInfo.Index> columns);
+    abstract public String addIndexSql(String tableName, String indexName, List<TableInfo.Index> columns);
 
     /**
      * 添加唯一索引SQL
@@ -230,7 +262,7 @@ public interface DatabaseService {
      * @param columns
      * @return
      */
-    String addUniqueIndexSql(String tableName, String constraintName, List<TableInfo.Index> columns);
+    abstract public String addUniqueIndexSql(String tableName, String constraintName, List<TableInfo.Index> columns);
 
     /**
      * 添加唯一约束SQL
@@ -240,7 +272,7 @@ public interface DatabaseService {
      * @param columns
      * @return
      */
-    String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns);
+    abstract public String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns);
 
 
     /**
@@ -250,7 +282,7 @@ public interface DatabaseService {
      * @param tableComment
      * @return
      */
-    String getUpdateTableCommentSql(String tableName, String tableComment);
+    abstract public String getUpdateTableCommentSql(String tableName, String tableComment);
 
     /**
      * 获取修改列注释SQL
@@ -260,7 +292,7 @@ public interface DatabaseService {
      * @param columnComment
      * @return
      */
-    String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment);
+    abstract public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment);
 
     /**
      * 新增列
@@ -269,7 +301,7 @@ public interface DatabaseService {
      * @param columnNameDetails
      * @return
      */
-    String getAddColumnSql(String tableName, StringBuilder columnNameDetails);
+    abstract public String getAddColumnSql(String tableName, StringBuilder columnNameDetails);
 
     /**
      * 修改列
@@ -278,7 +310,7 @@ public interface DatabaseService {
      * @param columnNameDetails
      * @return
      */
-    String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails);
+    abstract public String getUpdateColumnSql(String tableName, String columnNameDetails);
 
     /**
      * 删除列
@@ -287,7 +319,7 @@ public interface DatabaseService {
      * @param columnName
      * @return
      */
-    String getDelColumnSql(String tableName, String columnName);
+    abstract public String getDelColumnSql(String tableName, String columnName);
 
     /**
      * 修改列名称
@@ -298,7 +330,7 @@ public interface DatabaseService {
      * @param columnNameDetails
      * @return
      */
-    String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails);
+    abstract public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails);
 
     /**
      * 删除索引（普通索引+唯一索引）
@@ -306,7 +338,7 @@ public interface DatabaseService {
      * @param indexName
      * @return
      */
-    String getDropIndexSql(String indexName);
+    abstract public String getDropIndexSql(String indexName);
 
     /**
      * 删除约束（唯一约束）
@@ -315,7 +347,7 @@ public interface DatabaseService {
      * @param constraintName
      * @return
      */
-    String getDropConstraintSql(String tableName, String constraintName);
+    abstract public String getDropConstraintSql(String tableName, String constraintName);
 
 
 }

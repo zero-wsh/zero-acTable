@@ -50,16 +50,20 @@ public class AcTableProperties {
      */
     private String endFlag = StringConstants.SQL_SPLIT_STR;
     /**
-     * 是否将结束标识符当作sql的一部分，默认false
+     * 是否将结束标识符当作sql的一部分，默认true
      */
-    private Boolean sqlPart = false;
+    private Boolean sqlPart = true;
     /**
-     * 是否打印执行的sql语句，默认true
+     * 是否打印执行的sql语句，默认false
      */
-    private Boolean print = true;
+    private Boolean print = false;
     /**
      * 历史表处理：默认什么都不做
      */
     private HistoryEnums history = HistoryEnums.NONE;
+    /**
+     * 在建表语句时忽略length（字段长度）和decimalLength（字段精度）的数据库类型，多个使用逗号隔开
+     */
+    private String ignoreLengthAndDecimalLength;
 
 }

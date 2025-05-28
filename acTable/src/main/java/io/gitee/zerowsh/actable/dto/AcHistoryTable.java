@@ -23,10 +23,10 @@ public class AcHistoryTable {
     @AcColumn(comment = "主键", isKey = true, isAutoIncrement = true, type = ColumnTypeConstants.BIGINT)
     private Long id;
 
-    @AcColumn(comment = "脚本文件名称")
+    @AcColumn(comment = "脚本文件名称", length = 255)
     private String fileName;
 
-    @AcColumn(comment = "脚本文件md5")
+    @AcColumn(comment = "脚本文件md5", length = 255)
     private String fileMd5;
 
     @AcColumn(comment = "创建时间", length = 0)

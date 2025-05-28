@@ -15,6 +15,8 @@ import java.util.List;
 public class TableInfo {
     private String name;
     private String comment;
+    //表编码 暂时没用
+    private String characterSetName;
     /**
      * 主键集合
      */
@@ -43,18 +45,25 @@ public class TableInfo {
     @AllArgsConstructor
     public static class PropertyInfo {
         private String tableName;
+        //表注释
+        private String tableComment;
+        //表编码 暂时没用
+        private String tableCharacterSetName;
+        //字段名称
         private String columnName;
+        private String columnComment;
+        //字段编码 暂时没用
+        private String columnCharacterSetName;
         private String oldColumnName;
         private boolean isKey;
         private int order;
-        private String type;
+        private String typeStr;
         private boolean typeLimit;
         private long length;
-        private int decimalLength;
+        private long decimalLength;
         private boolean isNull;
         private boolean isAutoIncrement;
         private String defaultValue;
-        private String columnComment;
     }
 
     @Getter

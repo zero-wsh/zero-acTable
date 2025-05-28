@@ -7,7 +7,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.HistoryEnums;
@@ -125,7 +124,7 @@ public class AcTableService {
                 /*
                  * 存在--改表
                  */
-                Map<String, TableColumnInfo> tableColumnInfoMap = JdbcUtil.getTableColumnInfoMap(connection, databaseService.getTableStructureSql(tableName));
+                Map<String, TableInfo.PropertyInfo> tableColumnInfoMap = JdbcUtil.getTableColumnInfoMap(connection, databaseService.getTableStructureSql(tableName));
                 List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getConstraintInfoSql(tableName));
                 //sqlserver有默认值约束
                 List<ConstraintInfo> defaultInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getDefaultInfoSql(tableName));

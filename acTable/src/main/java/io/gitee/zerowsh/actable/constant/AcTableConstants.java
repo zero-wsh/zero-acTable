@@ -11,12 +11,14 @@ public interface AcTableConstants {
      */
     String DEFAULT_VALUE = "ZERO_AC_TABLE_DEFAULT_VALUE";
 
+    String SINGLE_QUOTE = "'";
+    String DOUBLE_QUOTES = "\"";
+
     /**
      * 当实体属性没标记@Column注解时有用，字段可以为空，默认长度255、默认浮点数0
      */
     boolean COLUMN_IS_NULL_DEF = true;
-    int COLUMN_LENGTH_DEF = 255;
-    int COLUMN_DECIMAL_LENGTH_DEF = 0;
+    long NUMBER_UNDEFINED = -1L;
     String DESC = " DESC";
     String ASC = " ASC";
     int PK = 1;
@@ -53,7 +55,9 @@ public interface AcTableConstants {
     String NULL = " NULL";
     String NOT_NULL = " NOT NULL";
     String DEFAULT = " DEFAULT {}";
-    String COMMENT = " COMMENT '{}'";
+    String DEFAULT_BIT = "b'{}'";
+    String LENGTH_DECIMAL = "({},{})";
+    String LENGTH = "({})";
     String PRIMARY_KEY = " PRIMARY KEY ({}),";
     String UNIQUE_KEY = " UNIQUE KEY {} ({}),";
     String INDEX_KEY = " KEY {} ({}),";
@@ -61,13 +65,16 @@ public interface AcTableConstants {
      * 验证字符串
      */
     String COLUMN_LENGTH_VALID_STR = "表【{}】字段【{}】，【{}】类型长度【{}】存在问题，使用默认值【{}】！";
-    String COLUMN_DECIMAL_LENGTH_VALID_STR = "表【{}】字段【{}】，【{}】精度长度【{}】大于类型长度【{}】存在问题，使用类型长度【{}】！";
+    String COLUMN_DECIMAL_LENGTH_VALID_STR = "表【{}】字段【{}】，【{}】精度长度【{}】 类型长度【{}】存在问题，使用默认值【{}】！";
     String COLUMN_DUPLICATE_VALID_STR = "表【{}】，【{}】字段名或@AcColumn注解属性值【name或value】重复！";
 
     /**
      * 数据库操作部分sql
      */
-    String CREATE_TABLE = "CREATE TABLE {} ({})";
+    String CREATE_TABLE = "CREATE TABLE {} ({}) ";
+    String COMMENT = " COMMENT '{}'";
+    String COMMENT_EQ = " COMMENT='{}'";
+
     String ADD_TABLE_COMMENT = "EXEC sp_addextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String UPDATE_TABLE_COMMENT = "EXEC sp_updateextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}'";
     String DROP_TABLE_COMMENT = "EXEC sys.sp_dropextendedproperty 'MS_Description',N'SCHEMA', N'dbo', N'TABLE', N'{}'";

@@ -2,8 +2,9 @@ package io.gitee.zerowsh.actable.util;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableColumnInfo;
+import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,10 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zero
@@ -60,26 +58,32 @@ public class JdbcUtil {
      * @param obj
      * @return 查询返回List集合
      */
-    public static Map<String, TableColumnInfo> getTableColumnInfoMap(Connection conn, String sql, Object... obj) throws SQLException {
-        Map<String, TableColumnInfo> resultMap = new HashMap<>();
+    public static Map<String, TableInfo.PropertyInfo> getTableColumnInfoMap(Connection conn, String sql, Object... obj) throws SQLException {
+        Map<String, TableInfo.PropertyInfo> resultMap = new HashMap<>();
         try (PreparedStatement ps = handlePrepareStatement(conn, sql, obj);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                TableColumnInfo tableColumnInfo = new TableColumnInfo();
-                tableColumnInfo.setTableName(rs.getString("tableName"));
+                TableInfo.PropertyInfo propertyInfo = new TableInfo.PropertyInfo();
+                propertyInfo.setTableName(rs.getString("tableName"));
                 String tableComment = rs.getString("tableComment");
-                tableColumnInfo.setTableComment(StrUtil.isBlank(tableComment) ? "" : tableComment);
-                tableColumnInfo.setColumnName(rs.getString("columnName"));
+                propertyInfo.setTableComment(StrUtil.isBlank(tableComment) ? "" : tableComment);
+                propertyInfo.setColumnName(rs.getString("columnName"));
                 String columnComment = rs.getString("columnComment");
-                tableColumnInfo.setColumnComment(StrUtil.isBlank(columnComment) ? "" : columnComment);
-                tableColumnInfo.setKey(rs.getBoolean("isKey"));
-                tableColumnInfo.setTypeStr(rs.getString("typeStr"));
-                tableColumnInfo.setLength(rs.getLong("length"));
-                tableColumnInfo.setDecimalLength(rs.getInt("decimalLength"));
-                tableColumnInfo.setNull(rs.getBoolean("isNull"));
-                tableColumnInfo.setAutoIncrement(rs.getBoolean("isAutoIncrement"));
-                tableColumnInfo.setDefaultValue(rs.getString("defaultValue"));
-                resultMap.put(tableColumnInfo.getColumnName(), tableColumnInfo);
+                propertyInfo.setColumnComment(StrUtil.isBlank(columnComment) ? "" : columnComment);
+                propertyInfo.setKey(rs.getBoolean("isKey"));
+                propertyInfo.setTypeStr(rs.getString("typeStr"));
+                propertyInfo.setLength(rs.getLong("length"));
+                propertyInfo.setDecimalLength(rs.getLong("decimalLength"));
+                propertyInfo.setNull(rs.getBoolean("isNull"));
+                propertyInfo.setAutoIncrement(rs.getBoolean("isAutoIncrement"));
+                propertyInfo.setDefaultValue(rs.getString("defaultValue"));
+                //处理length没值，decimalLength有值情况
+                if (Objects.equals(propertyInfo.getLength(), AcTableConstants.NUMBER_UNDEFINED)
+                        && !Objects.equals(propertyInfo.getDecimalLength(), AcTableConstants.NUMBER_UNDEFINED)) {
+                    propertyInfo.setLength(propertyInfo.getDecimalLength());
+                    propertyInfo.setDecimalLength(AcTableConstants.NUMBER_UNDEFINED);
+                }
+                resultMap.put(propertyInfo.getColumnName(), propertyInfo);
             }
             return resultMap;
         }

@@ -61,12 +61,12 @@ public @interface AcColumn {
     /**
      * 字段长度
      */
-    int length() default AcTableConstants.COLUMN_LENGTH_DEF;
+    long length() default AcTableConstants.NUMBER_UNDEFINED;
 
     /**
      * 小数位数
      */
-    int decimalLength() default AcTableConstants.COLUMN_DECIMAL_LENGTH_DEF;
+    long decimalLength() default AcTableConstants.NUMBER_UNDEFINED;
 
     /**
      * 是否为可以为null，true是可以，false是不可以，默认为true

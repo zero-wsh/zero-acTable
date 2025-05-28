@@ -133,9 +133,9 @@ public class HandlerEntityUtils {
             //swagger 兼容获取表注释
             ApiModel apiModel = AnnotationUtils.getAnnotationClassSafe(cls, () -> ApiModel.class);
             if (Objects.nonNull(apiModel)) {
-                if(StrUtil.isNotBlank(apiModel.description())){
+                if (StrUtil.isNotBlank(apiModel.description())) {
                     comment = apiModel.description();
-                }else{
+                } else {
                     comment = apiModel.value();
                 }
             }
@@ -173,7 +173,7 @@ public class HandlerEntityUtils {
         builder.comment(StrUtil.isBlank(tableComment) ? "" : tableComment);
         getFieldInfo(cls, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                 uniqueInfoList, propertyList, acTable,
-                null, acTableProperties, databaseService, tableName);
+                null, acTableProperties, databaseService, tableName,tableComment);
 
 
         //定义在类上的修改字段注解
@@ -310,7 +310,8 @@ public class HandlerEntityUtils {
                                      ExcludeSuperField excludeSuperField,
                                      AcTableProperties acTableProperties,
                                      DatabaseService databaseService,
-                                     String tableName) {
+                                     String tableName,
+                                     String tableComment) {
         TurnEnums turn = acTableProperties.getTurn();
         for (Field field : cls.getDeclaredFields()) {
             TableInfo.PropertyInfo.PropertyInfoBuilder propertyInfoBuilder = TableInfo.PropertyInfo.builder();
@@ -386,13 +387,14 @@ public class HandlerEntityUtils {
                 propertyInfoBuilder.columnName(columnName)
                         .oldColumnName(columnName)
                         .tableName(tableName)
+                        .tableComment(tableComment)
                         .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
-                        .decimalLength(COLUMN_DECIMAL_LENGTH_DEF)
+                        .decimalLength(NUMBER_UNDEFINED)
                         .isNull(isNull)
                         .isKey(isKey)
                         .isAutoIncrement(isAutoIncrement)
-                        .length(COLUMN_LENGTH_DEF)
-                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName()))
+                        .length(NUMBER_UNDEFINED)
+                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName()))
                         .typeLimit(true);
             } else {
                 //从自定义注解获取
@@ -454,6 +456,7 @@ public class HandlerEntityUtils {
                 propertyInfoBuilder.columnName(columnName)
                         .oldColumnName(oldColumnName)
                         .tableName(tableName)
+                        .tableComment(tableComment)
                         .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(acColumn.decimalLength())
                         .defaultValue(judgeIsNull(acColumn.defaultValue()))
@@ -461,8 +464,8 @@ public class HandlerEntityUtils {
                         .isKey(isKey)
                         .order(acColumn.order())
                         .isNull(isNull)
-                        .length(acColumn.length())
-                        .type(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
+                        .length(Long.valueOf(acColumn.length()))
+                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
                         .typeLimit(acColumn.typeLimit());
             }
             propertyInfoList.add(propertyInfoBuilder.build());
@@ -472,7 +475,7 @@ public class HandlerEntityUtils {
         if (Objects.nonNull(superclass)) {
             getFieldInfo(superclass, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                     uniqueInfoList, propertyList, acTable,
-                    cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName);
+                    cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName,tableComment);
         }
     }
 

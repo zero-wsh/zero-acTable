@@ -18,9 +18,9 @@ public @interface Index {
      * 索引、唯一索引、唯一约束
      * 同一个字段只需要（UK_IDX、UK）二选一
      */
+    @Getter
     enum IndexEnums {
         IDX("idx_"), UK_IDX("uk_idx_"), UK("uk_");
-        @Getter
         private final String prefix;
 
         IndexEnums(String prefix) {

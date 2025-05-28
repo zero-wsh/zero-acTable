@@ -7,8 +7,9 @@ import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableColumnInfo;
+import io.gitee.zerowsh.actable.dto.TableInfo.PropertyInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
+import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.service.DatabaseService;
@@ -27,7 +28,15 @@ import static io.gitee.zerowsh.actable.constant.StringConstants.RIGHT_BRACKET;
  * @author zero
  */
 @Slf4j
-public class DmImpl implements DatabaseService {
+public class DmImpl extends DatabaseService {
+    public DmImpl() {
+        super("\"", "\"");
+    }
+
+    @Override
+    public Set<String> ignoreLengthAndDecimalLength() {
+        return Collections.emptySet();
+    }
 
     /**
      * 获取创建表sql，达梦数据库支持创建表时直接指定列注释
@@ -166,7 +175,7 @@ public class DmImpl implements DatabaseService {
      */
     @Override
     public List<String> getUpdateTableSql(TableInfo tableInfo,
-                                          Map<String, TableColumnInfo> tableColumnInfoMap,
+                                          Map<String, TableInfo.PropertyInfo> tableColumnInfoMap,
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
@@ -178,8 +187,8 @@ public class DmImpl implements DatabaseService {
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String oldColumnName = propertyInfo.getOldColumnName();
-            TableColumnInfo tableColumnInfo = tableColumnInfoMap.get(columnName);
-            TableColumnInfo oldTableColumnInfo = tableColumnInfoMap.get(oldColumnName);
+            TableInfo.PropertyInfo tableColumnInfo = tableColumnInfoMap.get(columnName);
+            TableInfo.PropertyInfo oldTableColumnInfo = tableColumnInfoMap.get(oldColumnName);
             if (!Objects.equals(columnName, oldColumnName)) {
                 if (Objects.nonNull(tableColumnInfo) && Objects.nonNull(oldTableColumnInfo)) {
                     //如果columnName、oldColumnName在数据库中都有，存在问题
@@ -216,7 +225,7 @@ public class DmImpl implements DatabaseService {
             }
             count++;
             //修改--判断类型、是否为空、是否自增、默认值 ,这些是否存在修改
-            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getType())))
+            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getTypeStr())))
                     || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement()
                     && propertyInfo.isNull()))
                     || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
@@ -239,7 +248,7 @@ public class DmImpl implements DatabaseService {
                             typeStr = typeStr + StrUtil.COMMA + decimalLength1;
                         }
                         typeStr = typeStr + RIGHT_BRACKET;
-                        if (!StrUtil.equalsIgnoreCase(typeStr, propertyInfo.getType())) {
+                        if (!StrUtil.equalsIgnoreCase(typeStr, propertyInfo.getTypeStr())) {
                             existUpdate = true;
                         }
                     }
@@ -262,7 +271,7 @@ public class DmImpl implements DatabaseService {
                 //存在修改
                 StringBuilder propertySb = new StringBuilder();
                 this.splicingColumnInfo(propertySb, propertyInfo, tableName);
-                resultList.add(this.getUpdateColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
+                resultList.add(this.getUpdateColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString()));
 
             }
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
@@ -366,8 +375,8 @@ public class DmImpl implements DatabaseService {
         if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
             //如果数据库有但是实体类没有，进行删除
             if (CollectionUtil.isNotEmpty(tableColumnInfoMap)) {
-                for (Map.Entry<String, TableColumnInfo> map : tableColumnInfoMap.entrySet()) {
-                    TableColumnInfo value = map.getValue();
+                for (Map.Entry<String, TableInfo.PropertyInfo> map : tableColumnInfoMap.entrySet()) {
+                    TableInfo.PropertyInfo value = map.getValue();
                     resultList.add(this.getDelColumnSql(value.getTableName(), value.getColumnName()));
                 }
             }
@@ -390,36 +399,9 @@ public class DmImpl implements DatabaseService {
     }
 
     @Override
-    public String delKeywordHandle(String var) {
-        //左右都相同的处理
-        String leftKeyword = this.leftKeyword();
-        if (var.startsWith(leftKeyword) && var.endsWith(leftKeyword)) {
-            var = var.replace(leftKeyword, "");
-        }
-        return var;
-    }
-
-    @Override
-    public String addKeywordHandle(String var) {
-        //左右都相同的处理
-        String leftKeyword = this.leftKeyword();
-        return leftKeyword + var + leftKeyword;
-    }
-
-    @Override
     public String javaTypeTurnColumnType(String fieldType, String columnType) {
         return Objects.equals(columnType, ColumnTypeConstants.DEFAULT_VALUE)
                 ? JavaTypeTurnColumnTypeEnums.getDmByValue(fieldType) : columnType;
-    }
-
-    @Override
-    public String leftKeyword() {
-        return "\"";
-    }
-
-    @Override
-    public String rightKeyword() {
-        return this.leftKeyword();
     }
 
     /**
@@ -430,7 +412,7 @@ public class DmImpl implements DatabaseService {
      * @param tableName
      */
     private void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
-        String type = propertyInfo.getType();
+        String type = propertyInfo.getTypeStr();
         String columnName = propertyInfo.getColumnName();
         boolean typeLimit = propertyInfo.isTypeLimit();
         propertySb.append(StrPool.CRLF).append(this.addKeywordHandle(columnName)).append(StrPool.C_SPACE);
@@ -479,7 +461,7 @@ public class DmImpl implements DatabaseService {
     private ColumnTypeInfo handleType(TableInfo.PropertyInfo propertyInfo) {
         long length = propertyInfo.getLength();
         long decimalLength = propertyInfo.getDecimalLength();
-        String type = propertyInfo.getType();
+        String type = propertyInfo.getTypeStr();
         String columnName = propertyInfo.getColumnName();
         String tableName = propertyInfo.getTableName();
         ColumnTypeInfo columnTypeInfo = new ColumnTypeInfo();
@@ -672,7 +654,7 @@ public class DmImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails) {
+    public String getUpdateColumnSql(String tableName, String columnNameDetails) {
         //alter table "TABLE_1" modify "COLUMN_2" VARCHAR(50)  DEFAULT 22  not null
         return StrUtil.format("ALTER TABLE {} MODIFY {}",
                 this.addKeywordHandle(tableName), columnNameDetails);

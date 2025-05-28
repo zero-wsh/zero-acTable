@@ -5,7 +5,6 @@ import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableColumnInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
@@ -25,8 +24,16 @@ import static io.gitee.zerowsh.actable.constant.StringConstants.RIGHT_BRACKET;
  * @author zero
  */
 @Slf4j
-public class SqlServerImpl implements DatabaseService {
+public class SqlServerImpl extends DatabaseService {
+    public SqlServerImpl() {
+        super("[", "]");
+    }
 
+
+    @Override
+    public Set<String> ignoreLengthAndDecimalLength() {
+        return Collections.emptySet();
+    }
 
     /**
      * 获取创建表sql
@@ -188,7 +195,7 @@ public class SqlServerImpl implements DatabaseService {
      * @param resultList
      * @param tableName
      */
-    private static void handleColumnComment(TableColumnInfo tableColumnInfo, TableInfo.PropertyInfo propertyInfo, List<String> resultList, String tableName) {
+    private static void handleColumnComment(TableInfo.PropertyInfo tableColumnInfo, TableInfo.PropertyInfo propertyInfo, List<String> resultList, String tableName) {
         //判断是否调整了备注
         if (!Objects.equals(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
             if (Objects.isNull(tableColumnInfo.getColumnComment())) {
@@ -267,12 +274,12 @@ public class SqlServerImpl implements DatabaseService {
      */
     @Override
     public List<String> getUpdateTableSql(TableInfo tableInfo,
-                                          Map<String, TableColumnInfo> tableColumnInfoMap,
+                                          Map<String, TableInfo.PropertyInfo> tableColumnInfoMap,
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
 //        List<String> resultList = new ArrayList<>();
-//        TableColumnInfo firstTableColumnInfo = tableColumnInfoList.get(0);
+//        TableInfo.PropertyInfo firstTableColumnInfo = tableColumnInfoList.get(0);
 //        String tableName = firstTableColumnInfo.getTableName();
 //        List<ConstraintInfo> constraintInfoNewList = new ArrayList<>();
 //        List<ConstraintInfo> defaultInfoNewList = new ArrayList<>();
@@ -305,12 +312,12 @@ public class SqlServerImpl implements DatabaseService {
 //        boolean idxFlag = false;
 //        boolean ukFlag = false;
 //
-//        for (TableColumnInfo tableColumnInfo : tableColumnInfoList) {
+//        for (TableInfo.PropertyInfo tableColumnInfo : tableColumnInfoList) {
 //            boolean flag = false;
 //            Iterator<TableInfo.PropertyInfo> it = propertyInfoList.iterator();
 //            while (it.hasNext()) {
 //                TableInfo.PropertyInfo propertyInfo = it.next();
-//                String type = propertyInfo.getType();
+//                String type = propertyInfo.getTypeStr();
 //                if (Objects.equals(tableColumnInfo.getColumnName(), propertyInfo.getColumnName())) {
 //                    //默认值
 //                    boolean defExistUpdate = !(Objects.equals(propertyInfo.getDefaultValue(), tableColumnInfo.getDefaultValue())
@@ -526,37 +533,11 @@ public class SqlServerImpl implements DatabaseService {
         return null;
     }
 
-    @Override
-    public String delKeywordHandle(String var) {
-        String leftKeyword = this.leftKeyword();
-        String rightKeyword = this.rightKeyword();
-        if (var.startsWith(leftKeyword) && var.endsWith(rightKeyword)) {
-            var = var.replace(leftKeyword, "")
-                    .replace(rightKeyword, "");
-        }
-        return var;
-    }
-
-    @Override
-    public String addKeywordHandle(String var) {
-        return this.leftKeyword() + var + this.rightKeyword();
-    }
-
 
     @Override
     public String javaTypeTurnColumnType(String fieldType, String columnType) {
         return Objects.equals(columnType, ColumnTypeConstants.DEFAULT_VALUE)
                 ? JavaTypeTurnColumnTypeEnums.getSqlServerByValue(fieldType) : columnType;
-    }
-
-    @Override
-    public String leftKeyword() {
-        return "[";
-    }
-
-    @Override
-    public String rightKeyword() {
-        return "]";
     }
 
     @Override
@@ -600,7 +581,7 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList,boolean tableExistPk) {
+    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk) {
         return null;
     }
 
@@ -663,7 +644,7 @@ public class SqlServerImpl implements DatabaseService {
     }
 
     @Override
-    public String getUpdateColumnSql(String tableName, StringBuilder columnNameDetails) {
+    public String getUpdateColumnSql(String tableName, String columnNameDetails) {
         return null;
     }
 
@@ -883,7 +864,7 @@ public class SqlServerImpl implements DatabaseService {
      * @param tableName
      */
     private static void splicingColumnType(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
-        String type = propertyInfo.getType();
+        String type = propertyInfo.getTypeStr();
         long length = propertyInfo.getLength();
         long decimalLength = propertyInfo.getDecimalLength();
         String columnName = propertyInfo.getColumnName();

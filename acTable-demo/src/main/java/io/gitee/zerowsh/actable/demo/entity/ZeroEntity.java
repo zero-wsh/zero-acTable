@@ -35,10 +35,10 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, length = 4, isNull = false, isKey = true)
+    @AcColumn(type = ColumnTypeConstants.INT,  isNull = false,isKey = true)
     private Integer zero;
 
-    @AcColumn(oldName = "test1", value = "test1", defaultValue = "'test'")
+    @AcColumn(oldName = "test11", value = "test1", defaultValue = "'test'")
     private String test1;
     @AcColumn(value = "test2", length = 1000)
     private String test2;
@@ -46,7 +46,7 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(oldName = "test3", value = "test3")
     private Short test3;
 
-    @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "1")
+    @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "b'1'", length = 1)
     private Short test222;
 
 

@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.hutool.core.util.StrUtil.COMMA;
 
@@ -79,11 +80,13 @@ public class AcTableService {
             ModelEnums modelEnums = acTableProperties.getModel();
             List<String> executeSqlList = new ArrayList<>();
             this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseService);
+            if (CollectionUtil.isEmpty(executeSqlList)) {
+                log.info(StrUtil.format("自动建表未发现实体类有任何改动列！", databaseType));
+                return;
+            }
             log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
-            if (CollectionUtil.isNotEmpty(executeSqlList)) {
-                for (String sql : executeSqlList) {
-                    JdbcUtil.executeSql(connection, sql);
-                }
+            for (String sql : executeSqlList) {
+                JdbcUtil.executeSql(connection, sql);
             }
             log.info(StrUtil.format("完成【{}】自动建表！", databaseType));
             this.executeScript(connection, acTableProperties, acTableProperties.getAfterScript(), databaseType, "After");
@@ -108,14 +111,15 @@ public class AcTableService {
                                  List<String> executeSqlList,
                                  DatabaseService databaseService) throws SQLException {
         if (Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)) {
-            for (TableInfo tableInfo : tableInfoList) {
-                JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableInfo.getName()));
+            if(CollectionUtil.isNotEmpty(tableInfoList)) {
+                List<String> tableNameList = tableInfoList.stream().map(TableInfo::getName).collect(Collectors.toList());
+                JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableNameList));
             }
         }
         if (Objects.equals(modelEnums, ModelEnums.DEL_ALL_AND_ADD)) {
             List<String> tableNameList = JdbcUtil.getTableNameList(connection, databaseService.getAllTableSql());
-            for (String tableName : tableNameList) {
-                JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableName));
+            if(CollectionUtil.isNotEmpty(tableNameList)){
+                JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableNameList));
             }
         }
         for (TableInfo tableInfo : tableInfoList) {

@@ -465,8 +465,7 @@ public class HandlerEntityUtils {
                         .order(acColumn.order())
                         .isNull(isNull)
                         .length(Long.valueOf(acColumn.length()))
-                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
-                        .typeLimit(acColumn.typeLimit());
+                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()));
             }
             propertyInfoList.add(propertyInfoBuilder.build());
             propertyMap.put(fieldName, columnName);

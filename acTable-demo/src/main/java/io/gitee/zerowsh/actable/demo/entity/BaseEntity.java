@@ -35,7 +35,7 @@ public abstract class BaseEntity implements Serializable {
     @ApiModelProperty("创建人ID")
     private Integer createUserId;
 
-    @AcColumn(order = 100)
+    @AcColumn(order = 100, length = 0)
     @TableField(fill = FieldFill.INSERT)
     @ApiModelProperty("创建时间")
     private Date createTime;
@@ -45,7 +45,7 @@ public abstract class BaseEntity implements Serializable {
     @ApiModelProperty("修改人ID")
     private Integer updateUserId;
 
-    @AcColumn(order = 100)
+    @AcColumn(order = 100, length = 0)
     @TableField(fill = FieldFill.INSERT_UPDATE)
     @Schema(description = "修改时间")
     private Date updateTime;

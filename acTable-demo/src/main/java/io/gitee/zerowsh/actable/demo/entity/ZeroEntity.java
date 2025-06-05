@@ -35,10 +35,10 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT,  isNull = false,isKey = true)
+    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
     private Integer zero;
 
-    @AcColumn(oldName = "test11", value = "test1", defaultValue = "'test'")
+    @AcColumn(oldName = "test11", value = "test1", defaultValue = "'test'", length = 255)
     private String test1;
     @AcColumn(value = "test2", length = 1000)
     private String test2;
@@ -54,7 +54,7 @@ public class ZeroEntity extends BaseEntity {
     private BigDecimal ddd;
 
 
-    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)", typeLimit = false)
+    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)")
     private BigDecimal cc;
 
 
@@ -62,7 +62,7 @@ public class ZeroEntity extends BaseEntity {
     private Date date;
 
 
-    @AcColumn(comment = "测试4", type = ColumnTypeConstants.DATETIME)
+    @AcColumn(comment = "测试4", type = ColumnTypeConstants.DATETIME, length = 0)
     private Date dateTime;
 
 
@@ -79,7 +79,10 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(comment = "测试7", length = 1)
     private Boolean isPass;
 
-    @AcColumn(comment = "退款时间", defaultValue = "CURRENT_TIMESTAMP")
+    @AcColumn(comment = "退款时间", defaultValue = "CURRENT_TIMESTAMP", length = 0)
     private Timestamp refundTime; // 退款时间
+
+    @AcColumn(isNull = false, type = ColumnTypeConstants.TINYINT)
+    private Integer level;
 
 }

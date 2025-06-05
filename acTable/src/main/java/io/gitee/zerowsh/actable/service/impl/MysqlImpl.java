@@ -50,6 +50,8 @@ public class MysqlImpl extends DatabaseService {
             add(TEXT);
             add(DATE);
             add(JSON);
+            add(TINYINT);
+            add(SMALLINT);
         }};
         String ignoreLength = acTableProperties.getIgnoreLengthAndDecimalLength();
         if (StrUtil.isNotBlank(ignoreLength)) {
@@ -635,9 +637,6 @@ public class MysqlImpl extends DatabaseService {
                             log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, typeStr, length, 1);
                             length = 1;
                         }
-                        break;
-                    case SMALLINT:
-                        length = 5;
                         break;
                 }
             }

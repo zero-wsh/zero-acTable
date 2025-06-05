@@ -1,5 +1,7 @@
 package io.gitee.zerowsh.actable.service;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.StrUtil;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
@@ -142,11 +144,12 @@ public abstract class DatabaseService {
     /**
      * 如果存在删除表SQL
      *
-     * @param tableName
+     * @param tableNameList
      * @return
      */
-    public String dropTableSql(String tableName) {
-        return "DROP TABLE IF EXISTS " + this.addKeywordHandle(tableName);
+    public String dropTableSql(List<String> tableNameList) {
+        String table = CollectionUtil.join(tableNameList, StrPool.COMMA, this::addKeywordHandle);
+        return "DROP TABLE IF EXISTS " + table;
     }
 
     /**

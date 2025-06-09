@@ -16,8 +16,8 @@ import java.util.Date;
 @Getter
 @Setter
 @TableName("t_zero")
-@AcTable(name = "t_zero", comment = "测试")
-//@UpdateColumnName(value = {"test1->test4"})
+@AcTable(comment = "测试11")
+@UpdateColumnName(value = {"test1->test4"})
 @IndexArr({
         @Index(type = Index.IndexEnums.IDX, value = "realA",
                 columnArr = {@IndexColumn(value = "realName", asc = false)
@@ -26,7 +26,7 @@ import java.util.Date;
         @Index(type = Index.IndexEnums.UK, value = "realD", columnArr = {@IndexColumn("zero")}),
         @Index(type = Index.IndexEnums.UK_IDX, value = "realC", columnArr = {@IndexColumn("realName")})
 })
-@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
+@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test4")})
 public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "名称",
@@ -35,10 +35,11 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
+    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true,isAutoIncrement = true)
+//    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
     private Integer zero;
 
-    @AcColumn(oldName = "test11", value = "test1", defaultValue = "'test'", length = 255)
+    @AcColumn(value = "test1", defaultValue = "'test'", length = 255)
     private String test1;
     @AcColumn(value = "test2", length = 1000)
     private String test2;
@@ -46,15 +47,15 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(oldName = "test3", value = "test3")
     private Short test3;
 
-    @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "b'1'", length = 1)
-    private Short test222;
+    @AcColumn(type = ColumnTypeConstants.BIT, defaultValue = "1", length = 1)
+    private Boolean test222;
 
 
     @AcColumn(comment = "测试1", type = ColumnTypeConstants.DECIMAL, length = 10, decimalLength = 2)
     private BigDecimal ddd;
 
 
-    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)")
+    @AcColumn(comment = "测试2", type = "DECIMAL(10,3)", typeLimit = false)
     private BigDecimal cc;
 
 
@@ -82,7 +83,7 @@ public class ZeroEntity extends BaseEntity {
     @AcColumn(comment = "退款时间", defaultValue = "CURRENT_TIMESTAMP", length = 0)
     private Timestamp refundTime; // 退款时间
 
-    @AcColumn(isNull = false, type = ColumnTypeConstants.TINYINT)
-    private Integer level;
+//    @AcColumn(isNull = false, type = ColumnTypeConstants.TINYINT,isAutoIncrement = true)
+//    private Integer level;
 
 }

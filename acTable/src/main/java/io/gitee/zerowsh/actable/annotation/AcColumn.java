@@ -43,11 +43,20 @@ public @interface AcColumn {
 
     /**
      * 字段类型：不填默认使用属性的数据类型进行转换
-     * 可支持自定义会有两种情况：
-     * 1、不在ColumnTypeConstants类中的，length和decimalLength将不会生效，即填写的是什么就是什么
-     * 2、在ColumnTypeConstants类中的，length和decimalLength可能会神效，根据具体类型来处理
      */
     String type() default ColumnTypeConstants.DEFAULT_VALUE;
+
+
+    /**
+     * 是否限制字段类型为支持的类型，如果不限制可自定义类型值;
+     * 自定义类型值length和decimalLength将不会生效，将直接使用type的值作为数据库字段类型
+     * 开启后将不会检验type属性的有效性
+     * 例如：
+     * datetime(5)
+     * decimal(10,2)
+     */
+    boolean typeLimit() default true;
+
 
     /**
      * 字段长度
@@ -77,7 +86,7 @@ public @interface AcColumn {
 
     /**
      * 默认值
-     * 请自行判定默认是是否是字符串
+     * 请自行判定默认值是否是字符串
      */
     String defaultValue() default AcTableConstants.DEFAULT_VALUE;
 

@@ -26,7 +26,7 @@ public abstract class BaseEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @AcColumn(type = ColumnTypeConstants.INT, order = -10)
-    @TableId(type = IdType.AUTO)
+//    @TableId(type = IdType.AUTO)
     @ApiModelProperty("主键")
     private Integer id;
 

@@ -1,5 +1,7 @@
 package io.gitee.zerowsh.actable.constant;
 
+import cn.hutool.core.lang.Pair;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,7 +85,7 @@ public interface ColumnTypeConstants {
     /**
      * 达梦数据库字段是否包含这个列类型
      */
-    static String mysqlContains(String columnType) {
+    static Pair<String, Boolean>  mysqlContains(String columnType) {
         List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(TIME);
             this.add(LONGBLOB);
@@ -94,9 +96,9 @@ public interface ColumnTypeConstants {
         }};
 
         if (list.contains(columnType)) {
-            return columnType;
+            return Pair.of(columnType, true);
         }
-        return ColumnTypeConstants.VARCHAR;
+        return Pair.of(ColumnTypeConstants.VARCHAR, false);
     }
 
     /**
@@ -125,13 +127,14 @@ public interface ColumnTypeConstants {
      * @return
      */
 
-    static String dmContains(String columnType) {
+    static Pair<String, Long> dmContains(String columnType) {
         List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(DATETIME_WITH_TIME_ZONE);
         }};
         if (list.contains(columnType)) {
-            return columnType;
+            return Pair.of(columnType, null);
         }
-        return ColumnTypeConstants.VARCHAR;
+        return Pair.of(ColumnTypeConstants.VARCHAR, AcTableConstants.DEFAULT_STR);
     }
+
 }

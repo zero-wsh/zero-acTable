@@ -18,7 +18,7 @@ mysql、达梦
 - 忽略表@IgnoreTable，自动建表时指定包下面需要忽略的表
 - 排除父类字段@ExcludeSuperField，自动建表时排除父类相关字段
 - 增加修改字段逻辑，可指定在类上或者字段上，字段优先于类上
-- 类型采用字符串，可自定义ColumnTypeConstants中未支持的类型
+- 增加typeLimit属性，可自定义未支持的类型
 - 调整唯一键、索引标记位置，统一在类上标记
 
 ### 您只需两步即可集成
@@ -68,8 +68,9 @@ zero.ac-acTable.after-script=db/*.sql
 |isKey   |是否主键   |false   |true/false   |
 |isAutoIncrement   |是否自增   |false   |true/false   |
 |defaultValue   |默认值   |default_value   |   |
-|type   |字段类型   |ColumnTypeConstants   |字符串   |
+|type   |字段类型   |ColumnTypeEnums.DEFAULT   |ColumnTypeEnums   |
 |oldName|数据库以前字段名   |||
+|typeLimit|是否限制字段类型为支持的类型，如果不限制可自定义类型  |true|true/false|
 
 3、索引@Index，设置表索引
 |属性名   |描述   |默认值   |取值范围   |

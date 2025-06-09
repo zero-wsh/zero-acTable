@@ -13,6 +13,7 @@ public interface AcTableConstants {
 
     String SINGLE_QUOTE = "'";
     String DOUBLE_QUOTES = "\"";
+    long DEFAULT_STR = 255L;
 
     /**
      * 当实体属性没标记@Column注解时有用，字段可以为空，默认长度255、默认浮点数0

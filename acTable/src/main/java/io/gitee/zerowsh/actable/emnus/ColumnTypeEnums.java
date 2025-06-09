@@ -88,14 +88,6 @@ public enum ColumnTypeEnums {
         return sqlServer;
     }
 
-    public static ColumnTypeEnums getMysqlByValue(String type) {
-        for (ColumnTypeEnums types : ColumnTypeEnums.values()) {
-            if (Objects.equals(types.getMysql1(), type)) {
-                return types;
-            }
-        }
-        return ColumnTypeEnums.VARCHAR;
-    }
 
     public static ColumnTypeEnums getSqlServerByValue(String type) {
         for (ColumnTypeEnums types : ColumnTypeEnums.values()) {

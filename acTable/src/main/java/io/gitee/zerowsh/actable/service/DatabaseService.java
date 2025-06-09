@@ -33,16 +33,7 @@ public abstract class DatabaseService {
     }
 
     /**
-     * 自增就是主键
-     *
-     * @return
-     */
-    public boolean autoincrementIsPk() {
-        return false;
-    }
-
-    /**
-     * 拼接sql时忽略length和decimalLength
+     * 拼接sql时忽略length和decimalLength的字段类型
      *
      * @return 需要忽略的字段类型集合
      */
@@ -209,6 +200,16 @@ public abstract class DatabaseService {
      * @return
      */
     abstract public String getDropPkSql(String tableName);
+
+    /**
+     * 获取删除自增SQL
+     *
+     * @param tableName
+     * @return
+     */
+    public String getDropIdentitySql(String tableName) {
+        return StrUtil.format("alter table {} drop identity", this.addKeywordHandle(tableName));
+    }
 
     /**
      * 获取表默认值约束SQL

@@ -81,7 +81,7 @@ public class AcTableService {
             List<String> executeSqlList = new ArrayList<>();
             this.handleExecuteSql(connection, modelEnums, tableInfoList, executeSqlList, databaseService);
             if (CollectionUtil.isEmpty(executeSqlList)) {
-                log.info(StrUtil.format("自动建表未发现实体类有任何改动列！", databaseType));
+                log.info(StrUtil.format("自动建表未发现实体类和数据库有任何区别！", databaseType));
                 return;
             }
             log.info(StrUtil.format("开始【{}】自动建表！", databaseType));
@@ -111,14 +111,14 @@ public class AcTableService {
                                  List<String> executeSqlList,
                                  DatabaseService databaseService) throws SQLException {
         if (Objects.equals(modelEnums, ModelEnums.DEL_AND_ADD)) {
-            if(CollectionUtil.isNotEmpty(tableInfoList)) {
+            if (CollectionUtil.isNotEmpty(tableInfoList)) {
                 List<String> tableNameList = tableInfoList.stream().map(TableInfo::getName).collect(Collectors.toList());
                 JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableNameList));
             }
         }
         if (Objects.equals(modelEnums, ModelEnums.DEL_ALL_AND_ADD)) {
             List<String> tableNameList = JdbcUtil.getTableNameList(connection, databaseService.getAllTableSql());
-            if(CollectionUtil.isNotEmpty(tableNameList)){
+            if (CollectionUtil.isNotEmpty(tableNameList)) {
                 JdbcUtil.executeSql(connection, databaseService.dropTableSql(tableNameList));
             }
         }
@@ -132,11 +132,12 @@ public class AcTableService {
                 List<ConstraintInfo> constraintInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getConstraintInfoSql(tableName));
                 //sqlserver有默认值约束
                 List<ConstraintInfo> defaultInfoList = JdbcUtil.getConstraintInfoList(connection, databaseService.getDefaultInfoSql(tableName));
-                executeSqlList.addAll(databaseService.getUpdateTableSql(tableInfo,
+                List<String> updateTableSql = databaseService.getUpdateTableSql(tableInfo,
                         tableColumnInfoMap,
                         constraintInfoList,
                         defaultInfoList,
-                        modelEnums));
+                        modelEnums);
+                executeSqlList.addAll(updateTableSql);
             } else {
                 executeSqlList.addAll(databaseService.getCreateTableSql(tableInfo));
             }

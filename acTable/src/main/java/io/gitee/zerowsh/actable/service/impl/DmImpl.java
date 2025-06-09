@@ -1,17 +1,18 @@
 package io.gitee.zerowsh.actable.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Pair;
 import cn.hutool.core.text.StrPool;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
-import io.gitee.zerowsh.actable.dto.ColumnTypeInfo;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
-import io.gitee.zerowsh.actable.dto.TableInfo.PropertyInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
-import io.gitee.zerowsh.actable.emnus.DatabaseTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
+import io.gitee.zerowsh.actable.properties.AcTableProperties;
 import io.gitee.zerowsh.actable.service.DatabaseService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,8 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
-import static io.gitee.zerowsh.actable.constant.StringConstants.LEFT_BRACKET;
-import static io.gitee.zerowsh.actable.constant.StringConstants.RIGHT_BRACKET;
+import static io.gitee.zerowsh.actable.constant.ColumnTypeConstants.*;
 
 /**
  * 达梦数据库实现
@@ -35,7 +35,21 @@ public class DmImpl extends DatabaseService {
 
     @Override
     public Set<String> ignoreLengthAndDecimalLength() {
-        return Collections.emptySet();
+        AcTableProperties acTableProperties = SpringUtil.getBean(AcTableProperties.class);
+        HashSet<String> resultSet = new HashSet<String>() {{
+            add(BIT);
+            add(INT);
+            add(BIGINT);
+            add(TEXT);
+            add(DATE);
+            add(TINYINT);
+            add(SMALLINT);
+        }};
+        String ignoreLength = acTableProperties.getIgnoreLengthAndDecimalLength();
+        if (StrUtil.isNotBlank(ignoreLength)) {
+            resultSet.addAll(StrUtil.split(ignoreLength, StrPool.COMMA));
+        }
+        return resultSet;
     }
 
     /**
@@ -76,7 +90,9 @@ public class DmImpl extends DatabaseService {
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String columnComment = propertyInfo.getColumnComment();
-            this.splicingColumnInfo(propertySb, propertyInfo, tableName);
+            propertySb.append(StrPool.CRLF)
+                    .append(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()))
+                    .append(StrPool.COMMA);
             if (StrUtil.isNotBlank(columnComment)) {
                 addColumnCommentSqlList.add(this.addColumnCommentSql(tableName, columnName, columnComment));
             }
@@ -87,7 +103,7 @@ public class DmImpl extends DatabaseService {
                     .append(StrUtil.format(PRIMARY_KEY, CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
         }
         //存储建表sql
-        resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), null));
+        resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), ""));
         if (StrUtil.isNotBlank(comment)) {
             //存储表备注sql
             resultList.add(this.addTableCommentSql(tableName, comment));
@@ -180,15 +196,31 @@ public class DmImpl extends DatabaseService {
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
         List<String> resultList = new ArrayList<>();
-        String comment = tableInfo.getComment();
+        String tableComment = tableInfo.getComment();
+        //数据库查询出来表注释
+        String tableComment1 = null;
         String tableName = tableInfo.getName();
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
-        int count = 0;
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String oldColumnName = propertyInfo.getOldColumnName();
             TableInfo.PropertyInfo tableColumnInfo = tableColumnInfoMap.get(columnName);
             TableInfo.PropertyInfo oldTableColumnInfo = tableColumnInfoMap.get(oldColumnName);
+            if (StrUtil.isBlank(tableComment1)) {
+                tableComment1 = propertyInfo.getTableComment();
+            }
+
+            //新旧字段一起删除，代表处理过
+            tableColumnInfoMap.remove(oldColumnName);
+            tableColumnInfoMap.remove(columnName);
+            if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
+                //如果columnName、oldColumnName在数据库中都没有，新增columnName
+                StringBuilder propertySb = new StringBuilder(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()));
+                propertySb.append(StrPool.COMMA);
+                resultList.add(this.getAddColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
+                continue;
+            }
+
             if (!Objects.equals(columnName, oldColumnName)) {
                 if (Objects.nonNull(tableColumnInfo) && Objects.nonNull(oldTableColumnInfo)) {
                     //如果columnName、oldColumnName在数据库中都有，存在问题
@@ -196,83 +228,27 @@ public class DmImpl extends DatabaseService {
                             tableName, oldColumnName, columnName));
                 }
                 if (Objects.nonNull(oldTableColumnInfo)) {
-                    //修改
-                    resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, null));
-                    tableColumnInfo = oldTableColumnInfo;
-                } else if (Objects.isNull(tableColumnInfo)) {
-                    //写错了会导致新增字段和删除字段
-                    throw new RuntimeException(StrUtil.format("无法将表【{}】，字段【{}】修改成【{}】，两个字段都不存在于表中！",
-                            tableName, oldColumnName, columnName));
+                    //将旧的字段修改成新字段
+                    resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                    continue;
                 }
             }
-            if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
-                //如果columnName、oldColumnName在数据库中都没有，新增columnName
-                StringBuilder propertySb = new StringBuilder();
-                this.splicingColumnInfo(propertySb, propertyInfo, tableName);
-                resultList.add(this.getAddColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
-                //添加字段备注
-                resultList.add(this.addColumnCommentSql(tableName, columnName, propertyInfo.getColumnComment()));
-                continue;
-            }
-            //新旧字段一起删除，代表处理过
-            tableColumnInfoMap.remove(oldColumnName);
-            tableColumnInfoMap.remove(columnName);
-            if (count == 0) {
-                //处理表备注
-                if (!Objects.equals(comment, tableColumnInfo.getTableComment())) {
-                    resultList.add(this.getUpdateTableCommentSql(tableName, comment));
-                }
-            }
-            count++;
-            //修改--判断类型、是否为空、是否自增、默认值 ,这些是否存在修改
-            boolean existUpdate = (propertyInfo.isTypeLimit() && !StrUtil.equalsIgnoreCase(tableColumnInfo.getTypeStr(), ColumnTypeConstants.dmContains(propertyInfo.getTypeStr())))
-                    || !(tableColumnInfo.isNull() == (!propertyInfo.isKey() && !propertyInfo.isAutoIncrement()
-                    && propertyInfo.isNull()))
-                    || tableColumnInfo.isAutoIncrement() != propertyInfo.isAutoIncrement()
-                    || !(StrUtil.equalsIgnoreCase(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue()));
 
-            //判断长度、精度，是否修改
-            long length1 = tableColumnInfo.getLength();
-            long decimalLength1 = tableColumnInfo.getDecimalLength();
-            if (!existUpdate) {
-                ColumnTypeInfo columnTypeInfo = this.handleType(propertyInfo);
-                Long length = columnTypeInfo.getLength();
-                Long decimalLength = columnTypeInfo.getDecimalLength();
-                boolean flag = columnTypeInfo.isFlag();
-                if (flag) {
-                    //其他的类型不用验证长度和精度
-                    if (!propertyInfo.isTypeLimit()) {
-                        //拼接数据库类型和自定义的字符串比较
-                        String typeStr = tableColumnInfo.getTypeStr() + LEFT_BRACKET + length1;
-                        if (Objects.nonNull(decimalLength)) {
-                            typeStr = typeStr + StrUtil.COMMA + decimalLength1;
-                        }
-                        typeStr = typeStr + RIGHT_BRACKET;
-                        if (!StrUtil.equalsIgnoreCase(typeStr, propertyInfo.getTypeStr())) {
-                            existUpdate = true;
-                        }
+
+            //先比较默认值
+            if (!StrUtil.equals(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue())) {
+                resultList.add(this.getUpdateColumnSql(tableName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+            } else {
+                String alterSentence1 = this.getAlterSentence(propertyInfo, true);
+                String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
+                //在比较其他值
+                if (!Objects.equals(alterSentence1, alterSentence2)) {
+                    //自增处理
+                    if (alterSentence2.contains(IDENTITY) && alterSentence1.contains(IDENTITY)) {
+                        resultList.add(this.getDropIdentitySql(tableName));
                     }
-                } else {
-                    if (Objects.isNull(decimalLength)) {
-                        //没有精度，只比较长度
-                        if (Objects.equals(columnTypeInfo.getTypeStr(), ColumnTypeConstants.DATETIME)) {
-                            //todo 存在差异单独处理
-                            existUpdate = !Objects.equals(decimalLength1, length);
-                        } else {
-                            existUpdate = !Objects.equals(length1, length);
-                        }
-
-                    } else {
-                        existUpdate = !Objects.equals(length1, length) || !Objects.equals(decimalLength1, decimalLength);
-                    }
+                    resultList.add(this.getUpdateColumnSql(tableName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
                 }
-            }
-            if (existUpdate) {
-                //存在修改
-                StringBuilder propertySb = new StringBuilder();
-                this.splicingColumnInfo(propertySb, propertyInfo, tableName);
-                resultList.add(this.getUpdateColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString()));
-
             }
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
                 //修改字段备注
@@ -280,6 +256,10 @@ public class DmImpl extends DatabaseService {
             }
         }
 
+        //处理表备注
+        if (!Objects.equals(tableComment, tableComment1)) {
+            resultList.add(this.getUpdateTableCommentSql(tableName, tableComment));
+        }
         //主键
         List<String> keyList = tableInfo.getKeyList();
         //唯一键
@@ -405,108 +385,114 @@ public class DmImpl extends DatabaseService {
     }
 
     /**
-     * 拼接列信息
+     * 获取alter语句
      *
-     * @param propertySb
-     * @param propertyInfo
-     * @param tableName
+     * @param propertyInfo 字段信息
+     * @param flag         是否实体类映射
+     * @return
      */
-    private void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
-        String type = propertyInfo.getTypeStr();
-        String columnName = propertyInfo.getColumnName();
-        boolean typeLimit = propertyInfo.isTypeLimit();
-        propertySb.append(StrPool.CRLF).append(this.addKeywordHandle(columnName)).append(StrPool.C_SPACE);
-        ColumnTypeInfo columnTypeInfo = this.handleType(propertyInfo);
-        Long length = columnTypeInfo.getLength();
-        Long decimalLength = columnTypeInfo.getDecimalLength();
-        if (columnTypeInfo.isFlag()) {
-            if (typeLimit) {
-                //类型限制
-                propertySb.append(ColumnTypeConstants.dmContains(type));
-            } else {
-                propertySb.append(type);
-            }
-        } else {
-            if (Objects.isNull(length)) {
-                propertySb.append(type);
-            } else {
-                propertySb.append(type).append(LEFT_BRACKET).append(length);
-                if (Objects.nonNull(decimalLength)) {
-                    propertySb.append(StrUtil.COMMA);
-                    propertySb.append(decimalLength);
-                }
-                propertySb.append(RIGHT_BRACKET);
-            }
-        }
-
-
-        //是否为空
-        if (propertyInfo.isKey() || propertyInfo.isAutoIncrement() || !propertyInfo.isNull()) {
-            propertySb.append(NOT_NULL);
-        } else {
-            propertySb.append(NULL);
-        }
-        //是否自增
-        if (propertyInfo.isAutoIncrement()) {
-            propertySb.append(IDENTITY);
-        } else {
-            //自增不能设置默认值
-            if (Objects.nonNull(propertyInfo.getDefaultValue())) {
-                propertySb.append(StrUtil.format(DEFAULT, propertyInfo.getDefaultValue()));
-            }
-        }
-        propertySb.append(StrUtil.COMMA);
-    }
-
-    private ColumnTypeInfo handleType(TableInfo.PropertyInfo propertyInfo) {
+    public String getAlterSentence(TableInfo.PropertyInfo propertyInfo, boolean flag) {
+        String typeStr = propertyInfo.getTypeStr().toLowerCase();
         long length = propertyInfo.getLength();
         long decimalLength = propertyInfo.getDecimalLength();
-        String type = propertyInfo.getTypeStr();
-        String columnName = propertyInfo.getColumnName();
-        String tableName = propertyInfo.getTableName();
-        ColumnTypeInfo columnTypeInfo = new ColumnTypeInfo();
-        switch (type) {
-            case ColumnTypeConstants.DATETIME:
-                if (length > 9 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 6);
-                    length = 6;
-                }
-                columnTypeInfo.setLength(length).setTypeStr(type);
-                break;
-            case ColumnTypeConstants.VARCHAR:
-            case ColumnTypeConstants.CHAR:
-                if (length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 255);
-                    length = 255;
-                }
-                columnTypeInfo.setLength(length).setTypeStr(type);
-                break;
-            case ColumnTypeConstants.FLOAT:
-            case ColumnTypeConstants.DOUBLE:
-                if (length > 126 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 53);
-                    length = 53;
-                }
-                columnTypeInfo.setLength(length).setTypeStr(type);
-                break;
-            case ColumnTypeConstants.DECIMAL:
-            case ColumnTypeConstants.NUMERIC:
-                if (length > 38 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 22);
-                    length = 22;
-                }
-                if (decimalLength > 38 || decimalLength > length || decimalLength < 0) {
-                    log.warn(COLUMN_DECIMAL_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, length, 2);
-                    decimalLength = 2;
-                }
-                columnTypeInfo.setLength(length).setTypeStr(type).setDecimalLength(decimalLength);
-                break;
-            default:
-                //其他的类型不用验证长度和精度
-                columnTypeInfo.setLength(length).setTypeStr(type).setDecimalLength(decimalLength).setFlag(true);
+        boolean typeLimit = propertyInfo.isTypeLimit();
+        if (typeLimit) {
+            //类型限制，在已有的集合中找
+            Pair<String, Long> pair = dmContains(typeStr);
+            if (Objects.nonNull(pair.getValue())) {
+                //没有定义返回的是默认的
+                typeStr = pair.getKey();
+                length = pair.getValue();
+            }
         }
-        return columnTypeInfo;
+        StringBuilder sb = new StringBuilder(this.addKeywordHandle(propertyInfo.getColumnName()));
+        sb.append(" ").append(typeStr);
+        //处理length和decimalLength
+        if (!this.ignoreLengthAndDecimalLength().contains(typeStr)) {
+            //直接通过实体类映射或者注解指定的，需要先处理length和decimalLength
+            String columnName = propertyInfo.getColumnName();
+            String tableName = propertyInfo.getTableName();
+            switch (typeStr) {
+                case ColumnTypeConstants.DATETIME:
+                    if (flag) {
+                        //实体类
+                        if (length > 9 || length < 0) {
+                            log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, typeStr, length, 0);
+                            length = 0;
+                        }
+                    } else {
+                        //数据库查询
+                        length = decimalLength;
+                    }
+                    decimalLength = AcTableConstants.NUMBER_UNDEFINED;
+                    break;
+                case ColumnTypeConstants.VARCHAR:
+                case ColumnTypeConstants.CHAR:
+                    if (length < 0) {
+                        log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, typeStr, length, 255);
+                        length = 255;
+                    }
+                    decimalLength = AcTableConstants.NUMBER_UNDEFINED;
+                    break;
+                case ColumnTypeConstants.FLOAT:
+                case ColumnTypeConstants.DOUBLE:
+                    if (length > 126 || length < 0) {
+                        log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, typeStr, length, 53);
+                        length = 53;
+                    }
+                    decimalLength = AcTableConstants.NUMBER_UNDEFINED;
+                    break;
+                case ColumnTypeConstants.DECIMAL:
+                case ColumnTypeConstants.NUMERIC:
+                    if (length > 38 || length < 0) {
+                        log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, typeStr, length, 22);
+                        length = 22;
+                    }
+                    if (decimalLength > 38 || decimalLength > length || decimalLength < 0) {
+                        log.warn(COLUMN_DECIMAL_LENGTH_VALID_STR, tableName, columnName, typeStr, decimalLength, length, 2);
+                        decimalLength = 2;
+                    }
+                    break;
+            }
+
+            if (!Objects.equals(length, AcTableConstants.NUMBER_UNDEFINED)
+                    && !Objects.equals(decimalLength, AcTableConstants.NUMBER_UNDEFINED)) {
+                //length和decimalLength都有值
+                sb.append(StrUtil.format(LENGTH_DECIMAL, length, decimalLength));
+            } else if (!Objects.equals(length, AcTableConstants.NUMBER_UNDEFINED)) {
+                //length有值
+                sb.append(StrUtil.format(LENGTH, length));
+            }
+        }
+        /*
+         * 自增、主键 必填
+         * 如果isNull是false 必填
+         */
+        if (propertyInfo.isAutoIncrement() || propertyInfo.isKey() || !propertyInfo.isNull()) {
+            sb.append(NOT_NULL);
+            if (propertyInfo.isAutoIncrement()) {
+                //加上自增的逻辑
+                sb.append(IDENTITY);
+            }
+        } else {
+            sb.append(NULL);
+        }
+        //默认值占位符
+        sb.append("{}");
+        return sb.toString();
     }
+
+    public String jointDefault(String alterSentence, String defaultValue) {
+        if (Objects.nonNull(defaultValue)) {
+            if (defaultValue.isEmpty()) {//空字符串
+                return StrUtil.format(alterSentence, StrUtil.format(DEFAULT, "''"));
+            } else {
+                return StrUtil.format(alterSentence, StrUtil.format(DEFAULT, defaultValue));
+            }
+        }
+        return StrUtil.format(alterSentence, "");
+    }
+
 
     @Override
     public String getAllTableSql() {
@@ -520,50 +506,49 @@ public class DmImpl extends DatabaseService {
 
     @Override
     public String getTableStructureSql(String tableName) {
-        return StrUtil.format("SELECT t.TABLE_NAME tableName, " +
-                "\t   (select COMMENTS from all_tab_comments A1  " +
-                "\t   WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment, " +
+        return StrUtil.format("SELECT t.TABLE_NAME tableName," +
+                "   (select COMMENTS from all_tab_comments A1  " +
+                "  WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment, " +
                 "       t.COLUMN_NAME columnName, " +
                 "       (select COMMENTS from all_COL_comments A2  " +
                 "       WHERE  t.TABLE_NAME=A2.TABLE_NAME  " +
                 "       AND t.OWNER=A2.SCHEMA_NAME AND t.COLUMN_NAME=A2.COLUMN_NAME ) columnComment, " +
-                "       t.DATA_DEFAULT columnDefault, " +
                 "       t.CHARACTER_SET_NAME columnCharacterSetName, " +
                 "       CASE WHEN t.NULLABLE = 'Y' THEN 1 ELSE 0 END isNull, " +
-                "       CASE WHEN t.DATA_TYPE = 'NUMBER' THEN " +
-                "           (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE " +
-                "                 WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')' " +
-                "                 ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END) " +
-                "           ELSE t.DATA_TYPE END typeStr, " +
-                "       CASE WHEN (SELECT count(1) FROM USER_CONS_COLUMNS T4, USER_CONSTRAINTS T5 " +
-                "                  WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P' " +
+                "   CASE WHEN t.DATA_TYPE = 'NUMBER' THEN " +
+                "   (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE " +
+                "         WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')' " +
+                " ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END) " +
+                "       ELSE t.DATA_TYPE END typeStr, " +
+                "   CASE WHEN (SELECT count(1) FROM all_CONS_COLUMNS T4, all_CONSTRAINTS T5 " +
+                "              WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P' " +
                 "                 AND t.TABLE_NAME = T5.TABLE_NAME(+) AND t.COLUMN_NAME = T4.COLUMN_NAME(+)) > 0 THEN 1 " +
                 "            ELSE 0 END isKey, " +
                 "       t.DATA_DEFAULT defaultValue, " +
                 "       case when t.DATA_PRECISION is null then t.DATA_LENGTH else t.DATA_PRECISION end length, " +
-                "       t.DATA_SCALE decimalLength, " +
-                "       CASE WHEN (SELECT count(1) FROM SYS.SYSCOLUMNS a,user_tables b,sys.sysobjects c " +
+                "       t.DATA_SCALE decimalLength," +
+                "       CASE WHEN (SELECT count(1) FROM SYS.SYSCOLUMNS a,all_tables b,sys.sysobjects c " +
                 "                 WHERE a.INFO2 & 0x01 = 0x01 AND a.id = c.id AND c.name = b.table_name AND " +
                 "       b.table_name = t.TABLE_NAME AND a.name = t.COLUMN_NAME) > 0 THEN 1 ELSE 0 END  isAutoIncrement " +
-                "FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = '{}' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
+                " FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = '{}' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
     }
 
     @Override
     public String getConstraintInfoSql(String tableName) {
         return StrUtil.format("SELECT IFNULL(C.CONSTRAINT_NAME,IC.INDEX_NAME) constraintName," +
-                "    LISTAGG(IC.COLUMN_NAME, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS constraintColumnName," +
-                "    LISTAGG(IC.descend, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS indexSortStr," +
-                "     case when C.CONSTRAINT_TYPE='P' then 1" +
-                "     when C.CONSTRAINT_TYPE='U' then 2 " +
-                "     when I.UNIQUENESS='NONUNIQUE' then 3 " +
+                "                    LISTAGG(IC.COLUMN_NAME, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS constraintColumnName," +
+                " LISTAGG(IC.descend, ',') WITHIN GROUP (ORDER BY IC.COLUMN_POSITION) AS indexSortStr," +
+                " case when C.CONSTRAINT_TYPE='P' then 1" +
+                " when C.CONSTRAINT_TYPE='U' then 2 " +
+                " when I.UNIQUENESS='NONUNIQUE' then 3 " +
                 "     else 4 end constraintFlag " +
-                "FROM  " +
-                "    USER_INDEXES I " +
-                "    LEFT JOIN USER_IND_COLUMNS IC ON I.INDEX_NAME = IC.INDEX_NAME " +
-                "    LEFT JOIN USER_CONSTRAINTS C ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME " +
-                "WHERE  " +
+                " FROM  " +
+                "    ALL_INDEXES I " +
+                "    LEFT JOIN  ALL_IND_COLUMNS IC ON I.INDEX_NAME = IC.INDEX_NAME " +
+                "    LEFT JOIN  ALL_CONSTRAINTS C ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME " +
+                " WHERE  " +
                 "    I.TABLE_NAME = '{}' and I.TABLE_OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID) and IC.COLUMN_NAME is not null " +
-                "    group by IC.INDEX_NAME, C.CONSTRAINT_TYPE,C.CONSTRAINT_NAME,I.UNIQUENESS", tableName);
+                " group by IC.INDEX_NAME, C.CONSTRAINT_TYPE,C.CONSTRAINT_NAME,I.UNIQUENESS", tableName);
     }
 
     @Override

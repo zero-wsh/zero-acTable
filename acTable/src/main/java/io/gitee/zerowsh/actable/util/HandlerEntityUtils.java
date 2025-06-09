@@ -173,7 +173,7 @@ public class HandlerEntityUtils {
         builder.comment(StrUtil.isBlank(tableComment) ? "" : tableComment);
         getFieldInfo(cls, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                 uniqueInfoList, propertyList, acTable,
-                null, acTableProperties, databaseService, tableName,tableComment);
+                null, acTableProperties, databaseService, tableName, tableComment);
 
 
         //定义在类上的修改字段注解
@@ -207,15 +207,18 @@ public class HandlerEntityUtils {
             String columnName = propertyInfo.getColumnName();
             if (propertyInfo.isKey()) {
                 keyList.add(columnName);
-            } else if (databaseService.autoincrementIsPk() && propertyInfo.isAutoIncrement()) {
-                //mysql数据库是自增就必须是主键
-                keyList.add(columnName);
-                propertyInfo.setKey(true);
             }
-
+//
+//            else if (databaseService.autoincrementIsPk() && propertyInfo.isAutoIncrement()) {
+//                //mysql数据库是自增就必须是主键
+//                keyList.add(columnName);
+//                propertyInfo.setKey(true);
+//            }
             if (Objects.equals(columnName, propertyInfo.getOldColumnName())) {
                 String newColumnName = updateColumnNameMap.get(columnName);
                 if (StrUtil.isNotBlank(newColumnName)) {
+                    propertyMap.remove(columnName);
+                    propertyMap.put(newColumnName, fieldNameTurnDatabaseColumn(newColumnName, acTableProperties.getTurn(), acTable));
                     propertyInfo.setOldColumnName(columnName);
                     propertyInfo.setColumnName(newColumnName);
                 }
@@ -465,7 +468,8 @@ public class HandlerEntityUtils {
                         .order(acColumn.order())
                         .isNull(isNull)
                         .length(Long.valueOf(acColumn.length()))
-                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()));
+                        .typeStr(databaseService.javaTypeTurnColumnType(field.getType().getName(), acColumn.type()))
+                        .typeLimit(acColumn.typeLimit());
             }
             propertyInfoList.add(propertyInfoBuilder.build());
             propertyMap.put(fieldName, columnName);
@@ -474,7 +478,7 @@ public class HandlerEntityUtils {
         if (Objects.nonNull(superclass)) {
             getFieldInfo(superclass, propertyInfoList, propertyMap, indexInfoList, uniqueIndexInfoList,
                     uniqueInfoList, propertyList, acTable,
-                    cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName,tableComment);
+                    cls.getAnnotation(ExcludeSuperField.class), acTableProperties, databaseService, tableName, tableComment);
         }
     }
 

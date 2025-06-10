@@ -580,15 +580,6 @@ public class SqlServerImpl extends DatabaseService {
                 " group by c.constraintName,c.constraintType,c.constraintFlag", tableName);
     }
 
-    @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk) {
-        return null;
-    }
-
-    @Override
-    public String getDropPkSql(String tableName) {
-        return null;
-    }
 
     @Override
     public String getDefaultInfoSql(String tableName) {
@@ -597,76 +588,6 @@ public class SqlServerImpl extends DatabaseService {
                 "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault", tableName);
     }
 
-    @Override
-    public String addTableCommentSql(String tableName, String comment) {
-        return null;
-    }
-
-    @Override
-    public String addColumnCommentSql(String tableName, String columnName, String comment) {
-        return null;
-    }
-
-    @Override
-    public String addPrimaryKeySql(String tableName, String constraintName, List<String> columnList) {
-        return null;
-    }
-
-    @Override
-    public String addIndexSql(String tableName, String indexName, List<TableInfo.Index> columns) {
-        return null;
-    }
-
-    @Override
-    public String addUniqueIndexSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        return null;
-    }
-
-    @Override
-    public String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        return null;
-    }
-
-
-    @Override
-    public String getUpdateTableCommentSql(String tableName, String tableComment) {
-        return null;
-    }
-
-    @Override
-    public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment) {
-        return null;
-    }
-
-    @Override
-    public String getAddColumnSql(String tableName, StringBuilder columnNameDetails) {
-        return null;
-    }
-
-    @Override
-    public String getUpdateColumnSql(String tableName, String columnNameDetails) {
-        return null;
-    }
-
-    @Override
-    public String getDelColumnSql(String tableName, String columnName) {
-        return null;
-    }
-
-    @Override
-    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails) {
-        return null;
-    }
-
-    @Override
-    public String getDropIndexSql(String indexName) {
-        return null;
-    }
-
-    @Override
-    public String getDropConstraintSql(String tableName, String constraintName) {
-        return null;
-    }
 
     /**
      * 排除主键约束删除

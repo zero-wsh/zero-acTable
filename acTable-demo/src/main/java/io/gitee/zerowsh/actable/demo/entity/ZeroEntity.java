@@ -38,7 +38,8 @@ public class ZeroEntity extends BaseEntity {
 //    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
     private Integer zero;
 
-    @AcColumn(value = "test1", defaultValue = "'test'", length = 255)
+    @AcColumn(value = "test11",oldName = "test1", defaultValue = "'test221'", length = 255)
+//    @AcColumn(value = "test1", defaultValue = "'test'", length = 255)
     private String test1;
     @AcColumn(value = "test2", length = 1000)
     private String test2;

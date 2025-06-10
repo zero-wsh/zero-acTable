@@ -125,13 +125,14 @@ public class DmImpl extends DatabaseService {
                     .append(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()))
                     .append(StrPool.COMMA);
             if (StrUtil.isNotBlank(columnComment)) {
-                addColumnCommentSqlList.add(this.addColumnCommentSql(tableName, columnName, columnComment));
+                addColumnCommentSqlList.add(StrUtil.format("comment on column {}.{} is '{}'",
+                        this.addKeywordHandle(tableName), this.addKeywordHandle(columnName), columnComment));
             }
         }
         //可显示插入自增主键
         if (CollectionUtil.isNotEmpty(tableInfo.getKeyList())) {
             propertySb.append(StrPool.CRLF)
-                    .append(StrUtil.format("PRIMARY KEY ({}),", CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
+                    .append(StrUtil.format("primary key ({}),", CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
         }
         //存储建表sql
         resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), ""));
@@ -142,7 +143,7 @@ public class DmImpl extends DatabaseService {
 
         if (StrUtil.isNotBlank(comment)) {
             //存储表备注sql
-            resultList.add(this.addTableCommentSql(tableName, comment));
+            resultList.add(StrUtil.format("comment on table {} is '{}'", this.addKeywordHandle(tableName), comment));
         }
         //存储字段备注sql
         resultList.addAll(addColumnCommentSqlList);
@@ -164,7 +165,9 @@ public class DmImpl extends DatabaseService {
      */
     private void createPk(List<String> keyList, String tableName, List<String> resultList) {
         if (CollectionUtil.isNotEmpty(keyList)) {
-            resultList.add(this.addPrimaryKeySql(tableName, PK_ + tableName + IdUtil.getSnowflakeNextId(), keyList));
+            resultList.add(StrUtil.format("alter table {} add constraint {} primary key ({})",
+                    this.addKeywordHandle(tableName), this.addKeywordHandle(PK_ + tableName + IdUtil.getSnowflakeNextId()),
+                    CollectionUtil.join(keyList, StrPool.COMMA, this::addKeywordHandle)));
         }
     }
 
@@ -178,7 +181,10 @@ public class DmImpl extends DatabaseService {
     private void createIdx(List<TableInfo.IndexInfo> indexInfoList, String tableName, List<String> resultList) {
         if (CollectionUtil.isNotEmpty(indexInfoList)) {
             for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-                resultList.add(this.addIndexSql(tableName, indexInfo.getValue() + IdUtil.getSnowflakeNextId(), indexInfo.getColumns()));
+                resultList.add(StrUtil.format("create index {} on {} ({})",
+                        this.addKeywordHandle(indexInfo.getValue() + IdUtil.getSnowflakeNextId()), this.addKeywordHandle(tableName),
+                        CollectionUtil.join(indexInfo.getColumns(), StrPool.COMMA, (index) ->
+                                this.addKeywordHandle(index.getColumn()) + (index.isAsc() ? ASC : DESC))));
             }
         }
     }
@@ -193,7 +199,10 @@ public class DmImpl extends DatabaseService {
     private void createUkIdx(List<TableInfo.UniqueIndexInfo> indexInfoList, String tableName, List<String> resultList) {
         if (CollectionUtil.isNotEmpty(indexInfoList)) {
             for (TableInfo.UniqueIndexInfo uniqueIndexInfo : indexInfoList) {
-                resultList.add(this.addUniqueIndexSql(tableName, uniqueIndexInfo.getValue() + IdUtil.getSnowflakeNextId(), uniqueIndexInfo.getColumns()));
+                resultList.add(StrUtil.format("create unique index {} on {}({})",
+                        this.addKeywordHandle(uniqueIndexInfo.getValue() + IdUtil.getSnowflakeNextId()), this.addKeywordHandle(tableName),
+                        CollectionUtil.join(uniqueIndexInfo.getColumns(), StrPool.COMMA, (index) ->
+                                this.addKeywordHandle(index.getColumn()) + (index.isAsc() ? ASC : DESC))));
             }
         }
     }
@@ -208,7 +217,9 @@ public class DmImpl extends DatabaseService {
     private void createUk(List<TableInfo.UniqueInfo> uniqueInfoList, String tableName, List<String> resultList) {
         if (CollectionUtil.isNotEmpty(uniqueInfoList)) {
             for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-                resultList.add(this.addUniqueSql(tableName, uniqueInfo.getValue() + IdUtil.getSnowflakeNextId(), uniqueInfo.getColumns()));
+                resultList.add(StrUtil.format("alter table {} add constraint {} unique ({})",
+                        this.addKeywordHandle(tableName), this.addKeywordHandle(uniqueInfo.getValue() + IdUtil.getSnowflakeNextId()),
+                        CollectionUtil.join(uniqueInfo.getColumns(), StrPool.COMMA, (index) -> this.addKeywordHandle(index.getColumn()))));
             }
         }
     }
@@ -265,7 +276,7 @@ public class DmImpl extends DatabaseService {
             tableColumnInfoMap.remove(columnName);
             if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
                 //如果columnName、oldColumnName在数据库中都没有，新增columnName
-                addList.add(StrUtil.format("ALTER TABLE {} ADD COLUMN({})",
+                addList.add(StrUtil.format("alter table {} add column({})",
                         this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
                 continue;
             }
@@ -278,7 +289,10 @@ public class DmImpl extends DatabaseService {
                 }
                 if (Objects.nonNull(oldTableColumnInfo)) {
                     //将旧的字段修改成新字段
-                    updateList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                    updateList.add(StrUtil.format("alter table {} alter column {} rename to {}",
+                            this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), this.addKeywordHandle(columnName)));
+                    updateOtherList.add(StrUtil.format("alter table {} modify {}",
+                            this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
                     continue;
                 }
             }
@@ -299,13 +313,14 @@ public class DmImpl extends DatabaseService {
             }
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
                 //修改字段备注
-                otherList.add(this.getUpdateColumnCommentSql(tableName, columnName, propertyInfo.getColumnComment()));
+                otherList.add(StrUtil.format("comment on column {}.{} is '{}'",
+                        this.addKeywordHandle(tableName), this.addKeywordHandle(columnName), propertyInfo.getColumnComment()));
             }
         }
 
         //处理表备注
         if (!Objects.equals(tableComment, dbTableComment)) {
-            otherList.add(this.getUpdateTableCommentSql(tableName, tableComment));
+            otherList.add(StrUtil.format("comment on table {} is '{}'", this.addKeywordHandle(tableName), tableComment));
         }
 
         Iterator<ConstraintInfo> iterator = constraintInfoList.iterator();
@@ -325,7 +340,8 @@ public class DmImpl extends DatabaseService {
                 // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
                 if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
                     //修改
-                    indexList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, true));
+                    indexList.add(StrUtil.format("alter table {} modify constraint {} to primary key ({})", this.addKeywordHandle(tableName),
+                            this.addKeywordHandle(constraintInfo.getConstraintName()), CollectionUtil.join(keyList, StrPool.COMMA, this::addKeywordHandle)));
                 }
                 //处理过了
                 keyList.clear();
@@ -369,10 +385,11 @@ public class DmImpl extends DatabaseService {
         for (ConstraintInfo constraintInfo : constraintInfoList) {
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 //唯一约束
-                indexList.add(this.getDropConstraintSql(tableName, constraintInfo.getConstraintName()));
+
+                indexList.add(StrUtil.format("alter table {} drop constraint {}", this.addKeywordHandle(tableName), this.addKeywordHandle(constraintInfo.getConstraintName())));
             } else {
                 //普通索引+唯一索引
-                indexList.add(this.getDropIndexSql(constraintInfo.getConstraintName()));
+                indexList.add(StrUtil.format("drop index {}", this.addKeywordHandle(constraintInfo.getConstraintName())));
             }
         }
         if (CollectionUtil.isNotEmpty(keyList)) {
@@ -397,7 +414,8 @@ public class DmImpl extends DatabaseService {
             if (CollectionUtil.isNotEmpty(tableColumnInfoMap)) {
                 for (Map.Entry<String, TableInfo.PropertyInfo> map : tableColumnInfoMap.entrySet()) {
                     TableInfo.PropertyInfo value = map.getValue();
-                    indexList.add(this.getDelColumnSql(value.getTableName(), value.getColumnName()));
+                    indexList.add(StrUtil.format("alter table {} drop column {}",
+                            this.addKeywordHandle(value.getTableName()), this.addKeywordHandle(value.getColumnName())));
                 }
             }
         }
@@ -426,7 +444,8 @@ public class DmImpl extends DatabaseService {
             addList.add(0, StrUtil.format("alter table {} drop identity", this.addKeywordHandle(tableName)));
         }
         if (flag) {
-            updateOtherList.add(this.getUpdateColumnSql(tableName, this.jointDefault(alterSentence, propertyInfo.getDefaultValue())));
+            updateOtherList.add(StrUtil.format("alter table {} modify {}",
+                    this.addKeywordHandle(tableName), this.jointDefault(alterSentence, propertyInfo.getDefaultValue())));
         }
         if (propertyInfo.isAutoIncrement()) {
             //alter table TEST."t_zero" add column "zero" identity(1, 1);
@@ -626,124 +645,5 @@ public class DmImpl extends DatabaseService {
                 " group by IC.INDEX_NAME, C.CONSTRAINT_TYPE,C.CONSTRAINT_NAME,I.UNIQUENESS", tableName);
     }
 
-    @Override
-    public String getUpdatePkSql(String tableName, String constraintName, List<String> columnList, boolean tableExistPk) {
-        //达梦数据库不用关心是否存在主键
-        //alter table "t_zero" modify constraint "pk_t_zero1760210543954223104" to primary key ("ddd");
-        String column = CollectionUtil.join(columnList, StrPool.COMMA, this::addKeywordHandle);
-        return StrUtil.format("ALTER TABLE {} MODIFY CONSTRAINT {} TO PRIMARY KEY ({})", this.addKeywordHandle(tableName),
-                this.addKeywordHandle(constraintName), column);
-    }
 
-    @Override
-    public String getDropPkSql(String tableName) {
-        return null;
-    }
-
-
-    @Override
-    public String getDefaultInfoSql(String tableName) {
-        return null;
-    }
-
-    @Override
-    public String addTableCommentSql(String tableName, String comment) {
-        //COMMENT ON TABLE "t_zero" IS '测试'
-        return StrUtil.format("COMMENT ON TABLE {} IS '{}'", this.addKeywordHandle(tableName), comment);
-    }
-
-    @Override
-    public String addColumnCommentSql(String tableName, String columnName, String comment) {
-        //COMMENT ON COLUMN "t_zero"."id" IS '主键'
-        return StrUtil.format("COMMENT ON COLUMN {}.{} IS '{}'",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(columnName), comment);
-    }
-
-    @Override
-    public String addPrimaryKeySql(String tableName, String constraintName, List<String> columnList) {
-        //ALTER TABLE "t_zero" ADD CONSTRAINT "pk_t_zero" PRIMARY KEY ("id","name")
-        String column = CollectionUtil.join(columnList, StrPool.COMMA, this::addKeywordHandle);
-        return StrUtil.format("ALTER TABLE {} ADD CONSTRAINT {} PRIMARY KEY ({})",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(constraintName), column);
-    }
-
-    @Override
-    public String addIndexSql(String tableName, String indexName, List<TableInfo.Index> columns) {
-        //CREATE INDEX "idx_createTime" ON "t_zero" ("update_time" desc,"create_time" asc)
-        String column = CollectionUtil.join(columns, StrPool.COMMA, (index) ->
-                this.addKeywordHandle(index.getColumn()) + (index.isAsc() ? ASC : DESC));
-        return StrUtil.format("CREATE INDEX {} ON {} ({})",
-                this.addKeywordHandle(indexName), this.addKeywordHandle(tableName), column);
-    }
-
-    @Override
-    public String addUniqueIndexSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        //CREATE UNIQUE INDEX id_idx ON T_ZERO("ID" DESC)
-        String column = CollectionUtil.join(columns, StrPool.COMMA, (index) ->
-                this.addKeywordHandle(index.getColumn()) + (index.isAsc() ? ASC : DESC));
-        return StrUtil.format("CREATE UNIQUE INDEX {} ON {}({})",
-                this.addKeywordHandle(constraintName), this.addKeywordHandle(tableName), column);
-    }
-
-    @Override
-    public String addUniqueSql(String tableName, String constraintName, List<TableInfo.Index> columns) {
-        //ALTER TABLE "t_zero" ADD CONSTRAINT "uk_createTime" UNIQUE ("create_time")
-        String column = CollectionUtil.join(columns, StrPool.COMMA, (index) -> this.addKeywordHandle(index.getColumn()));
-        return StrUtil.format("ALTER TABLE {} ADD CONSTRAINT {} UNIQUE ({})",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(constraintName), column);
-    }
-
-
-    @Override
-    public String getUpdateTableCommentSql(String tableName, String tableComment) {
-        //comment on table  "t_zero1" is '111'; 添加和修改是一样的
-        return this.addTableCommentSql(tableName, tableComment);
-    }
-
-    @Override
-    public String getUpdateColumnCommentSql(String tableName, String columnName, String columnComment) {
-        //comment on column "t_zero1"."zero" is '212'; 添加和修改是一样的语句
-        return this.addColumnCommentSql(tableName, columnName, columnComment);
-    }
-
-    @Override
-    public String getAddColumnSql(String tableName, StringBuilder columnNameDetails) {
-        //alter table "ARCHIVE_INFOR1" add column("COLUMN_1" CHAR(10));
-        return StrUtil.format("ALTER TABLE {} ADD COLUMN({})",
-                this.addKeywordHandle(tableName), columnNameDetails);
-    }
-
-    @Override
-    public String getUpdateColumnSql(String tableName, String columnNameDetails) {
-        //alter table "TABLE_1" modify "COLUMN_2" VARCHAR(50)  DEFAULT 22  not null
-        return StrUtil.format("ALTER TABLE {} MODIFY {}",
-                this.addKeywordHandle(tableName), columnNameDetails);
-    }
-
-    @Override
-    public String getDelColumnSql(String tableName, String columnName) {
-        //alter table "TABLE_1" drop column "COLUMN_1";
-        return StrUtil.format("ALTER TABLE {} DROP COLUMN {}",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(columnName));
-    }
-
-    @Override
-    public String getUpdateColumnNameSql(String tableName, String oldColumnName, String newColumnName, String columnNameDetails) {
-        //alter table "t_zero" alter column "ddd" rename to "ddd2";
-        return StrUtil.format("ALTER TABLE {} ALTER COLUMN {} RENAME TO {}",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), this.addKeywordHandle(newColumnName));
-    }
-
-    @Override
-    public String getDropIndexSql(String indexName) {
-        //drop index "idx_realA1759856289930014720";
-        return StrUtil.format("DROP INDEX {}", this.addKeywordHandle(indexName));
-    }
-
-    @Override
-    public String getDropConstraintSql(String tableName, String constraintName) {
-        //alter table "t_zero" drop constraint "uk_realB1759856289930014723";
-        return StrUtil.format("ALTER TABLE {} DROP CONSTRAINT {}",
-                this.addKeywordHandle(tableName), this.addKeywordHandle(constraintName));
-    }
 }

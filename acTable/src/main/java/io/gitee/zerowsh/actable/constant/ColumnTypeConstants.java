@@ -58,7 +58,6 @@ public interface ColumnTypeConstants {
         this.add(BIGINT);
         this.add(INT);
         this.add(BIT);
-        this.add(DATETIME);
         this.add(DATE);
         this.add(CHAR);
         this.add(FLOAT);
@@ -85,7 +84,7 @@ public interface ColumnTypeConstants {
     /**
      * 达梦数据库字段是否包含这个列类型
      */
-    static Pair<String, Boolean>  mysqlContains(String columnType) {
+    static Pair<String, Long> mysqlContains(String columnType) {
         List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(TIME);
             this.add(LONGBLOB);
@@ -93,12 +92,13 @@ public interface ColumnTypeConstants {
             this.add(LONGTEXT);
             this.add(YEAR);
             this.add(INTEGER);
+            this.add(DATETIME);
         }};
 
         if (list.contains(columnType)) {
-            return Pair.of(columnType, true);
+            return Pair.of(columnType, null);
         }
-        return Pair.of(ColumnTypeConstants.VARCHAR, false);
+        return Pair.of(ColumnTypeConstants.VARCHAR, AcTableConstants.DEFAULT_STR);
     }
 
     /**
@@ -107,8 +107,8 @@ public interface ColumnTypeConstants {
      * @return
      */
 
-    static boolean sqlServerContains(String columnType) {
-        return new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
+    static Pair<String, Long> sqlServerContains(String columnType) {
+        List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(NVARCHAR);
             this.add(NVARCHAR_MAX);
             this.add(VARCHAR_MAX);
@@ -118,7 +118,11 @@ public interface ColumnTypeConstants {
             this.add(VARBINARY);
             this.add(VARBINARY_MAX);
             this.add(NCHAR);
-        }}.contains(columnType);
+        }};
+        if (list.contains(columnType)) {
+            return Pair.of(columnType, null);
+        }
+        return Pair.of(ColumnTypeConstants.NVARCHAR, AcTableConstants.DEFAULT_STR);
     }
 
     /**
@@ -130,6 +134,7 @@ public interface ColumnTypeConstants {
     static Pair<String, Long> dmContains(String columnType) {
         List<String> list = new ArrayList<String>(COMMON_COLUMN_TYPE_LIST) {{
             this.add(DATETIME_WITH_TIME_ZONE);
+            this.add(DATETIME);
         }};
         if (list.contains(columnType)) {
             return Pair.of(columnType, null);

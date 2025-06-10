@@ -1,10 +1,13 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost;databaseName=dynamic_table
+    url: jdbc:sqlserver://localhost;databaseName=zero
     username: sa
-    password: zero
+    password: Y.sa123456
 zero:
   ac-table:
-    entity-package: io.gitee.zerowsh.actable.demo.entity
+    entity-package: io.gitee.zerowsh.*.demo.entity
     model: ADD_OR_UPDATE_OR_DEL
-    after-script: db/sql_server.sql
+    #    after-script: db/mysql.sql
+    history: NONE
+    print: true
+

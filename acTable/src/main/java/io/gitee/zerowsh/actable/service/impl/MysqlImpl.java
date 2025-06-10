@@ -462,11 +462,11 @@ public class MysqlImpl extends DatabaseService {
                 boolean typeLimit = propertyInfo.isTypeLimit();
                 if (typeLimit) {
                     //类型限制，在已有的集合中找
-                    Pair<String, Boolean> pair = mysqlContains(typeStr);
-                    if (!pair.getValue()) {
+                    Pair<String, Long> pair = mysqlContains(typeStr);
+                    if (Objects.nonNull(pair.getValue())) {
                         //没有定义返回的是默认的
                         typeStr = pair.getKey();
-                        length = 255;
+                        length = pair.getValue();
                     }
                 }
                 //直接通过实体类映射或者注解指定的，需要先处理length和decimalLength

@@ -6,5 +6,5 @@ spring:
     time-zone: GMT+8
   profiles:
 #    active: mysql
-    active: dm
-#    active: sql_server
+#    active: dm
+    active: sql_server

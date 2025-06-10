@@ -52,6 +52,32 @@ public class DmImpl extends DatabaseService {
         return resultSet;
     }
 
+    public void checkTableInfo(TableInfo tableInfo) {
+        List<String> keyList = tableInfo.getKeyList();
+        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
+        for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
+            if (new HashSet<>(keyList).equals(new HashSet<>(uniqueInfo.getColumns().stream()
+                    .map(TableInfo.Index::getColumn)
+                    .collect(Collectors.toSet())))) {
+                //完全相等，不允许
+                throw new RuntimeException(StrUtil.format("表[{}]唯一键和主键字段不能完全相同[{}]", tableInfo.getName(), CollectionUtil.join(keyList, StrPool.COMMA)));
+            }
+        }
+
+        //自增字段集合
+        List<String> autoIncrementList = new ArrayList<>();
+        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
+        for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
+            boolean autoIncrement = propertyInfo.isAutoIncrement();
+            if (autoIncrement) {
+                autoIncrementList.add(propertyInfo.getColumnName());
+            }
+        }
+        if (autoIncrementList.size() > 1) {
+            throw new RuntimeException(StrUtil.format("表[{}]只能存在一个自增列，目前有[{}]", tableInfo.getName(), CollectionUtil.join(autoIncrementList, StrPool.COMMA)));
+        }
+    }
+
     /**
      * 获取创建表sql，达梦数据库支持创建表时直接指定列注释
      * CREATE TABLE "t_zero" (
@@ -79,10 +105,12 @@ public class DmImpl extends DatabaseService {
      */
     @Override
     public List<String> getCreateTableSql(TableInfo tableInfo) {
+        this.checkTableInfo(tableInfo);
         //存储需要执行的表相关sql
         List<String> resultList = new ArrayList<>();
         //存储需要执行的字段备注sql
         List<String> addColumnCommentSqlList = new ArrayList<>();
+        String autoIncrementSql = null;
         String tableName = tableInfo.getName();
         String comment = tableInfo.getComment();
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
@@ -90,6 +118,9 @@ public class DmImpl extends DatabaseService {
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String columnComment = propertyInfo.getColumnComment();
+            if (propertyInfo.isAutoIncrement()) {
+                autoIncrementSql = StrUtil.format("alter table {} add column {} identity(1, 1)", this.addKeywordHandle(tableName), this.addKeywordHandle(columnName));
+            }
             propertySb.append(StrPool.CRLF)
                     .append(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()))
                     .append(StrPool.COMMA);
@@ -100,18 +131,21 @@ public class DmImpl extends DatabaseService {
         //可显示插入自增主键
         if (CollectionUtil.isNotEmpty(tableInfo.getKeyList())) {
             propertySb.append(StrPool.CRLF)
-                    .append(StrUtil.format(PRIMARY_KEY, CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
+                    .append(StrUtil.format("PRIMARY KEY ({}),", CollectionUtil.join(tableInfo.getKeyList(), StrPool.COMMA, this::addKeywordHandle)));
         }
         //存储建表sql
         resultList.add(this.addTableSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1).toString(), ""));
+        //处理自增作为单独语句，方便新增和修改的getAlterSentence方法统一
+        if (StrUtil.isNotBlank(autoIncrementSql)) {
+            resultList.add(autoIncrementSql);
+        }
+
         if (StrUtil.isNotBlank(comment)) {
             //存储表备注sql
             resultList.add(this.addTableCommentSql(tableName, comment));
         }
         //存储字段备注sql
         resultList.addAll(addColumnCommentSqlList);
-//        //创建主键
-//        this.createPk(tableInfo.getKeyList(), tableName, resultList);
         //创建索引
         this.createIdx(tableInfo.getIndexInfoList(), tableName, resultList);
         //创建唯一索引
@@ -195,29 +229,44 @@ public class DmImpl extends DatabaseService {
                                           List<ConstraintInfo> constraintInfoList,
                                           List<ConstraintInfo> defaultInfoList,
                                           ModelEnums modelEnums) {
-        List<String> resultList = new ArrayList<>();
+        this.checkTableInfo(tableInfo);
+        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
+        /*
+         * 将语句排序
+         * 删除自增约束，新增字段 > 修改字段名 > 索引语句 > 修改字段其他属性
+         */
+        List<String> addList = new ArrayList<>();
+        List<String> updateList = new ArrayList<>();
+        List<String> indexList = new ArrayList<>();
+        List<String> updateOtherList = new ArrayList<>();
+        List<String> otherList = new ArrayList<>();
         String tableComment = tableInfo.getComment();
         //数据库查询出来表注释
-        String tableComment1 = null;
+        String dbTableComment = null;
         String tableName = tableInfo.getName();
-        List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
+        //主键
+        List<String> keyList = tableInfo.getKeyList();
+        //唯一键
+        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
+        //唯一索引
+        List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList = tableInfo.getUniqueIndexInfoList();
+        //普通索引
+        List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
         for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
             String columnName = propertyInfo.getColumnName();
             String oldColumnName = propertyInfo.getOldColumnName();
             TableInfo.PropertyInfo tableColumnInfo = tableColumnInfoMap.get(columnName);
             TableInfo.PropertyInfo oldTableColumnInfo = tableColumnInfoMap.get(oldColumnName);
-            if (StrUtil.isBlank(tableComment1)) {
-                tableComment1 = propertyInfo.getTableComment();
+            if (StrUtil.isBlank(dbTableComment) && Objects.nonNull(tableColumnInfo)) {
+                dbTableComment = tableColumnInfo.getTableComment();
             }
-
             //新旧字段一起删除，代表处理过
             tableColumnInfoMap.remove(oldColumnName);
             tableColumnInfoMap.remove(columnName);
             if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
                 //如果columnName、oldColumnName在数据库中都没有，新增columnName
-                StringBuilder propertySb = new StringBuilder(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()));
-                propertySb.append(StrPool.COMMA);
-                resultList.add(this.getAddColumnSql(tableName, propertySb.deleteCharAt(propertySb.length() - 1)));
+                addList.add(StrUtil.format("ALTER TABLE {} ADD COLUMN({})",
+                        this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
                 continue;
             }
 
@@ -229,7 +278,7 @@ public class DmImpl extends DatabaseService {
                 }
                 if (Objects.nonNull(oldTableColumnInfo)) {
                     //将旧的字段修改成新字段
-                    resultList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                    updateList.add(this.getUpdateColumnNameSql(tableName, oldColumnName, columnName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
                     continue;
                 }
             }
@@ -237,37 +286,28 @@ public class DmImpl extends DatabaseService {
 
             //先比较默认值
             if (!StrUtil.equals(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue())) {
-                resultList.add(this.getUpdateColumnSql(tableName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
             } else {
                 String alterSentence1 = this.getAlterSentence(propertyInfo, true);
                 String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
                 //在比较其他值
                 if (!Objects.equals(alterSentence1, alterSentence2)) {
-                    //自增处理
-                    if (alterSentence2.contains(IDENTITY) && alterSentence1.contains(IDENTITY)) {
-                        resultList.add(this.getDropIdentitySql(tableName));
-                    }
-                    resultList.add(this.getUpdateColumnSql(tableName, this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
+                } else if (propertyInfo.isAutoIncrement() != tableColumnInfo.isAutoIncrement()) {
+                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, false);
                 }
             }
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
                 //修改字段备注
-                resultList.add(this.getUpdateColumnCommentSql(tableName, columnName, propertyInfo.getColumnComment()));
+                otherList.add(this.getUpdateColumnCommentSql(tableName, columnName, propertyInfo.getColumnComment()));
             }
         }
 
         //处理表备注
-        if (!Objects.equals(tableComment, tableComment1)) {
-            resultList.add(this.getUpdateTableCommentSql(tableName, tableComment));
+        if (!Objects.equals(tableComment, dbTableComment)) {
+            otherList.add(this.getUpdateTableCommentSql(tableName, tableComment));
         }
-        //主键
-        List<String> keyList = tableInfo.getKeyList();
-        //唯一键
-        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
-        //唯一索引
-        List<TableInfo.UniqueIndexInfo> uniqueIndexInfoList = tableInfo.getUniqueIndexInfoList();
-        //普通索引
-        List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
+
         Iterator<ConstraintInfo> iterator = constraintInfoList.iterator();
         /*
          * 主键：可以比对并修改主键字段
@@ -285,7 +325,7 @@ public class DmImpl extends DatabaseService {
                 // 一个表只会查出来一个主键名称，一个主键名称对应多个字段
                 if (!new HashSet<>(list).equals(new HashSet<>(keyList))) {
                     //修改
-                    resultList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, true));
+                    indexList.add(this.getUpdatePkSql(tableName, constraintInfo.getConstraintName(), keyList, true));
                 }
                 //处理过了
                 keyList.clear();
@@ -329,27 +369,27 @@ public class DmImpl extends DatabaseService {
         for (ConstraintInfo constraintInfo : constraintInfoList) {
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 //唯一约束
-                resultList.add(this.getDropConstraintSql(tableName, constraintInfo.getConstraintName()));
+                indexList.add(this.getDropConstraintSql(tableName, constraintInfo.getConstraintName()));
             } else {
                 //普通索引+唯一索引
-                resultList.add(this.getDropIndexSql(constraintInfo.getConstraintName()));
+                indexList.add(this.getDropIndexSql(constraintInfo.getConstraintName()));
             }
         }
         if (CollectionUtil.isNotEmpty(keyList)) {
             //新增主键
-            this.createPk(keyList, tableName, resultList);
+            this.createPk(keyList, tableName, indexList);
         }
         if (CollectionUtil.isNotEmpty(uniqueInfoList)) {
             //新增唯一键
-            this.createUk(uniqueInfoList, tableName, resultList);
+            this.createUk(uniqueInfoList, tableName, indexList);
         }
         if (CollectionUtil.isNotEmpty(indexInfoList)) {
             //新增普通索引
-            this.createIdx(indexInfoList, tableName, resultList);
+            this.createIdx(indexInfoList, tableName, indexList);
         }
         if (CollectionUtil.isNotEmpty(uniqueIndexInfoList)) {
             //新增唯一索引
-            this.createUkIdx(uniqueIndexInfoList, tableName, resultList);
+            this.createUkIdx(uniqueIndexInfoList, tableName, indexList);
         }
 
         if (Objects.equals(modelEnums, ModelEnums.ADD_OR_UPDATE_OR_DEL)) {
@@ -357,11 +397,41 @@ public class DmImpl extends DatabaseService {
             if (CollectionUtil.isNotEmpty(tableColumnInfoMap)) {
                 for (Map.Entry<String, TableInfo.PropertyInfo> map : tableColumnInfoMap.entrySet()) {
                     TableInfo.PropertyInfo value = map.getValue();
-                    resultList.add(this.getDelColumnSql(value.getTableName(), value.getColumnName()));
+                    indexList.add(this.getDelColumnSql(value.getTableName(), value.getColumnName()));
                 }
             }
         }
-        return resultList;
+        addList.addAll(updateList);
+        addList.addAll(indexList);
+        addList.addAll(updateOtherList);
+        addList.addAll(otherList);
+        return addList;
+    }
+
+    /**
+     * @param propertyInfo
+     * @param tableColumnInfo
+     * @param addList
+     * @param updateOtherList
+     * @param flag            true字段其他信息也修改了，false只改了自增
+     */
+
+    public void updateHandle(TableInfo.PropertyInfo propertyInfo, TableInfo.PropertyInfo tableColumnInfo, List<String> addList, List<String> updateOtherList, boolean flag) {
+        String tableName = propertyInfo.getTableName();
+        String columnName = propertyInfo.getColumnName();
+        String alterSentence = this.getAlterSentence(propertyInfo, true);
+        //数据库是自增，实体类不是自增，删掉自增
+        if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
+            //alter table TEST."t_zero" drop identity;
+            addList.add(0, StrUtil.format("alter table {} drop identity", this.addKeywordHandle(tableName)));
+        }
+        if (flag) {
+            updateOtherList.add(this.getUpdateColumnSql(tableName, this.jointDefault(alterSentence, propertyInfo.getDefaultValue())));
+        }
+        if (propertyInfo.isAutoIncrement()) {
+            //alter table TEST."t_zero" add column "zero" identity(1, 1);
+            updateOtherList.add(StrUtil.format("alter table {} add column {} identity(1, 1)", this.addKeywordHandle(tableName), this.addKeywordHandle(columnName)));
+        }
     }
 
     private boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {
@@ -470,10 +540,10 @@ public class DmImpl extends DatabaseService {
          */
         if (propertyInfo.isAutoIncrement() || propertyInfo.isKey() || !propertyInfo.isNull()) {
             sb.append(NOT_NULL);
-            if (propertyInfo.isAutoIncrement()) {
-                //加上自增的逻辑
-                sb.append(IDENTITY);
-            }
+//            if (propertyInfo.isAutoIncrement()) {
+//                //加上自增的逻辑
+//                sb.append(IDENTITY);
+//            }
         } else {
             sb.append(NULL);
         }
@@ -506,31 +576,36 @@ public class DmImpl extends DatabaseService {
 
     @Override
     public String getTableStructureSql(String tableName) {
-        return StrUtil.format("SELECT t.TABLE_NAME tableName," +
-                "   (select COMMENTS from all_tab_comments A1  " +
-                "  WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment, " +
-                "       t.COLUMN_NAME columnName, " +
-                "       (select COMMENTS from all_COL_comments A2  " +
-                "       WHERE  t.TABLE_NAME=A2.TABLE_NAME  " +
-                "       AND t.OWNER=A2.SCHEMA_NAME AND t.COLUMN_NAME=A2.COLUMN_NAME ) columnComment, " +
-                "       t.CHARACTER_SET_NAME columnCharacterSetName, " +
-                "       CASE WHEN t.NULLABLE = 'Y' THEN 1 ELSE 0 END isNull, " +
-                "   CASE WHEN t.DATA_TYPE = 'NUMBER' THEN " +
-                "   (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE " +
-                "         WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')' " +
-                " ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END) " +
-                "       ELSE t.DATA_TYPE END typeStr, " +
-                "   CASE WHEN (SELECT count(1) FROM all_CONS_COLUMNS T4, all_CONSTRAINTS T5 " +
-                "              WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P' " +
-                "                 AND t.TABLE_NAME = T5.TABLE_NAME(+) AND t.COLUMN_NAME = T4.COLUMN_NAME(+)) > 0 THEN 1 " +
-                "            ELSE 0 END isKey, " +
-                "       t.DATA_DEFAULT defaultValue, " +
-                "       case when t.DATA_PRECISION is null then t.DATA_LENGTH else t.DATA_PRECISION end length, " +
-                "       t.DATA_SCALE decimalLength," +
-                "       CASE WHEN (SELECT count(1) FROM SYS.SYSCOLUMNS a,all_tables b,sys.sysobjects c " +
-                "                 WHERE a.INFO2 & 0x01 = 0x01 AND a.id = c.id AND c.name = b.table_name AND " +
-                "       b.table_name = t.TABLE_NAME AND a.name = t.COLUMN_NAME) > 0 THEN 1 ELSE 0 END  isAutoIncrement " +
-                " FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = '{}' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
+        return StrUtil.format("SELECT t.TABLE_NAME tableName, " +
+                "                   (select COMMENTS from all_tab_comments A1   " +
+                "                  WHERE t.TABLE_NAME=A1.TABLE_NAME and t.OWNER=A1.OWNER) tableComment,  " +
+                "                       t.COLUMN_NAME columnName,  " +
+                "                       (select COMMENTS from all_COL_comments A2   " +
+                "                       WHERE  t.TABLE_NAME=A2.TABLE_NAME   " +
+                "                       AND t.OWNER=A2.SCHEMA_NAME AND t.COLUMN_NAME=A2.COLUMN_NAME ) columnComment,  " +
+                "                       t.CHARACTER_SET_NAME columnCharacterSetName,  " +
+                "                       CASE WHEN t.NULLABLE = 'Y' THEN 1 ELSE 0 END isNull,  " +
+                "   CASE WHEN t.DATA_TYPE = 'NUMBER' THEN  " +
+                "   (CASE WHEN t.DATA_PRECISION IS NULL THEN t.DATA_TYPE  " +
+                "         WHEN NVL(t.DATA_SCALE, 0) > 0 THEN t.DATA_TYPE || '(' || t.DATA_PRECISION || ',' || t.DATA_SCALE || ')'  " +
+                " ELSE t.DATA_TYPE || '(' || t.DATA_PRECISION || ')' END)  " +
+                "       ELSE t.DATA_TYPE END typeStr,  " +
+                "   CASE WHEN (SELECT count(1) FROM all_CONS_COLUMNS T4, all_CONSTRAINTS T5  " +
+                "              WHERE T4.CONSTRAINT_NAME = T5.CONSTRAINT_NAME AND T5.CONSTRAINT_TYPE = 'P' and T5.OWNER = t.OWNER " +
+                "                 AND t.TABLE_NAME = T5.TABLE_NAME(+) AND t.COLUMN_NAME = T4.COLUMN_NAME(+)) > 0 THEN 1  " +
+                "            ELSE 0 END isKey,  " +
+                "       t.DATA_DEFAULT defaultValue,  " +
+                "       case when t.DATA_PRECISION is null then t.DATA_LENGTH else t.DATA_PRECISION end length,  " +
+                "       t.DATA_SCALE decimalLength, " +
+                "       CASE WHEN (SELECT count(1) " +
+                "  FROM SYSOBJECTS TAB " +
+                "      ,SYSCOLUMNS COL " +
+                " WHERE COL.ID = TAB.ID " +
+                "   AND TAB.TYPE$ = 'SCHOBJ' " +
+                "   AND TAB.SUBTYPE$ IN ('UTAB') " +
+                "   AND COL.INFO2 & 0x01 = 1 " +
+                "   AND TAB.SCHID = CURRENT_SCHID and TAB.NAME = t.TABLE_NAME and COL.NAME=t.COLUMN_NAME ) > 0 THEN 1 ELSE 0 END  isAutoIncrement  " +
+                " FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = 't_zero' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
     }
 
     @Override

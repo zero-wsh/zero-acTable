@@ -131,11 +131,9 @@ public class MysqlImpl extends DatabaseService {
      * @param tableInfo
      * @return 自增是什么索引
      */
-    public int checkTableInfo(TableInfo tableInfo) {
+    public void checkTableInfo(TableInfo tableInfo) {
         //自增字段集合
         List<String> autoIncrementList = new ArrayList<>();
-        //自增是什么索引
-        int result = -1;
         //不是主键的自增字段
         String notKeyAutoIncrementColumnName = null;
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
@@ -146,8 +144,6 @@ public class MysqlImpl extends DatabaseService {
                 autoIncrementList.add(propertyInfo.getColumnName());
                 if (!key) {
                     notKeyAutoIncrementColumnName = propertyInfo.getColumnName();
-                } else {
-                    result = PK;
                 }
             }
         }
@@ -160,7 +156,7 @@ public class MysqlImpl extends DatabaseService {
                 List<TableInfo.Index> columns = indexInfo.getColumns();
                 for (TableInfo.Index column : columns) {
                     if (Objects.equals(column.getColumn(), notKeyAutoIncrementColumnName)) {
-                        return INDEX;
+                        return;
                     }
                 }
             }
@@ -170,7 +166,7 @@ public class MysqlImpl extends DatabaseService {
                 List<TableInfo.Index> columns = uniqueInfo.getColumns();
                 for (TableInfo.Index column : columns) {
                     if (Objects.equals(column.getColumn(), notKeyAutoIncrementColumnName)) {
-                        return UK;
+                        return;
                     }
                 }
             }
@@ -180,13 +176,12 @@ public class MysqlImpl extends DatabaseService {
                 List<TableInfo.Index> columns = uniqueIndexInfo.getColumns();
                 for (TableInfo.Index column : columns) {
                     if (Objects.equals(column.getColumn(), notKeyAutoIncrementColumnName)) {
-                        return UK_IDX;
+                        return;
                     }
                 }
             }
             throw new RuntimeException(StrUtil.format("表[{}]自增列[{}]必须是索引的一部分", tableInfo.getName(), notKeyAutoIncrementColumnName));
         }
-        return result;
     }
 
     @Override

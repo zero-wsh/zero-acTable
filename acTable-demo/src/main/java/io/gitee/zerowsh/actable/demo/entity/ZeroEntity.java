@@ -17,16 +17,15 @@ import java.util.Date;
 @Setter
 @TableName("t_zero")
 @AcTable(comment = "测试11")
-@UpdateColumnName(value = {"test1->test4"})
+//@UpdateColumnName(value = {"test1->test4"})
 @IndexArr({
         @Index(type = Index.IndexEnums.IDX, value = "realA",
                 columnArr = {@IndexColumn(value = "realName", asc = false)
                 }),
         @Index(type = Index.IndexEnums.UK, value = "realB", columnArr = {@IndexColumn("realName"), @IndexColumn("zero")}),
-        @Index(type = Index.IndexEnums.UK, value = "realD", columnArr = {@IndexColumn("zero")}),
         @Index(type = Index.IndexEnums.UK_IDX, value = "realC", columnArr = {@IndexColumn("realName")})
 })
-@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test4")})
+@Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
 public class ZeroEntity extends BaseEntity {
 
     @AcColumn(comment = "名称",
@@ -35,7 +34,7 @@ public class ZeroEntity extends BaseEntity {
     private String realName;
 
 
-    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true,isAutoIncrement = true)
+    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
 //    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
     private Integer zero;
 

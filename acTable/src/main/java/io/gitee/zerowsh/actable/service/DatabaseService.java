@@ -9,12 +9,13 @@ import io.gitee.zerowsh.actable.dto.TableInfo;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static io.gitee.zerowsh.actable.constant.AcTableConstants.DOUBLE_QUOTES;
-import static io.gitee.zerowsh.actable.constant.AcTableConstants.SINGLE_QUOTE;
+import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
 
 /**
  * 所有数据库基类
@@ -190,6 +191,28 @@ public abstract class DatabaseService {
      */
     public String getDefaultInfoSql(String tableName) {
         return "";
+    }
+
+    /**
+     * 处理索引
+     *
+     * @param columns
+     * @param list
+     * @param sortList
+     * @return
+     */
+    public boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {
+        List<String> uniqueList = columns.stream().map(TableInfo.Index::getColumn).collect(Collectors.toList());
+        List<String> uniqueSortList = columns.stream().map(a -> {
+            if (a.isAsc()) {
+                return StrUtil.trim(ASC);
+            } else {
+                return StrUtil.trim(DESC);
+            }
+        }).collect(Collectors.toList());
+        //如果完全相等就在集合中删除，否者新增
+        return (new HashSet<>(list).equals(new HashSet<>(uniqueList)))
+                && (new HashSet<>(sortList).equals(new HashSet<>(uniqueSortList)));
     }
 
 

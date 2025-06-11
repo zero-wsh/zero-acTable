@@ -1,6 +1,5 @@
 package io.gitee.zerowsh.actable.properties;
 
-import io.gitee.zerowsh.actable.constant.StringConstants;
 import io.gitee.zerowsh.actable.emnus.HistoryEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.emnus.TurnEnums;
@@ -48,7 +47,7 @@ public class AcTableProperties {
     /**
      * 结束标识，实际使用中发现默认的sql分隔符无法满足业务需求，支持自定义结束标识符
      */
-    private String endFlag = StringConstants.SQL_SPLIT_STR;
+    private String endFlag = ";";
     /**
      * 是否将结束标识符当作sql的一部分，默认true
      */

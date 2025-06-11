@@ -67,19 +67,6 @@ public interface ColumnTypeConstants {
         this.add(NUMERIC);
         this.add(SMALLINT);
     }};
-    List<String> JAVA_TYPE_LIST = new ArrayList<String>() {{
-        this.add("java.lang.Integer,int");
-        this.add("java.lang.Long,long");
-        this.add("java.lang.Short,short");
-        this.add("java.lang.Byte,byte");
-        this.add("java.lang.Char,char");
-        this.add("java.lang.Float,float");
-        this.add("java.lang.Double,double");
-        this.add("java.lang.Boolean,boolean");
-        this.add("java.lang.String");
-        this.add("java.math.BigDecimal");
-        this.add("java.util.Date,java.sql.Timestamp,java.time.LocalDate,java.time.LocalDateTime");
-    }};
 
     /**
      * 达梦数据库字段是否包含这个列类型

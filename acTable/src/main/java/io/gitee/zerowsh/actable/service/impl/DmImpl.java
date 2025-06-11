@@ -122,7 +122,7 @@ public class DmImpl extends DatabaseService {
                 autoIncrementSql = StrUtil.format("alter table {} add column {} identity(1, 1)", this.addKeywordHandle(tableName), this.addKeywordHandle(columnName));
             }
             propertySb.append(StrPool.CRLF)
-                    .append(this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue()))
+                    .append(this.getAlterSentence(propertyInfo, true))
                     .append(StrPool.COMMA);
             if (StrUtil.isNotBlank(columnComment)) {
                 addColumnCommentSqlList.add(StrUtil.format("comment on column {}.{} is '{}'",
@@ -277,7 +277,7 @@ public class DmImpl extends DatabaseService {
             if (Objects.isNull(tableColumnInfo) && Objects.isNull(oldTableColumnInfo)) {
                 //如果columnName、oldColumnName在数据库中都没有，新增columnName
                 addList.add(StrUtil.format("alter table {} add column({})",
-                        this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                        this.addKeywordHandle(tableName), this.getAlterSentence(propertyInfo, true)));
                 continue;
             }
 
@@ -291,26 +291,30 @@ public class DmImpl extends DatabaseService {
                     //将旧的字段修改成新字段
                     updateList.add(StrUtil.format("alter table {} alter column {} rename to {}",
                             this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), this.addKeywordHandle(columnName)));
-                    updateOtherList.add(StrUtil.format("alter table {} modify {}",
-                            this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
-                    continue;
+                    tableColumnInfo = oldTableColumnInfo;
+                    tableColumnInfo.setColumnName(columnName);
                 }
             }
-
 
             //先比较默认值
             if (!StrUtil.equals(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue())) {
-                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
-            } else {
-                String alterSentence1 = this.getAlterSentence(propertyInfo, true);
-                String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
-                //在比较其他值
-                if (!Objects.equals(alterSentence1, alterSentence2)) {
-                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
-                } else if (propertyInfo.isAutoIncrement() != tableColumnInfo.isAutoIncrement()) {
-                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, false);
+                if (Objects.isNull(propertyInfo.getDefaultValue())) {
+                    updateOtherList.add(StrUtil.format("alter table {} alter column {} drop default", this.addKeywordHandle(tableName), this.addKeywordHandle(columnName)));
                 }
             }
+
+            String alterSentence1 = this.getAlterSentence(propertyInfo, true);
+            String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
+            /*
+             * 在比较其他值，getAlterSentence方法没有处理自增
+             *  自增（删除、新增）都是单独的语句，所以需要单独处理
+             */
+            if (!Objects.equals(alterSentence1, alterSentence2)) {
+                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
+            } else if (propertyInfo.isAutoIncrement() != tableColumnInfo.isAutoIncrement()) {
+                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, false);
+            }
+
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
                 //修改字段备注
                 otherList.add(StrUtil.format("comment on column {}.{} is '{}'",
@@ -445,7 +449,7 @@ public class DmImpl extends DatabaseService {
         }
         if (flag) {
             updateOtherList.add(StrUtil.format("alter table {} modify {}",
-                    this.addKeywordHandle(tableName), this.jointDefault(alterSentence, propertyInfo.getDefaultValue())));
+                    this.addKeywordHandle(tableName), alterSentence));
         }
         if (propertyInfo.isAutoIncrement()) {
             //alter table TEST."t_zero" add column "zero" identity(1, 1);
@@ -453,19 +457,6 @@ public class DmImpl extends DatabaseService {
         }
     }
 
-    private boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {
-        List<String> uniqueList = columns.stream().map(TableInfo.Index::getColumn).collect(Collectors.toList());
-        List<String> uniqueSortList = columns.stream().map(a -> {
-            if (a.isAsc()) {
-                return StrUtil.trim(ASC);
-            } else {
-                return StrUtil.trim(DESC);
-            }
-        }).collect(Collectors.toList());
-        //如果完全相等就在集合中删除，否者新增
-        return (new HashSet<>(list).equals(new HashSet<>(uniqueList)))
-                && (new HashSet<>(sortList).equals(new HashSet<>(uniqueSortList)));
-    }
 
     @Override
     public String javaTypeTurnColumnType(String fieldType, String columnType) {
@@ -559,27 +550,19 @@ public class DmImpl extends DatabaseService {
          */
         if (propertyInfo.isAutoIncrement() || propertyInfo.isKey() || !propertyInfo.isNull()) {
             sb.append(NOT_NULL);
-//            if (propertyInfo.isAutoIncrement()) {
-//                //加上自增的逻辑
-//                sb.append(IDENTITY);
-//            }
         } else {
             sb.append(NULL);
         }
-        //默认值占位符
-        sb.append("{}");
-        return sb.toString();
-    }
-
-    public String jointDefault(String alterSentence, String defaultValue) {
+        //默认值处理
+        String defaultValue = propertyInfo.getDefaultValue();
         if (Objects.nonNull(defaultValue)) {
             if (defaultValue.isEmpty()) {//空字符串
-                return StrUtil.format(alterSentence, StrUtil.format(DEFAULT, "''"));
+                sb.append(StrUtil.format(DEFAULT, "''"));
             } else {
-                return StrUtil.format(alterSentence, StrUtil.format(DEFAULT, defaultValue));
+                sb.append(StrUtil.format(DEFAULT, defaultValue));
             }
         }
-        return StrUtil.format(alterSentence, "");
+        return sb.toString();
     }
 
 

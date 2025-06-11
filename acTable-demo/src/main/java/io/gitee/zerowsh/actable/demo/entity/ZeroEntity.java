@@ -28,7 +28,7 @@ import java.util.Date;
 @Index(type = Index.IndexEnums.UK, value = "realNameZero2", columnArr = {@IndexColumn("test1")})
 public class ZeroEntity extends BaseEntity {
 
-    @AcColumn(comment = "名称",
+    @AcColumn(
             length = 20, order = 1,
             type = ColumnTypeConstants.VARCHAR)
     private String realName;
@@ -38,7 +38,7 @@ public class ZeroEntity extends BaseEntity {
 //    @AcColumn(type = ColumnTypeConstants.INT, isNull = false, isKey = true)
     private Integer zero;
 
-    @AcColumn(value = "test11",oldName = "test1", defaultValue = "'test221'", length = 255)
+    @AcColumn(value = "test1",oldName = "test44",  length = 255,isNull = false)
 //    @AcColumn(value = "test1", defaultValue = "'test'", length = 255)
     private String test1;
     @AcColumn(value = "test2", length = 1000)

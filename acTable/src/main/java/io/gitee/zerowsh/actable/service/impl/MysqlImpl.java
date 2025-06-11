@@ -105,7 +105,7 @@ public class MysqlImpl extends DatabaseService {
         }
         resultList.add(this.addTableSql(tableName,
                 propertySb.deleteCharAt(propertySb.length() - 1).toString(),
-                StrUtil.format(COMMENT_EQ, tableInfo.getComment())));
+                StrUtil.format(" COMMENT='{}'", tableInfo.getComment())));
         return resultList;
     }
 
@@ -380,20 +380,6 @@ public class MysqlImpl extends DatabaseService {
         return resultList;
     }
 
-    private boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {
-        List<String> uniqueList = columns.stream().map(TableInfo.Index::getColumn).collect(Collectors.toList());
-        List<String> uniqueSortList = columns.stream().map(a -> {
-            if (a.isAsc()) {
-                return StrUtil.trim(ASC);
-            } else {
-                return StrUtil.trim(DESC);
-            }
-        }).collect(Collectors.toList());
-        //如果完全相等就在集合中删除，否者新增
-        return (new HashSet<>(list).equals(new HashSet<>(uniqueList)))
-                && (new HashSet<>(sortList).equals(new HashSet<>(uniqueSortList)));
-    }
-
 
     @Override
     public String javaTypeTurnColumnType(String fieldType, String columnType) {
@@ -534,7 +520,7 @@ public class MysqlImpl extends DatabaseService {
         sb.append("{}");
         String columnComment = propertyInfo.getColumnComment();
         if (Objects.nonNull(columnComment)) {
-            sb.append(StrUtil.format(COMMENT, columnComment));
+            sb.append(StrUtil.format(" COMMENT '{}'", columnComment));
         }
         return sb.toString();
     }

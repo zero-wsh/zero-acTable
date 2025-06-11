@@ -32,7 +32,7 @@ import java.util.*;
 import static io.gitee.zerowsh.actable.annotation.Index.IndexEnums.IDX;
 import static io.gitee.zerowsh.actable.annotation.Index.IndexEnums.UK_IDX;
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
-import static io.gitee.zerowsh.actable.constant.StringConstants.CONVERT_STR;
+import static io.gitee.zerowsh.actable.constant.AcTableConstants.CONVERT_STR;
 
 /**
  * 处理实体工具类，通过实体类获取表、字段信息
@@ -285,7 +285,15 @@ public class HandlerEntityUtils {
      * @return 判断是否为null
      */
     private static String judgeIsNull(String comment) {
-        return Objects.equals(comment, DEFAULT_VALUE) ? null : comment;
+        return Objects.equals(comment, DEFAULT_VALUE) ? null :  comment;
+    }
+
+    /**
+     * @param comment
+     * @return 判断是否为null
+     */
+    private static String judgeIsNullDefault(String comment) {
+        return Objects.equals(comment, DEFAULT_VALUE) ? null : comment.isEmpty() ? "''" : comment;
     }
 
     /**
@@ -462,7 +470,7 @@ public class HandlerEntityUtils {
                         .tableComment(tableComment)
                         .columnComment(StrUtil.isBlank(columnComment) ? "" : columnComment)
                         .decimalLength(acColumn.decimalLength())
-                        .defaultValue(judgeIsNull(acColumn.defaultValue()))
+                        .defaultValue(judgeIsNullDefault(acColumn.defaultValue()))
                         .isAutoIncrement(isAutoIncrement)
                         .isKey(isKey)
                         .order(acColumn.order())

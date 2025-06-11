@@ -10,7 +10,6 @@ import io.gitee.zerowsh.actable.constant.AcTableConstants;
 import io.gitee.zerowsh.actable.constant.ColumnTypeConstants;
 import io.gitee.zerowsh.actable.dto.ConstraintInfo;
 import io.gitee.zerowsh.actable.dto.TableInfo;
-import io.gitee.zerowsh.actable.emnus.ColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.JavaTypeTurnColumnTypeEnums;
 import io.gitee.zerowsh.actable.emnus.ModelEnums;
 import io.gitee.zerowsh.actable.properties.AcTableProperties;
@@ -22,8 +21,6 @@ import java.util.stream.Collectors;
 
 import static io.gitee.zerowsh.actable.constant.AcTableConstants.*;
 import static io.gitee.zerowsh.actable.constant.ColumnTypeConstants.*;
-import static io.gitee.zerowsh.actable.constant.StringConstants.LEFT_BRACKET;
-import static io.gitee.zerowsh.actable.constant.StringConstants.RIGHT_BRACKET;
 
 /**
  * sqlserver数据库实现
@@ -43,6 +40,11 @@ public class SqlServerImpl extends DatabaseService {
         HashSet<String> resultSet = new HashSet<String>() {{
             add(BIT);
             add(INT);
+            add(BIGINT);
+            add(SMALLINT);
+            add(DATE);
+            add(TEXT);
+            add(TINYINT);
         }};
         String ignoreLength = acTableProperties.getIgnoreLengthAndDecimalLength();
         if (StrUtil.isNotBlank(ignoreLength)) {
@@ -214,112 +216,11 @@ public class SqlServerImpl extends DatabaseService {
     private void createUk(List<TableInfo.UniqueInfo> uniqueInfoList, String tableName, List<String> resultList) {
         if (CollectionUtil.isNotEmpty(uniqueInfoList)) {
             for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-                resultList.add(StrUtil.format("CREATE UNIQUE NONCLUSTERED INDEX {} on {}({})",
-                        this.addKeywordHandle(uniqueInfo.getValue() + IdUtil.getSnowflakeNextId()), this.addKeywordHandle(tableName),
+                resultList.add(StrUtil.format("ALTER TABLE [dbo].{} ADD CONSTRAINT {} UNIQUE NONCLUSTERED ({})", this.addKeywordHandle(tableName),
+                        this.addKeywordHandle(uniqueInfo.getValue() + IdUtil.getSnowflakeNextId()),
                         CollectionUtil.join(uniqueInfo.getColumns(), StrPool.COMMA, (index) -> this.addKeywordHandle(index.getColumn()))));
             }
         }
-    }
-
-
-    /**
-     * 处理表备注
-     *
-     * @param list
-     * @param comment
-     * @param tableComment
-     * @param tableName
-     */
-    private static void handleTableComment(List<String> list, String comment, String tableComment, String tableName) {
-        if (!Objects.equals(comment, tableComment)) {
-            if (Objects.isNull(tableComment)) {
-                //数据库为null新增备注
-                list.add(StrUtil.format(ADD_TABLE_COMMENT, comment, tableName));
-            } else {
-                if (Objects.isNull(comment)) {
-                    //字段null删除备注
-                    list.add(StrUtil.format(DROP_TABLE_COMMENT, tableName));
-                } else {
-                    //修改备注
-                    list.add(StrUtil.format(UPDATE_TABLE_COMMENT, comment, tableName));
-                }
-            }
-        }
-    }
-
-    /**
-     * 处理列备注
-     *
-     * @param tableColumnInfo
-     * @param propertyInfo
-     * @param resultList
-     * @param tableName
-     */
-    private static void handleColumnComment(TableInfo.PropertyInfo tableColumnInfo, TableInfo.PropertyInfo propertyInfo, List<String> resultList, String tableName) {
-        //判断是否调整了备注
-        if (!Objects.equals(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
-            if (Objects.isNull(tableColumnInfo.getColumnComment())) {
-                //数据库为null新增备注
-                resultList.add(StrUtil.format(ADD_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
-            } else {
-                if (Objects.isNull(propertyInfo.getColumnComment())) {
-                    //字段null删除备注
-                    resultList.add(StrUtil.format(DROP_COLUMN_COMMENT, tableName, propertyInfo.getColumnName()));
-                } else {
-                    //修改备注
-                    resultList.add(StrUtil.format(UPDATE_COLUMN_COMMENT, propertyInfo.getColumnComment(), tableName, propertyInfo.getColumnName()));
-                }
-            }
-        }
-    }
-
-    /**
-     * 处理约束（主键 唯一键 索引 默认值）
-     *
-     * @param constraintInfoList
-     * @param defaultInfoList
-     */
-    private static Map<String, Collection<String>> handleConstraint(String tableName,
-                                                                    List<ConstraintInfo> constraintInfoList,
-                                                                    List<ConstraintInfo> defaultInfoList,
-                                                                    List<String> delUkList,
-                                                                    List<String> delIdxList) {
-        Map<String, Collection<String>> map = new HashMap<>(4);
-        //删除所有约束（唯一键、主键、索引、默认值）
-        List<String> delPkConstraintSqlList = new ArrayList<>();
-        Set<String> delUkConstraintSqlSet = new HashSet<>();
-        Set<String> delIdxConstraintSqlSet = new HashSet<>();
-        List<String> delDefConstraintSqlList = new ArrayList<>();
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            Integer constraintFlag = constraintInfo.getConstraintFlag();
-            String constraintName = constraintInfo.getConstraintName();
-            switch (constraintFlag) {
-                case PK:
-                    //主键
-                    delPkConstraintSqlList.add(StrUtil.format(DROP_CONSTRAINT, tableName, constraintName));
-                    break;
-                case UK:
-                    //唯一键
-                    delUkList.add(constraintName);
-                    delUkConstraintSqlSet.add(StrUtil.format(DROP_CONSTRAINT, tableName, constraintName));
-                    break;
-                case INDEX:
-                    //索引
-                    delIdxList.add(constraintName);
-                    delIdxConstraintSqlSet.add(StrUtil.format(DROP_INDEX, constraintName, tableName));
-                    break;
-                default:
-            }
-        }
-        //删除默认值约束
-        for (ConstraintInfo defaultInfo : defaultInfoList) {
-            delDefConstraintSqlList.add(StrUtil.format(DROP_CONSTRAINT, tableName, defaultInfo.getConstraintName()));
-        }
-        map.put(DEL_PK_C_SQL, delPkConstraintSqlList);
-        map.put(DEL_UK_C_SQL, delUkConstraintSqlSet);
-        map.put(DEL_INDEX_C_SQL, delIdxConstraintSqlSet);
-        map.put(DEL_DF_C_SQL, delDefConstraintSqlList);
-        return map;
     }
 
     /**
@@ -340,16 +241,36 @@ public class SqlServerImpl extends DatabaseService {
                                           ModelEnums modelEnums) {
         this.checkTableInfo(tableInfo);
         List<TableInfo.PropertyInfo> propertyInfoList = tableInfo.getPropertyInfoList();
-        /*
-         * 将语句排序
-         * 删除自增约束，新增字段 > 修改字段名 > 索引语句 > 修改字段其他属性
-         */
         List<String> addList = new ArrayList<>();
         List<String> updateList = new ArrayList<>();
         List<String> indexList = new ArrayList<>();
-        List<String> updateOtherList = new ArrayList<>();
         List<String> otherList = new ArrayList<>();
         String tableComment = tableInfo.getComment();
+
+        //数据库表中自增字段
+        String tableAutoIncrementColumnName = null;
+        if (CollectionUtil.isNotEmpty(constraintInfoList)) {
+            for (Map.Entry<String, TableInfo.PropertyInfo> propertyInfoEntry : tableColumnInfoMap.entrySet()) {
+                TableInfo.PropertyInfo value = propertyInfoEntry.getValue();
+                boolean autoIncrement = value.isAutoIncrement();
+                if (autoIncrement) {
+                    tableAutoIncrementColumnName = value.getColumnName();
+                    break;
+                }
+            }
+        }
+        //实体类自增字段
+        String entityAutoIncrementColumnName = null;
+        for (TableInfo.PropertyInfo propertyInfo : propertyInfoList) {
+            boolean autoIncrement = propertyInfo.isAutoIncrement();
+            if (autoIncrement) {
+                entityAutoIncrementColumnName = propertyInfo.getColumnName();
+                break;
+            }
+        }
+        if (Objects.nonNull(tableAutoIncrementColumnName) && !Objects.equals(tableAutoIncrementColumnName, entityAutoIncrementColumnName)) {
+            throw new RuntimeException(StrUtil.format("表[{}]自增主键字段[{}]不允许改变", tableInfo.getName(), tableAutoIncrementColumnName));
+        }
         //数据库查询出来表注释
         String dbTableComment = null;
         String tableName = tableInfo.getName();
@@ -389,26 +310,74 @@ public class SqlServerImpl extends DatabaseService {
                     //将旧的字段修改成新字段
                     updateList.add(StrUtil.format("EXEC sp_rename '[dbo].{}.{}', '{}', 'COLUMN'",
                             this.addKeywordHandle(tableName), this.addKeywordHandle(oldColumnName), columnName));
-                    updateOtherList.add(StrUtil.format("ALTER TABLE [dbo].{} ALTER COLUMN {}",
-                            this.addKeywordHandle(tableName), this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
-                    continue;
+                    tableColumnInfo = oldTableColumnInfo;
+                    tableColumnInfo.setColumnName(columnName);
                 }
             }
+            String defaultValue = propertyInfo.getDefaultValue();
+            if (Objects.nonNull(defaultValue)) {//这里的判断只需要判断是否为null,空字符串是允许的
+                //特殊默认值处理
+                switch (tableColumnInfo.getTypeStr()) {
+                    case BIT:
+                        defaultValue = StrUtil.format("(({}))", defaultValue);
+                        break;
 
-
+                    case DATE:
+                    case DATETIME:
+                    case DATETIME2:
+                        if (Objects.equals(defaultValue, "CURRENT_TIMESTAMP")) {
+                            defaultValue = StrUtil.format("({})", "getdate()");
+                        } else {
+                            defaultValue = StrUtil.format("({})", defaultValue);
+                        }
+                        break;
+                    default:
+                        defaultValue = StrUtil.format("({})", defaultValue);
+                        break;
+                }
+            }
             //先比较默认值
-            if (!StrUtil.equals(tableColumnInfo.getDefaultValue(), propertyInfo.getDefaultValue())) {
-                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
-            } else {
-                String alterSentence1 = this.getAlterSentence(propertyInfo, true);
-                String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
-                //在比较其他值
-                if (!Objects.equals(alterSentence1, alterSentence2)) {
-                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
-                } else if (propertyInfo.isAutoIncrement() != tableColumnInfo.isAutoIncrement()) {
-                    this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, false);
+            if (!StrUtil.equals(tableColumnInfo.getDefaultValue(), defaultValue)) {
+                for (ConstraintInfo constraintInfo : defaultInfoList) {
+                    String constraintColumnName = constraintInfo.getConstraintColumnName();
+                    if (Objects.equals(constraintColumnName, tableColumnInfo.getColumnName())) {
+                        //删除
+                        //ALTER TABLE [dbo].[t_zero] DROP CONSTRAINT [DF__t_zero__test11__6EF57B66]
+                        updateList.add(StrUtil.format("ALTER TABLE [dbo].{} DROP CONSTRAINT {}",
+                                tableName, constraintInfo.getConstraintName()));
+                        break;
+                    }
+                }
+                if (Objects.nonNull(defaultValue)) {
+                    updateList.add(StrUtil.format("ALTER TABLE [dbo].{} ADD CONSTRAINT {} DEFAULT {} FOR {}",
+                            this.addKeywordHandle(tableName), this.addKeywordHandle(StrUtil.format("DF__{}__{}__", tableName, columnName) + IdUtil.getSnowflakeNextId())
+                            , propertyInfo.getDefaultValue(), this.addKeywordHandle(columnName)));
                 }
             }
+            String alterSentence1 = this.getAlterSentence(propertyInfo, true);
+            String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
+            //在比较其他值
+            if (!Objects.equals(alterSentence1, alterSentence2)) {
+                for (ConstraintInfo constraintInfo : constraintInfoList) {
+                    Integer constraintFlag = constraintInfo.getConstraintFlag();
+                    if (Objects.equals(constraintFlag, UK)) {
+                        List<String> list = Arrays.asList(constraintInfo.getConstraintColumnName().split(StrPool.COMMA));
+                        if (list.contains(tableColumnInfo.getColumnName())) {
+                            //先删除
+                            //ALTER TABLE [dbo].[t_zero] DROP CONSTRAINT [UQ__t_zero__FF33573DF6A1794C]
+                            updateList.add(StrUtil.format("ALTER TABLE [dbo].{} DROP CONSTRAINT {}", this.addKeywordHandle(tableName),
+                                    this.addKeywordHandle(constraintInfo.getConstraintName())));
+                            constraintInfoList.remove(constraintInfo);
+                            break;
+                        }
+                    }
+                }
+
+                //默认值处理过了，这里直接不拼接
+                updateList.add(StrUtil.format("ALTER TABLE [dbo].{} ALTER COLUMN {}", this.addKeywordHandle(tableName),
+                        StrUtil.format(this.getAlterSentence(propertyInfo, true), "")));
+            }
+
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
                 //修改字段备注
                 otherList.add(StrUtil.format("EXEC sp_updateextendedproperty 'MS_Description', N'{}','SCHEMA', N'dbo','TABLE', N'{}','COLUMN', N'{}'", propertyInfo.getColumnComment(),
@@ -484,7 +453,6 @@ public class SqlServerImpl extends DatabaseService {
         for (ConstraintInfo constraintInfo : constraintInfoList) {
             if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
                 //唯一约束
-
                 indexList.add(StrUtil.format("ALTER TABLE [dbo].{} DROP CONSTRAINT {}", this.addKeywordHandle(tableName), this.addKeywordHandle(constraintInfo.getConstraintName())));
             } else {
                 //普通索引+唯一索引
@@ -520,51 +488,10 @@ public class SqlServerImpl extends DatabaseService {
         }
         addList.addAll(updateList);
         addList.addAll(indexList);
-        addList.addAll(updateOtherList);
         addList.addAll(otherList);
         return addList;
     }
 
-    private boolean handleIndex(List<TableInfo.Index> columns, List<String> list, List<String> sortList) {
-        List<String> uniqueList = columns.stream().map(TableInfo.Index::getColumn).collect(Collectors.toList());
-        List<String> uniqueSortList = columns.stream().map(a -> {
-            if (a.isAsc()) {
-                return StrUtil.trim(ASC);
-            } else {
-                return StrUtil.trim(DESC);
-            }
-        }).collect(Collectors.toList());
-        //如果完全相等就在集合中删除，否者新增
-        return (new HashSet<>(list).equals(new HashSet<>(uniqueList)))
-                && (new HashSet<>(sortList).equals(new HashSet<>(uniqueSortList)));
-    }
-
-    /**
-     * @param propertyInfo
-     * @param tableColumnInfo
-     * @param addList
-     * @param updateOtherList
-     * @param flag            true字段其他信息也修改了，false只改了自增
-     */
-
-    public void updateHandle(TableInfo.PropertyInfo propertyInfo, TableInfo.PropertyInfo tableColumnInfo, List<String> addList, List<String> updateOtherList, boolean flag) {
-        String tableName = propertyInfo.getTableName();
-        String columnName = propertyInfo.getColumnName();
-        String alterSentence = this.getAlterSentence(propertyInfo, true);
-        //数据库是自增，实体类不是自增，删掉自增
-        if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
-            //alter table TEST."t_zero" drop identity;
-            addList.add(0, StrUtil.format("alter table {} drop identity", this.addKeywordHandle(tableName)));
-        }
-        if (flag) {
-            updateOtherList.add(StrUtil.format("alter table {} modify {}",
-                    this.addKeywordHandle(tableName), this.jointDefault(alterSentence, propertyInfo.getDefaultValue())));
-        }
-        if (propertyInfo.isAutoIncrement()) {
-            //alter table TEST."t_zero" add column "zero" identity(1, 1);
-            updateOtherList.add(StrUtil.format("alter table {} add column {} identity(1, 1)", this.addKeywordHandle(tableName), this.addKeywordHandle(columnName)));
-        }
-    }
 
     @Override
     public String javaTypeTurnColumnType(String fieldType, String columnType) {
@@ -584,297 +511,47 @@ public class SqlServerImpl extends DatabaseService {
 
     @Override
     public String getTableStructureSql(String tableName) {
-        return StrUtil.format("SELECT d.name tableName,convert(nvarchar(255), f.value) tableComment,a.name columnName," +
-                " case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement," +
-                " case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (" +
-                " SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then 1 else 0 end isKey," +
-                " b.name typeStr, COLUMNPROPERTY(a.id,a.name,'PRECISION') length," +
-                " isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) decimalLength," +
-                " case when a.isnullable=1 then 1 else 0 end isNull,convert(nvarchar(255), e.text) defaultValue,convert(nvarchar(255), g.value) columnComment" +
-                " FROM syscolumns a" +
-                " left join systypes b on a.xusertype=b.xusertype" +
-                " inner join sysobjects d on a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties'" +
-                " left join syscomments e on a.cdefault=e.id" +
-                " left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id" +
-                " left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0 where d.name='{}'", tableName);
+        return StrUtil.format("SELECT d.name tableName, " +
+                "convert(nvarchar(255), f.value) tableComment, " +
+                "a.name columnName, " +
+                "case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then  1 else 0 end isAutoIncrement, " +
+                "case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in ( " +
+                "SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then 1 else 0 end isKey, " +
+                "b.name typeStr,  " +
+                "CASE  WHEN b.name IN ('datetime2', 'datetimeoffset', 'time') THEN  " +
+                "COLUMNPROPERTY(a.id, a.name, 'Scale')  ELSE COLUMNPROPERTY(a.id, a.name, 'PRECISION') END as length, " +
+                "isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) decimalLength, " +
+                "case when a.isnullable=1 then 1 else 0 end isNull,convert(nvarchar(255), e.text) defaultValue,convert(nvarchar(255), g.value) columnComment " +
+                "FROM syscolumns a " +
+                "left join systypes b on a.xusertype=b.xusertype " +
+                "inner join sysobjects d on a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties' " +
+                "left join syscomments e on a.cdefault=e.id " +
+                "left join sys.extended_properties g on a.id=G.major_id and a.colid=g.minor_id " +
+                "left join sys.extended_properties f on d.id=f.major_id and f.minor_id=0 where d.name='{}'", tableName);
     }
 
     @Override
     public String getConstraintInfoSql(String tableName) {
-        return StrUtil.format("WITH MO_Cook AS (SELECT  IDX.NAME AS constraintName, IDX.TYPE_DESC AS constraintType,COL.NAME AS constraintColumnName,case when IDX.IS_PRIMARY_KEY = 1 then 1 else case when        IDX.IS_UNIQUE_CONSTRAINT = 1 then 2 else 3 end end constraintFlag FROM  SYS.INDEXES IDX JOIN " +
-                " SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) JOIN " +
-                " SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN " +
-                " SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) " +
-                " where  TAB.NAME='{}') " +
-                " select constraintName,constraintType,constraintFlag,stuff((select ','+constraintColumnName from  MO_Cook   " +
-                " where c.constraintName=constraintName and c.constraintType=constraintType and c.constraintFlag=constraintFlag order by constraintColumnName " +
-                " for xml path('')),1,1,'') as constraintColumnName  from MO_Cook c" +
-                " group by c.constraintName,c.constraintType,c.constraintFlag", tableName);
+        return StrUtil.format("WITH MO_Cook AS( SELECT IDX.NAME AS constraintName, COL.NAME AS constraintColumnName," +
+                " CASE WHEN IDX.IS_PRIMARY_KEY = 1 THEN 1 WHEN IDX.IS_UNIQUE_CONSTRAINT = 1 AND IDX.IS_UNIQUE = 1 THEN 2 WHEN IDX.IS_UNIQUE = 1 THEN 4 ELSE 3 END AS constraintFlag," +
+                " IDXCOL.is_descending_key AS isDescending, IDXCOL.key_ordinal AS columnOrder FROM SYS.INDEXES IDX " +
+                " JOIN SYS.INDEX_COLUMNS IDXCOL ON (IDX.OBJECT_ID = IDXCOL.OBJECT_ID AND IDX.INDEX_ID = IDXCOL.INDEX_ID) " +
+                " JOIN SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) " +
+                " JOIN SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) WHERE TAB.NAME = '{}')" +
+                " SELECT constraintName, constraintFlag, STUFF(( SELECT ',' + constraintColumnName FROM MO_Cook m WHERE m.constraintName = c.constraintName AND m.constraintFlag = c.constraintFlag " +
+                " ORDER BY m.columnOrder FOR XML PATH('') ), 1, 1, '') AS constraintColumnName, " +
+                " STUFF(( SELECT ',' + CASE WHEN isDescending = 1 THEN 'DESC' ELSE 'ASC' END FROM MO_Cook m WHERE m.constraintName = c.constraintName AND m.constraintFlag = c.constraintFlag" +
+                " ORDER BY m.columnOrder FOR XML PATH('') ), 1, 1, '') AS indexSortStr FROM MO_Cook c GROUP BY c.constraintName, c.constraintFlag", tableName);
     }
 
 
     @Override
     public String getDefaultInfoSql(String tableName) {
-        return StrUtil.format("select t.name constraintName,syscolumns.name constraintColumnName,4 constraintFlag from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
+        return StrUtil.format("select t.name constraintName,syscolumns.name constraintColumnName,5 constraintFlag,'' indexSortStr from (SELECT sysobjects.name,sysobjects.id FROM sysobjects  " +
                 "where sysobjects.id IN ( SELECT syscolumns.cdefault FROM sysobjects INNER JOIN syscolumns ON sysobjects.Id= syscolumns.Id WHERE sysobjects.name= '{}' ))t  " +
                 "LEFT JOIN syscolumns ON t.Id= syscolumns.cdefault", tableName);
     }
 
-
-    /**
-     * 排除主键约束删除
-     *
-     * @param defaultInfoList
-     * @param pkFlag
-     */
-    public static void excludePkConstraint(List<ConstraintInfo> defaultInfoList, boolean pkFlag) {
-        if (!pkFlag) {
-            defaultInfoList.removeIf(constraintInfo -> Objects.equals(PK, constraintInfo.getConstraintFlag()));
-        }
-    }
-
-    /**
-     * 添加要删除的默认值约束
-     *
-     * @param defaultInfoList
-     * @param columnName
-     */
-    public static void addDelDefConstraintInfo(List<ConstraintInfo> defaultInfoList, List<ConstraintInfo> defaultInfoNewList, String columnName) {
-        for (ConstraintInfo constraintInfo : defaultInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)) {
-                defaultInfoNewList.add(constraintInfo);
-            }
-        }
-    }
-
-    /**
-     * 获取字段唯一键集合
-     *
-     * @param uniqueInfoList
-     * @return
-     */
-    public static Set<String> getPropertyUniqueSet(List<TableInfo.UniqueInfo> uniqueInfoList) {
-        Set<String> set = new HashSet<>();
-        for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-//            String[] columns = uniqueInfo.getColumns();
-//            if (ArrayUtil.isNotEmpty(columns)) {
-//                Arrays.sort(columns);
-//                set.add(StrUtil.join(StrUtil.COMMA, columns));
-//            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取数据库唯一键集合
-     *
-     * @param constraintInfoList
-     * @return
-     */
-    public static Set<String> getDatabaseUniqueSet(List<ConstraintInfo> constraintInfoList) {
-        Set<String> set = new HashSet<>();
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
-                set.add(constraintInfo.getConstraintColumnName());
-            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取字段索引集合
-     *
-     * @param indexInfoList
-     * @return
-     */
-    public static Set<String> getPropertyIndexSet(List<TableInfo.IndexInfo> indexInfoList) {
-        Set<String> set = new HashSet<>();
-        for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-//            String[] columns = indexInfo.getColumns();
-//            if (ArrayUtil.isNotEmpty(columns)) {
-//                Arrays.sort(columns);
-//                set.add(StrUtil.join(StrUtil.COMMA, columns));
-//            }
-        }
-        return set;
-    }
-
-    /**
-     * 获取数据库索引集合
-     *
-     * @param constraintInfoList
-     * @return
-     */
-    public static Set<String> getDatabaseIndexSet(List<ConstraintInfo> constraintInfoList) {
-        Set<String> set = new HashSet<>();
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
-                set.add(constraintInfo.getConstraintColumnName());
-            }
-        }
-        return set;
-    }
-
-    private static boolean handleUkConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
-        List<TableInfo.UniqueInfo> uniqueInfoList = tableInfo.getUniqueInfoList();
-        for (TableInfo.UniqueInfo uniqueInfo : uniqueInfoList) {
-//            String[] columns = uniqueInfo.getColumns();
-//            for (String column : columns) {
-//                if (Objects.equals(column, propertyInfo.getColumnName())) {
-//                    return true;
-//                }
-//            }
-        }
-        return false;
-    }
-
-
-    private static boolean handleIdxConstraint(TableInfo tableInfo, TableInfo.PropertyInfo propertyInfo) {
-        List<TableInfo.IndexInfo> indexInfoList = tableInfo.getIndexInfoList();
-        for (TableInfo.IndexInfo indexInfo : indexInfoList) {
-//            String[] columns = indexInfo.getColumns();
-//            for (String column : columns) {
-//                if (Objects.equals(column, propertyInfo.getColumnName())) {
-//                    return true;
-//                }
-//            }
-        }
-        return false;
-    }
-
-    private static boolean handleUkConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), UK)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean handleIdxConstraintDatabase(String columnName, List<ConstraintInfo> constraintInfoList) {
-        for (ConstraintInfo constraintInfo : constraintInfoList) {
-            if (Objects.equals(constraintInfo.getConstraintColumnName(), columnName)
-                    && Objects.equals(constraintInfo.getConstraintFlag(), INDEX)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 拼接列信息
-     *
-     * @param propertySb
-     * @param propertyInfo
-     * @param tableName
-     */
-    private static void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
-        splicingColumnInfo(propertySb, propertyInfo, tableName, false, null);
-    }
-
-    /**
-     * 拼接列信息
-     *
-     * @param propertySb
-     * @param propertyInfo
-     * @param tableName
-     * @param isUpdate
-     * @param addColumnDefSqlList
-     */
-    private static void splicingColumnInfo(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo,
-                                           String tableName, boolean isUpdate, List<String> addColumnDefSqlList) {
-        splicingColumnType(propertySb, propertyInfo, tableName);
-        //是否自增
-        if (propertyInfo.isAutoIncrement()) {
-            if (!isUpdate) {
-                propertySb.append(IDENTITY);
-            }
-        }
-        //默认值
-        if (StrUtil.isNotBlank(propertyInfo.getDefaultValue())) {
-            if (isUpdate) {
-                addColumnDefSqlList.add(StrUtil.format(ADD_DEFAULT, tableName, propertyInfo.getDefaultValue(), propertyInfo.getColumnName()));
-            } else {
-                propertySb.append(DEFAULT).append(propertyInfo.getDefaultValue());
-            }
-        }
-
-        //是否为空
-        if (propertyInfo.isNull() && !propertyInfo.isKey() && !propertyInfo.isAutoIncrement()) {
-            propertySb.append(NULL);
-        } else {
-            propertySb.append(NOT_NULL);
-        }
-        propertySb.append(StrUtil.COMMA);
-    }
-
-    /**
-     * 拼接列类型
-     *
-     * @param propertySb
-     * @param propertyInfo
-     * @param tableName
-     */
-    private static void splicingColumnType(StringBuilder propertySb, TableInfo.PropertyInfo propertyInfo, String tableName) {
-        String type = propertyInfo.getTypeStr();
-        long length = propertyInfo.getLength();
-        long decimalLength = propertyInfo.getDecimalLength();
-        String columnName = propertyInfo.getColumnName();
-        ColumnTypeEnums typeEnum = ColumnTypeEnums.getSqlServerByValue(type);
-        propertySb.append(StrPool.CRLF);
-        switch (typeEnum) {
-            case VARCHAR:
-            case NVARCHAR:
-            case DATETIME2:
-            case NCHAR:
-            case CHAR:
-                propertySb.append(type).append(LEFT_BRACKET);
-                if (Objects.equals(type, ColumnTypeEnums.DATETIME2.getSqlServer())) {
-                    //对类型特殊处理
-                    if (length > 7 || length < 0) {
-                        log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 0);
-                        propertySb.append(0);
-                    } else {
-                        propertySb.append(length);
-                    }
-                } else {
-                    if (length < 0) {
-                        log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 255);
-                        propertySb.append(255);
-                    } else {
-                        propertySb.append(length);
-                    }
-                }
-                propertySb.append(RIGHT_BRACKET);
-                break;
-
-            case DECIMAL:
-            case NUMERIC:
-                propertySb.append(type).append(LEFT_BRACKET);
-
-                if (decimalLength > length) {
-                    log.warn("表 [{}] 字段 [{}] {}精度长度 [{}] 大于类型长度 [{}] 存在问题，使用类型长度 [{}]", tableName, columnName, type, decimalLength, length, length);
-                    decimalLength = length;
-                }
-                if (length > 38 || length < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, length, 18);
-                    propertySb.append(18);
-                } else {
-                    propertySb.append(length);
-                }
-                if (decimalLength > 38 || decimalLength < 0) {
-                    log.warn(COLUMN_LENGTH_VALID_STR, tableName, columnName, type, decimalLength, 2);
-                    propertySb.append(StrUtil.COMMA).append(2);
-                } else {
-                    propertySb.append(StrUtil.COMMA).append(decimalLength);
-                }
-                propertySb.append(RIGHT_BRACKET);
-                break;
-            default:
-                propertySb.append(type);
-        }
-    }
 
     /**
      * 获取alter语句

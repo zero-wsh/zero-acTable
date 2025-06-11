@@ -128,3 +128,5 @@ zero.ac-acTable.after-script=db/*.sql
 - 有初始化脚本时，并且使用了druid连接池filters不要配置wall
 - 2.*和3.*版本存在兼容问题，并且有些注解进行了调整：①唯一键、索引统一放置在类上；②@AcColumn注解取消name属性，改为value
 - 如果有默认值，需自己判断是否为字符串，如果是字符串需要自己加上单引号
+- SQL Server如果修改的字段是唯一约束，需要先删除约束
+- SQL Server设计上不允许直接修改 IDENTITY 属性，必须通过重建列实现

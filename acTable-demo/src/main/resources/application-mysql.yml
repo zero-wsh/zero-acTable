@@ -7,7 +7,7 @@ zero:
   ac-table:
     entity-package: io.gitee.zerowsh.*.demo.entity
     model: ADD_OR_UPDATE_OR_DEL
-    after-script: db/mysql.sql
+    after-script: db/mysql/*
     history: not_repeat
     print: true
 #    table-to-upper-case: true

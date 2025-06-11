@@ -1,13 +1,13 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost;databaseName=zero
+    url: jdbc:sqlserver://localhost;databaseName=zero111
     username: sa
     password: Y.sa123456
 zero:
   ac-table:
     entity-package: io.gitee.zerowsh.*.demo.entity
     model: ADD_OR_UPDATE_OR_DEL
-    #    after-script: db/mysql.sql
-    history: NONE
+    after-script: db/sqlserver/*
+    history: NOT_REPEAT
     print: true
 

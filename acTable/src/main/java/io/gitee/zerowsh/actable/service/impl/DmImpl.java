@@ -607,7 +607,7 @@ public class DmImpl extends DatabaseService {
                 "   AND TAB.SUBTYPE$ IN ('UTAB') " +
                 "   AND COL.INFO2 & 0x01 = 1 " +
                 "   AND TAB.SCHID = CURRENT_SCHID and TAB.NAME = t.TABLE_NAME and COL.NAME=t.COLUMN_NAME ) > 0 THEN 1 ELSE 0 END  isAutoIncrement  " +
-                " FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = 't_zero' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
+                " FROM all_TAB_COLUMNS t WHERE t.TABLE_NAME = '{}' and t.OWNER=SF_GET_SCHEMA_NAME_BY_ID(CURRENT_SCHID)", tableName);
     }
 
     @Override

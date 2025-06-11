@@ -10,6 +10,6 @@ zero:
   ac-table:
     entity-package: io.gitee.zerowsh.*.demo.entity
     model: ADD_OR_UPDATE_OR_DEL
-#    after-script: db/mysql.sql
-    history: NONE
+    after-script: db/dm/*
+    history: NOT_REPEAT
     print: true

@@ -1,10 +1,11 @@
 # zero-acTable
 
 #### 介绍
-zero-acTable是基于实体类创建表的开源项目。您只需要在实体类上标记相关注解就能达到创建数据库的操作，指定初始化脚本就能执行数据初始化，内置测试demo。
+zero-acTable是将实体类和数据库表结构同步的开源项目。
+您只需要使用相关注解就能达到数据库表结构同步，指定初始化脚本就能执行数据初始化，可开启类似flyway功能，同时内置测试demo。
 
 #### 数据库支持
-mysql、达梦
+mysql、达梦、sql_server
 #### 功能介绍
 - 兼容MP 排除字段逻辑（static、transient修饰字段和@TableField注解exist=false）
 - 兼容MP @TableField、@TableName,@TableId注解
@@ -28,7 +29,7 @@ mysql、达梦
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>3.0.6</version>
+	<version>3.0.7</version>
 </dependency>
 ```
 

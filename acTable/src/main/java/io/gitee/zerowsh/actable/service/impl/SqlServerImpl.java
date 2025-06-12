@@ -375,7 +375,7 @@ public class SqlServerImpl extends DatabaseService {
 
                 //默认值处理过了，这里直接不拼接
                 updateList.add(StrUtil.format("ALTER TABLE [dbo].{} ALTER COLUMN {}", this.addKeywordHandle(tableName),
-                        StrUtil.format(this.getAlterSentence(propertyInfo, true), "")));
+                        StrUtil.format(alterSentence1, "")));
             }
 
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {

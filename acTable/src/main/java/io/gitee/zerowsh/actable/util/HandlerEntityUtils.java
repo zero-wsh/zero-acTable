@@ -378,8 +378,13 @@ public class HandlerEntityUtils {
                 boolean isAutoIncrement = (Objects.nonNull(tableId) && Objects.equals(tableId.type(), IdType.AUTO))
                         || (Objects.nonNull(generatedValue) && Objects.equals(generatedValue.strategy(), GenerationType.IDENTITY));
                 //只能从swagger注解上取值
-                String columnComment = Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value()) ? apiModelProperty.value() : null;
-                columnComment = Objects.nonNull(schema) && StrUtil.isNotBlank(schema.description()) ? schema.description() : null;
+                String columnComment = null;
+                if (Objects.nonNull(apiModelProperty) && StrUtil.isNotBlank(apiModelProperty.value())) {
+                    columnComment = apiModelProperty.value();
+                }
+                if (Objects.nonNull(schema) && StrUtil.isNotBlank(schema.description())) {
+                    columnComment = schema.description();
+                }
                 if (acTableProperties.getColumnToUpperCase()) {
                     columnName = columnName.toUpperCase();
                 }

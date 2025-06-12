@@ -310,9 +310,9 @@ public class DmImpl extends DatabaseService {
              *  自增（删除、新增）都是单独的语句，所以需要单独处理
              */
             if (!Objects.equals(alterSentence1, alterSentence2)) {
-                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, true);
+                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList,alterSentence1,true);
             } else if (propertyInfo.isAutoIncrement() != tableColumnInfo.isAutoIncrement()) {
-                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, false);
+                this.updateHandle(propertyInfo, tableColumnInfo, addList, updateOtherList, alterSentence1,false);
             }
 
             if (!StrUtil.equalsIgnoreCase(tableColumnInfo.getColumnComment(), propertyInfo.getColumnComment())) {
@@ -438,10 +438,10 @@ public class DmImpl extends DatabaseService {
      * @param flag            true字段其他信息也修改了，false只改了自增
      */
 
-    public void updateHandle(TableInfo.PropertyInfo propertyInfo, TableInfo.PropertyInfo tableColumnInfo, List<String> addList, List<String> updateOtherList, boolean flag) {
+    public void updateHandle(TableInfo.PropertyInfo propertyInfo, TableInfo.PropertyInfo tableColumnInfo, List<String> addList,
+                             List<String> updateOtherList, String alterSentence, boolean flag) {
         String tableName = propertyInfo.getTableName();
         String columnName = propertyInfo.getColumnName();
-        String alterSentence = this.getAlterSentence(propertyInfo, true);
         //数据库是自增，实体类不是自增，删掉自增
         if (tableColumnInfo.isAutoIncrement() && !propertyInfo.isAutoIncrement()) {
             //alter table TEST."t_zero" drop identity;

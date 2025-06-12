@@ -259,7 +259,7 @@ public class MysqlImpl extends DatabaseService {
                 String alterSentence2 = this.getAlterSentence(tableColumnInfo, false);
                 //在比较其他值
                 if (!Objects.equals(alterSentence1, alterSentence2)) {
-                    columnSql.append(StrPool.CRLF).append(StrUtil.format("MODIFY COLUMN {},", this.jointDefault(this.getAlterSentence(propertyInfo, true), propertyInfo.getDefaultValue())));
+                    columnSql.append(StrPool.CRLF).append(StrUtil.format("MODIFY COLUMN {},", this.jointDefault(alterSentence1, propertyInfo.getDefaultValue())));
                 }
             }
         }

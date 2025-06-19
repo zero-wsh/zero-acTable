@@ -29,7 +29,7 @@ mysql、达梦、sql_server
 <dependency>
 	<groupId>io.gitee.zero-wsh</groupId>
 	<artifactId>acTable</artifactId>
-	<version>3.0.7</version>
+	<version>3.0.7.1</version>
 </dependency>
 ```
 
